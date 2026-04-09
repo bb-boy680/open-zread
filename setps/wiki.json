@@ -1,0 +1,43 @@
+{
+  "id": "2026-04-09-014044",
+  "generated_at": "2026-04-08T17:40:44.397272752Z",
+  "language": "zh",
+  "pages": [
+    {
+      "slug": "1-xiang-mu-gai-shu",
+      "title": "项目概述",
+      "file": "1-xiang-mu-gai-shu.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "2-kuai-su-kai-shi",
+      "title": "快速开始",
+      "file": "2-kuai-su-kai-shi.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "3-huan-jing-pei-zhi-yu-mo-xing-she-zhi",
+      "title": "环境配置与模型设置",
+      "file": "3-huan-jing-pei-zhi-yu-mo-xing-she-zhi.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "4-chrome-kuo-zhan-ti-yan",
+      "title": "Chrome 扩展体验",
+      "file": "4-chrome-kuo-zhan-ti-yan.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "5-web-zi-dong-hua-ji-cheng",
+      "title": "Web 自动化集成",
+      "file": "5-web-zi-dong-hua-ji-cheng.md",
+      "section": "核心技术",
+      "group": "平台集成",
+      "level": "Intermediate"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "open-zread",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "bun run cli/src/index.tsx",
+    "build": "turbo build",
+    "build:cli": "cd cli && npm run build"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.1",
+    "turbo": "^2.9.5",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "react-devtools-core": "^4.28.5"
+  }
+}

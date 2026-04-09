@@ -1,0 +1,176 @@
+这是经过最终完善的 **Zread CLI 复刻项目第一阶段：项目扫描与蓝图构建** 深度研究文档。
+
+该文档整合了**多线程扫描、Tree-sitter WASM 懒加载、前端框架适配（Vue/React）、代码脱水技术以及 Agent 编排逻辑**，旨在为处理 50w 行以上代码的项目提供完整的底层理论与实施架构。
+
+---
+
+# 研究文档：项目扫描与蓝图构建 (Phase 1: The Architect's Blueprint)
+
+## 1. 核心架构设计 (The Core Architecture)
+
+本阶段将复杂的原始代码库转化为结构化的“语义蓝图”。架构分为四层：
+
+| 层次 | 组件 | 关键技术 | 目标 |
+| :--- | :--- | :--- | :--- |
+| **物理层** | 智能扫描器 (Smart Scanner) | Worker Threads, `ignore` | 高速遍历、多线程 Hash 计算、过滤噪音。 |
+| **语法层** | 跨语言提取器 (Polyglot Extractor) | `web-tree-sitter` (WASM) | 懒加载解析器，精准提取符号（Symbols）。 |
+| **逻辑层** | 代码脱水机 (Dehydrator) | Token Budgeting, SCM Queries | 压缩代码，去除逻辑细节，保留架构骨架。 |
+| **智能层** | 蓝图 Agent (Blueprint Agent) | Agentic Workflow, PI-SDK | 语义聚类、大纲规划、文件关联映射。 |
+
+---
+
+## 2. 核心技术细节 (Technical Deep-Dive)
+
+### 2.1 针对前端框架的符号提取 (Frontend Framework Intelligence)
+由于前端代码是多模态的，我们采用“差异化解析”：
+*   **React (TSX/JSX):** 使用 `tree-sitter-tsx` 解析。重点提取 `FunctionComponent`、`Props Interface` 以及 `Hook` 定义。
+*   **Vue (SFC):** 采用**二级解析策略**：
+    1.  使用 `tree-sitter-vue` 定位 `<script>` 块。
+    2.  对 script 内容进行二次解析（TS/JS）。
+    3.  提取 `defineProps`, `defineEmits` 和导出的 `setup` 逻辑。
+    4.  **优化：** 在蓝图阶段主动忽略 `<template>` 和 `<style>` 的内部结构，仅保留组件名。
+
+### 2.2 50w 行代码的脱水算法 (The Dehydration Algorithm)
+为了适配 LLM 上下文窗口，必须将压缩比控制在 **1:50** 左右：
+*   **提取项：** 导出符号 (Exports)、类与函数签名 (Signatures)、顶部文档注释 (Docstrings)、模块依赖 (Imports)。
+*   **剔除项：** 函数体内部逻辑、循环/分支语句、局部变量、HTML 标签细节、CSS 样式规则。
+*   **Token 熔断机制：** 当骨架大小接近阈值（如 100k Token），Agent 自动切换至“摘要模式”，仅保留文件名与类名。
+
+### 2.3 WASM 懒加载与 Agent 编排
+*   **懒加载：** CLI 仅内置基础引擎，`.wasm` 语法包根据扫描到的文件后缀名按需从 CDN 下载并缓存至 `~/.zread/parsers/`。
+*   **Agent 编排：** 引入 PI-SDK 思想，不直接请求 LLM 规划目录，而是：
+    1.  **扫描 Agent：** 汇总目录树与技术栈（识别是 React 还是 Go）。
+    2.  **聚类 Agent：** 寻找高频引用文件，将其标记为“核心模块”。
+    3.  **大纲 Agent：** 基于核心模块和骨架，推理出符合人类思维的 Wiki 章节。
+
+---
+
+## 3. 业务执行流程图 (Flowchart)
+
+```mermaid
+graph TD
+    A[执行 zread generate] --> B[1. 多线程文件遍历]
+    B --> C{识别文件类型}
+    
+    C -- .ts/.tsx/.go/.py --> D[2. WASM 解析器调度]
+    C -- .vue --> E[Vue 特殊处理: 提取 Script 块]
+    C -- .html/.css/.json --> F[仅记录文件名与元数据]
+    
+    D & E --> G[3. Tree-sitter 符号提取]
+    G --> H[4. 代码脱水: 符号+依赖+注释]
+    
+    H --> I[5. 上下文组装: Context Manager]
+    I --> J{Token 预算检查}
+    J -- 超出 --> K[触发层级压缩: 隐藏方法细节]
+    J -- 正常 --> L[6. Agent 编排推理]
+    
+    K --> L
+    L --> M[7. 生成 Wiki 蓝图 JSON]
+    M --> N[保存至 .zread/state.json]
+```
+
+---
+
+## 4. 系统交互时序图 (Sequence Diagram)
+
+展示了处理 50w 行代码时的跨组件协同。
+
+```mermaid
+sequenceDiagram
+    participant User as 开发者
+    participant CLI as CLI Core
+    participant WASM as WASM Manager
+    participant Agent as Blueprint Agent
+    participant LLM as GPT-4o / Claude
+
+    User->>CLI: zread generate
+    CLI->>CLI: 并行扫描文件系统 (IO 密集型)
+    
+    Note over CLI, WASM: 语义提取 (CPU 密集型)
+    CLI->>WASM: 加载 TSX/Vue/Go Parsers (On-demand)
+    WASM-->>CLI: 返回 AST 符号
+    CLI->>CLI: 生成 Dehydrated Skeleton (骨架)
+    
+    Note over CLI, LLM: 蓝图规划 (智能密集型)
+    CLI->>Agent: 提供骨架 + 目录树 + 依赖图
+    Agent->>Agent: 语义聚类 (识别核心业务逻辑)
+    Agent->>LLM: Prompt: 请根据骨架设计 Wiki 目录
+    LLM-->>Agent: 返回结构化 JSON (TOC)
+    
+    Agent->>CLI: 校验目录与物理文件关联
+    CLI->>User: 蓝图生成成功 (耗时 ~60s)
+```
+
+---
+
+## 5. 蓝图数据模型示例 (Blueprint Data Model)
+
+这是 `.zread/drafts/wiki.json` 的核心部分，记录了 AI 对项目的架构理解：
+
+```json
+{
+  "id": "2026-04-09-014044",
+  "generated_at": "2026-04-08T17:40:44.397272752Z",
+  "language": "zh",
+  "pages": [
+    {
+      "slug": "1-xiang-mu-gai-shu",
+      "title": "项目概述",
+      "file": "1-xiang-mu-gai-shu.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "2-kuai-su-kai-shi",
+      "title": "快速开始",
+      "file": "2-kuai-su-kai-shi.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "3-huan-jing-pei-zhi-yu-mo-xing-she-zhi",
+      "title": "环境配置与模型设置",
+      "file": "3-huan-jing-pei-zhi-yu-mo-xing-she-zhi.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "4-chrome-kuo-zhan-ti-yan",
+      "title": "Chrome 扩展体验",
+      "file": "4-chrome-kuo-zhan-ti-yan.md",
+      "section": "入门指南",
+      "level": "Beginner"
+    },
+    {
+      "slug": "5-web-zi-dong-hua-ji-cheng",
+      "title": "Web 自动化集成",
+      "file": "5-web-zi-dong-hua-ji-cheng.md",
+      "section": "核心技术",
+      "group": "平台集成",
+      "level": "Intermediate"
+    }
+  ]
+}
+```
+
+---
+
+## 6. 第一阶段研究结论与避坑指南
+
+### 研究结论：
+1.  **确定性是关键：** Tree-sitter 保证了蓝图的“物理路径”是真实的，Agent 保证了“语义分类”是合理的。
+2.  **性能可控：** 通过多线程和 WASM 懒加载，50w 行代码的本地解析不会成为瓶颈（约 10-15s）。
+3.  **前端适配：** 前端解析应聚焦于逻辑组件（Script）而非展现形式（Template），以节省 Token。
+
+### 避坑指南：
+*   **不要解析 `node_modules`：** 绝对禁止进入依赖库，否则 Token 消耗和扫描时间会呈指数级增长。
+*   **WASM 内存溢出：** 处理超大型文件（超过 1w 行的单个文件）时，建议截断处理，只取头部定义。
+*   **路径校验：** AI 生成的蓝图目录中，关联的文件路径必须在本地 FS 中二次校验，防止幻觉。
+
+---
+
+**一阶段总结：**
+我们现在已经拥有一张精准的**项目施工图**（蓝图）。它知道项目有哪些模块、哪些文件是核心、Wiki 该分几章。
+
+**下一阶段预演：**
+在 **Phase 2** 中，我们将针对 `wiki_toc` 中的每一章，调度 AI 深入读取 `mapping_files` 的具体细节，最终生成高水平的 Markdown 文档。

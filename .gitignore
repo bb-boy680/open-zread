@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+.turbo/
+
+# Build output
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.*
+!.env.example

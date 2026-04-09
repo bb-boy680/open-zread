@@ -1,0 +1,47 @@
+export const SCANNER_CONFIG = {
+  max_workers: 4,
+  max_file_size: 1024 * 1024,  // 1MB
+  ignore_patterns: [
+    'node_modules',
+    '.git',
+    '.open-zread',
+    'dist',
+    'build',
+    'out',
+    '*.test.ts',
+    '*.spec.ts',
+    '*.test.js',
+    '*.spec.js',
+    '*.min.js',
+    '*.min.mjs',
+    '*.d.ts',
+    '*.map',
+    '*.log',
+    '.DS_Store',
+    'Thumbs.db',
+  ],
+};
+
+// Language detection mapping
+export const LANGUAGE_MAP: Record<string, string> = {
+  '.ts': 'typescript',
+  '.tsx': 'tsx',
+  '.js': 'javascript',
+  '.jsx': 'jsx',
+  '.vue': 'vue',
+  '.go': 'go',
+  '.py': 'python',
+  '.java': 'java',
+  '.kt': 'kotlin',
+  '.rs': 'rust',
+  '.c': 'c',
+  '.cpp': 'cpp',
+  '.h': 'c',
+  '.hpp': 'cpp',
+  '.cs': 'csharp',
+  '.rb': 'ruby',
+  '.php': 'php',
+  '.swift': 'swift',
+  '.m': 'objc',
+  '.scala': 'scala',
+};

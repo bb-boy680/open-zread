@@ -1,0 +1,31 @@
+{
+  "name": "@open-zread/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "open-zread": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "bun build src/index.tsx --outfile dist/index.js --target=node && cp ../node_modules/.pnpm/yoga-wasm-web@0.3.3/node_modules/yoga-wasm-web/dist/yoga.wasm dist/",
+    "dev": "bun run src/index.tsx",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@open-zread/config": "workspace:*",
+    "@open-zread/scanner": "workspace:*",
+    "@open-zread/parser": "workspace:*",
+    "@open-zread/dehydrator": "workspace:*",
+    "@open-zread/cache": "workspace:*",
+    "@open-zread/agents": "workspace:*",
+    "@open-zread/output": "workspace:*",
+    "@open-zread/utils": "workspace:*",
+    "ink": "^4.0.0",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/react": "^18.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
