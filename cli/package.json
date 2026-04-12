@@ -7,7 +7,7 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "bun build.ts",
+    "build": "bun scripts/build.ts",
     "dev": "bun run src/index.tsx",
     "start": "node dist/index.js"
   },
