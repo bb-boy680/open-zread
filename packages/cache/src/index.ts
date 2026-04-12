@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { join } from 'path';
 import type { FileManifest, CacheManifest, DehydratedSkeleton } from '@open-zread/types';
 import { getCacheDir, readJsonFile, writeJsonFile, ensureDir } from '@open-zread/utils';
@@ -26,6 +27,33 @@ export async function saveCachedManifest(manifest: FileManifest): Promise<void> 
     files: manifest.files.map(f => ({
       path: f.path,
       hash: f.hash,
+      size: f.size,
+    })),
+  };
+
+  const manifestPath = join(cacheDir, CACHE_FILES.manifest);
+  await writeJsonFile(manifestPath, cacheManifest);
+}
+
+// Save manifest with skeleton hashes to cache
+export async function saveCachedManifestWithSkeleton(
+  manifest: FileManifest,
+  skeleton: DehydratedSkeleton
+): Promise<void> {
+  const cacheDir = getCacheDir();
+  await ensureDir(cacheDir);
+
+  const skeletonMap = new Map(skeleton.skeleton.map(s => [s.file, s.content]));
+
+  const cacheManifest: CacheManifest = {
+    version: CACHE_VERSION,
+    generated_at: new Date().toISOString(),
+    files: manifest.files.map(f => ({
+      path: f.path,
+      hash: f.hash,
+      skeletonHash: skeletonMap.has(f.path)
+        ? createHash('md5').update(skeletonMap.get(f.path)!).digest('hex')
+        : undefined,
       size: f.size,
     })),
   };

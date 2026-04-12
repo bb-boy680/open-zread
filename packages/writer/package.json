@@ -1,0 +1,28 @@
+{
+  "name": "@open-zread/writer",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts"
+  },
+  "dependencies": {
+    "@open-zread/types": "workspace:*",
+    "@open-zread/utils": "workspace:*",
+    "@open-zread/agents": "workspace:*",
+    "@open-zread/storage": "workspace:*",
+    "p-limit": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.0.0"
+  }
+}

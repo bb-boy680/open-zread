@@ -84,6 +84,7 @@ export interface WikiPage {
   file: string;
   section: string;
   level: string;
+  type?: 'overview' | 'architecture' | 'code' | 'spec' | 'reference';
   associatedFiles?: string[];
 }
 
@@ -93,6 +94,7 @@ export interface WikiOutput {
   generated_at: string;
   language: string;
   pages: WikiPage[];
+  techStackSummary?: TechStackSummary;
 }
 
 // AppConfig - Configuration
@@ -115,9 +117,11 @@ export interface AppConfig {
 export interface CacheManifest {
   version: string;
   generated_at: string;
+  promptHash?: string;
   files: Array<{
     path: string;
     hash: string;
+    skeletonHash?: string; // NEW: 骨架字符串的 MD5
     size: number;
   }>;
 }

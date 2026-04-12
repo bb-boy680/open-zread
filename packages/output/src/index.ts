@@ -1,4 +1,4 @@
-import type { WikiOutput, WikiPage, AppConfig } from '@open-zread/types';
+import type { WikiOutput, WikiPage, AppConfig, TechStackSummary } from '@open-zread/types';
 import { getDraftsDir, ensureDir, writeJsonFile, joinPath, logger } from '@open-zread/utils';
 import { OUTPUT_FILES } from './constants';
 
@@ -13,7 +13,8 @@ function generateWikiId(): string {
 // Generate wiki.json
 export async function generateWikiJson(
   pages: WikiPage[],
-  config: AppConfig
+  config: AppConfig,
+  techStackSummary?: TechStackSummary
 ): Promise<string> {
   const draftsDir = getDraftsDir();
   await ensureDir(draftsDir);
@@ -23,6 +24,7 @@ export async function generateWikiJson(
     generated_at: new Date().toISOString(),
     language: config.language,
     pages,
+    techStackSummary,
   };
 
   const outputPath = joinPath(draftsDir, OUTPUT_FILES.wiki);

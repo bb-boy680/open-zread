@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .turbo/
+.open-zread
 
 # Build output
 dist/
