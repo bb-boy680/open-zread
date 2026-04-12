@@ -16,7 +16,8 @@
   "dependencies": {
     "@open-zread/types": "workspace:*",
     "@open-zread/config": "workspace:*",
-    "@open-zread/utils": "workspace:*"
+    "@open-zread/utils": "workspace:*",
+    "@mariozechner/pi-ai": "^0.66.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

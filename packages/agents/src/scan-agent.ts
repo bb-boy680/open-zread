@@ -1,27 +1,9 @@
 import type { FileManifest, TechStackSummary, AppConfig } from '@open-zread/types';
-import { callLLM, parseJsonResponse } from './llm-client';
-import { logger } from '@open-zread/utils';
-
-const SYSTEM_PROMPT = `You are a tech stack analysis expert. Analyze project file structure to identify tech stack, framework type, and entry points.
-Output must be JSON format.`;
-
-const USER_PROMPT_TEMPLATE = `Analyze the following file list to identify project tech stack:
-
-Total Files: {totalFiles}
-Language Distribution: {languageStats}
-File List (First 50):
-{fileList}
-
-Output JSON format:
-{
-  "techStack": {
-    "languages": ["..."],
-    "frameworks": ["..."],
-    "buildTools": ["..."]
-  },
-  "projectType": "...",
-  "entryPoints": ["..."]
-}`;
+import { callLLM, parseJsonResponse, appendAgentLog } from './llm-client';
+import { scanPrompt, fillPrompt } from './prompts';
+import { logger, getProjectRoot } from '@open-zread/utils';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 
 // Build language statistics
 function buildLanguageStats(manifest: FileManifest): string {
@@ -34,6 +16,39 @@ function buildLanguageStats(manifest: FileManifest): string {
     .join(', ');
 }
 
+// Read core configuration files from project root
+function readCoreConfigs(projectRoot: string): string {
+  const configFiles = [
+    'package.json',
+    'go.mod',
+    'pyproject.toml',
+    'Cargo.toml',
+    'pom.xml',
+    'build.gradle',
+    'CMakeLists.txt',
+    'composer.json',
+    'Gemfile',
+    'tsconfig.json',
+    'Makefile',
+  ];
+
+  const results: string[] = [];
+  for (const file of configFiles) {
+    const fullPath = join(projectRoot, file);
+    if (existsSync(fullPath)) {
+      try {
+        const content = readFileSync(fullPath, 'utf-8');
+        // Truncate to avoid blowing up token count
+        const truncated = content.length > 2000 ? content.slice(0, 2000) + '\n... (truncated)' : content;
+        results.push(`=== ${file} ===\n${truncated}`);
+      } catch {
+        // Read failed, skip
+      }
+    }
+  }
+  return results.length > 0 ? results.join('\n\n') : '(No core config files found)';
+}
+
 // ScanAgent
 export async function runScanAgent(
   manifest: FileManifest,
@@ -41,19 +56,31 @@ export async function runScanAgent(
 ): Promise<TechStackSummary> {
   logger.progress('ScanAgent: Identifying tech stack');
 
+  const projectRoot = getProjectRoot();
   const languageStats = buildLanguageStats(manifest);
   const fileList = manifest.files
     .slice(0, 50)
     .map(f => f.path)
     .join('\n');
+  const coreConfigs = readCoreConfigs(projectRoot);
 
-  const prompt = USER_PROMPT_TEMPLATE
-    .replace('{totalFiles}', manifest.totalFiles.toString())
-    .replace('{languageStats}', languageStats)
-    .replace('{fileList}', fileList);
+  const prompt = fillPrompt(scanPrompt.user, {
+    totalFiles: manifest.totalFiles.toString(),
+    languageStats: languageStats,
+    fileList: fileList,
+    coreConfigs: coreConfigs,
+  });
 
-  const response = await callLLM(config, prompt, SYSTEM_PROMPT);
+  const response = await callLLM(config, prompt, scanPrompt.system);
   const result = parseJsonResponse(response) as TechStackSummary;
+
+  // Log what the AI identified
+  logger.info(`  Project type: ${result.projectType}`);
+  logger.info(`  Languages: ${result.techStack.languages.join(', ')}`);
+  logger.info(`  Frameworks: ${result.techStack.frameworks.join(', ')}`);
+  logger.info(`  Build tools: ${result.techStack.buildTools.join(', ')}`);
+  logger.info(`  Entry points: ${result.entryPoints.join(', ')}`);
+  appendAgentLog(`[ScanAgent Result] ${JSON.stringify(result, null, 2)}`);
 
   logger.success('ScanAgent: Tech stack identified');
   return result;

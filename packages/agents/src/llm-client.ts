@@ -1,79 +1,173 @@
 import type { AppConfig } from '@open-zread/types';
-import { logger } from '@open-zread/utils';
+import { stream, Context, Model } from '@mariozechner/pi-ai';
+import { logger, getProjectRoot } from '@open-zread/utils';
+import { join } from 'path';
+import { appendFileSync, mkdirSync, existsSync } from 'fs';
 
-interface LLMRequest {
-  model: string;
-  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
-  max_tokens?: number;
-  temperature?: number;
+// Write agent debug log
+let agentLogPath: string | null = null;
+
+function getAgentLogPath(): string {
+  if (agentLogPath) return agentLogPath;
+  const projectRoot = getProjectRoot();
+  const logDir = join(projectRoot, '.open-zread', 'logs');
+  if (!existsSync(logDir)) {
+    mkdirSync(logDir, { recursive: true });
+  }
+  agentLogPath = join(logDir, 'agent-debug.log');
+  return agentLogPath;
 }
 
-interface LLMResponse {
-  choices: Array<{
-    message: {
-      content: string;
-    };
-  }>;
+export function appendAgentLog(content: string): void {
+  try {
+    appendFileSync(getAgentLogPath(), content + '\n', 'utf-8');
+  } catch {
+    // Silent fail for debug log
+  }
 }
 
-// Call LLM API
+// Parse provider from config (supports openai-compatible endpoints)
+function resolveProvider(config: AppConfig): string {
+  const hostname = new URL(config.llm.base_url).hostname;
+
+  if (hostname === 'api.openai.com') return 'openai';
+  if (hostname === 'api.anthropic.com') return 'anthropic';
+  if (hostname === 'generativelanguage.googleapis.com') return 'google';
+
+  // Default to openai for OpenAI-compatible endpoints
+  return 'openai';
+}
+
+// Build model config from AppConfig (supports custom base_url)
+function buildModel(config: AppConfig): Model<'openai-completions'> {
+  const provider = resolveProvider(config);
+
+  // Custom model config for OpenAI-compatible endpoints
+  return {
+    id: config.llm.model,
+    name: config.llm.model,
+    api: 'openai-completions',
+    provider: provider,
+    baseUrl: config.llm.base_url,
+    reasoning: false,
+    input: ['text'],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: 128000,
+    maxTokens: 4000
+  };
+}
+
+// Build context from prompts
+function buildContext(prompt: string, systemPrompt?: string): Context {
+  const context: Context = { messages: [] };
+
+  if (systemPrompt) {
+    context.systemPrompt = systemPrompt;
+  }
+
+  context.messages.push({
+    role: 'user',
+    content: prompt,
+    timestamp: Date.now()
+  });
+
+  return context;
+}
+
+// Call LLM using PI-SDK
 export async function callLLM(
   config: AppConfig,
   prompt: string,
   systemPrompt?: string
 ): Promise<string> {
-  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+  const model = buildModel(config);
+  const context = buildContext(prompt, systemPrompt);
 
-  if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
-  }
+  const startTime = Date.now();
+  const callId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-  messages.push({ role: 'user', content: prompt });
-
-  const request: LLMRequest = {
-    model: config.llm.model,
-    messages,
-    max_tokens: 4000,
-    temperature: 0.7,
-  };
-
+  // Console log
   logger.info(`Calling LLM: ${config.llm.model}`);
+  logger.info(`  Provider: ${model.provider}`);
+  logger.info(`  Base URL: ${config.llm.base_url}`);
+
+  // Agent debug log - full prompt and response
+  const debugHeader = `\n${'='.repeat(60)}\nCALL #${callId} | ${config.llm.model} | ${new Date().toISOString()}\n${'='.repeat(60)}\n\n--- SYSTEM PROMPT ---\n${systemPrompt || '(none)'}\n\n--- USER PROMPT ---\n${prompt}\n`;
+  appendAgentLog(debugHeader);
 
   try {
-    const response = await fetch(config.llm.base_url + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.llm.api_key}`,
-      },
-      body: JSON.stringify(request),
-    });
+    const s = stream(model, context, { apiKey: config.llm.api_key });
+    let fullContent = '';
+    let lastLogTime = Date.now();
 
-    if (!response.ok) {
-      throw new Error(`LLM API error: ${response.status}`);
+    for await (const event of s) {
+      if (event.type === 'text_delta') {
+        fullContent += event.delta;
+        const now = Date.now();
+        if (now - lastLogTime > 2000) {
+          logger.info(`  Streaming... ${fullContent.length} chars (${((now - startTime) / 1000).toFixed(1)}s)`);
+          lastLogTime = now;
+        }
+      }
     }
 
-    const data: LLMResponse = await response.json();
-    const content = data.choices[0]?.message?.content || '';
+    const result = await s.result();
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    logger.success('LLM response received');
-    return content;
+    logger.success(`LLM response received (${result.usage.output} tokens, ${elapsed}s)`);
+
+    // Agent debug log - full response
+    appendAgentLog(`\n--- RESPONSE (${result.usage.output} tokens, ${elapsed}s) ---\n${fullContent}\n`);
+
+    return fullContent;
   } catch (error) {
-    logger.error(`LLM call failed: ${error}`);
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const errMsg = `\n--- ERROR after ${elapsed}s ---\n${error}\n`;
+    appendAgentLog(errMsg);
+    logger.error(`LLM call failed after ${elapsed}s: ${error}`);
     throw error;
   }
 }
 
-// Parse JSON response
+// Parse JSON response (extract first balanced JSON block from response)
+// Handles both raw JSON and markdown-wrapped JSON (```json ... ```)
+function extractFirstJson(text: string): string | null {
+  // Try markdown-wrapped JSON first (common LLM output pattern)
+  const markdownMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (markdownMatch) {
+    const inner = markdownMatch[1].trim();
+    // Recursively check for balanced braces within the extracted block
+    const start = inner.indexOf('{');
+    if (start !== -1) {
+      let depth = 0;
+      for (let i = start; i < inner.length; i++) {
+        if (inner[i] === '{') depth++;
+        if (inner[i] === '}') depth--;
+        if (depth === 0) return inner.slice(start, i + 1);
+      }
+    }
+  }
+
+  // Fallback: scan the full text for the first balanced JSON object
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    if (text[i] === '}') depth--;
+    if (depth === 0) return text.slice(start, i + 1);
+  }
+  return null;
+}
+
 export function parseJsonResponse(response: string): unknown {
-  // Try to extract JSON block
-  const jsonMatch = response.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
+  const json = extractFirstJson(response);
+  if (!json) {
     throw new Error('No JSON found in response');
   }
 
   try {
-    return JSON.parse(jsonMatch[0]);
+    return JSON.parse(json);
   } catch {
     throw new Error('JSON parse failed');
   }

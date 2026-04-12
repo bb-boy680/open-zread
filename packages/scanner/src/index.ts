@@ -2,14 +2,33 @@ import { readdir, stat, readFile } from 'fs/promises';
 import { join, extname, relative, resolve, dirname } from 'path';
 import { Worker } from 'worker_threads';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import Ignore, { type Ignore as IgnoreType } from 'ignore';
 import type { FileManifest, FileInfo } from '@open-zread/types';
 import { logger, getProjectRoot } from '@open-zread/utils';
 import { SCANNER_CONFIG, LANGUAGE_MAP } from './constants';
 
-// ES module __dirname equivalent
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Resolve worker path - handles both dev mode and built mode
+function getWorkerPath(): string {
+  // Try multiple locations for worker.js
+  const possiblePaths = [
+    // Built mode: worker.js in same directory as this file
+    join(dirname(fileURLToPath(import.meta.url)), 'worker.js'),
+    // Dev mode fallback: look in scanner dist directory
+    resolve(process.cwd(), 'packages/scanner/dist/worker.js'),
+    // Another dev mode path
+    resolve(dirname(fileURLToPath(import.meta.url)), '../scanner/dist/worker.js'),
+  ];
+
+  for (const path of possiblePaths) {
+    if (existsSync(path)) {
+      return path;
+    }
+  }
+
+  // Fallback: use first path (will error if not found, but at least consistent)
+  return possiblePaths[0];
+}
 
 // Language detection
 function detectLanguage(filePath: string): string {
@@ -41,6 +60,8 @@ function calculateHashWithWorker(
   filePaths: string[],
   maxWorkers: number = SCANNER_CONFIG.max_workers
 ): Promise<Map<string, string>> {
+  const workerPath = getWorkerPath();
+
   return new Promise((resolvePromise, reject) => {
     const results = new Map<string, string>();
     const queue = [...filePaths];
@@ -57,7 +78,7 @@ function calculateHashWithWorker(
         const filePath = queue[currentIndex++];
         activeWorkers++;
 
-        const worker = new Worker(join(__dirname, 'worker.js'));
+        const worker = new Worker(workerPath);
 
         worker.on('message', (result: { filePath: string; hash: string; error?: string }) => {
           if (result.hash) {

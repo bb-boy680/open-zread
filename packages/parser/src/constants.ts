@@ -1,5 +1,5 @@
-// WASM Parser CDN source
-export const WASM_CDN_URL = 'https://tree-sitter.github.io/tree-sitter/assets/wasm';
+// WASM Parser CDN source (tree-sitter-wasms by sourcegraph on jsDelivr)
+export const WASM_CDN_URL = 'https://cdn.jsdelivr.net/npm/tree-sitter-wasms@0.1.13/out';
 
 // WASM file naming mapping
 export const WASM_FILE_MAP: Record<string, string> = {
@@ -11,5 +11,5 @@ export const WASM_FILE_MAP: Record<string, string> = {
   python: 'tree-sitter-python.wasm',
 };
 
-// Local cache directory
+// Local cache directory (use homedir to avoid Chinese path encoding issues)
 export const PARSER_CACHE_DIR = '~/.zread/parsers';

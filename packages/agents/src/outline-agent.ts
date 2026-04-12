@@ -1,34 +1,8 @@
 import type { TechStackSummary, CoreModules, FileManifest, WikiPage, AppConfig } from '@open-zread/types';
-import { callLLM, parseJsonResponse } from './llm-client';
+import { callLLM, parseJsonResponse, appendAgentLog } from './llm-client';
 import { validateOutput } from './path-resolver';
+import { outlinePrompt, fillPrompt } from './prompts';
 import { logger } from '@open-zread/utils';
-
-const SYSTEM_PROMPT = `You are a documentation planning expert. Design Wiki directory structure based on project tech stack and core modules.
-Output must be JSON format.
-Note: Do not generate non-existent file paths.`;
-
-const USER_PROMPT_TEMPLATE = `Design Wiki directory structure based on tech stack and core modules:
-
-Tech Stack: {techStack}
-Core Modules: {coreModules}
-Language Preference: {language}
-
-Existing file paths (for reference only, do not create new paths):
-{validPaths}
-
-Output JSON format:
-{
-  "pages": [
-    {
-      "slug": "1-project-overview",
-      "title": "Project Overview",
-      "file": "1-project-overview.md",
-      "section": "Getting Started",
-      "level": "Beginner",
-      "associatedFiles": ["src/index.ts"]
-    }
-  ]
-}`;
 
 // Generate slug
 function generateSlug(title: string): string {
@@ -63,15 +37,17 @@ export async function runOutlineAgent(
 ): Promise<WikiPage[]> {
   logger.progress('OutlineAgent: Generating wiki outline');
 
-  const validPaths = manifest.files.slice(0, 100).map(f => f.path).join('\n');
+  // Provide broader path coverage for validation
+  const validPaths = manifest.files.slice(0, 200).map(f => f.path).join('\n');
 
-  const prompt = USER_PROMPT_TEMPLATE
-    .replace('{techStack}', JSON.stringify(techStack))
-    .replace('{coreModules}', JSON.stringify(coreModules))
-    .replace('{language}', config.language)
-    .replace('{validPaths}', validPaths);
+  const prompt = fillPrompt(outlinePrompt.user, {
+    techStack: JSON.stringify(techStack),
+    coreModules: JSON.stringify(coreModules),
+    language: config.language,
+    validPaths: validPaths,
+  });
 
-  const response = await callLLM(config, prompt, SYSTEM_PROMPT);
+  const response = await callLLM(config, prompt, outlinePrompt.system);
   const result = parseJsonResponse(response) as { pages: WikiPage[] };
 
   // Path validation
@@ -82,6 +58,13 @@ export async function runOutlineAgent(
     ...page,
     slug: page.slug || `${index + 1}-${generateSlug(page.title)}`,
   }));
+
+  // Log what the AI generated
+  logger.info(`  Pages generated: ${finalPages.length}`);
+  for (const page of finalPages) {
+    logger.info(`    - [${page.section}] ${page.title} (${page.slug})`);
+  }
+  appendAgentLog(`[OutlineAgent Result] ${JSON.stringify({ pages: finalPages }, null, 2)}`);
 
   logger.success('OutlineAgent: Wiki outline generated');
   return finalPages;

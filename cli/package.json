@@ -7,7 +7,7 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "bun build src/index.tsx --outfile dist/index.js --target=node && cp ../node_modules/.pnpm/yoga-wasm-web@0.3.3/node_modules/yoga-wasm-web/dist/yoga.wasm dist/",
+    "build": "bun build.ts",
     "dev": "bun run src/index.tsx",
     "start": "node dist/index.js"
   },
