@@ -1,5 +1,5 @@
 import { getProjectRoot, joinPath, ensureDir, readTextFile, writeTextFile } from '@open-zread/utils';
-import { existsSync, readdirSync, statSync, renameSync, mkdirSync, rmSync } from 'fs';
+import { mkdirSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
 
@@ -13,7 +13,7 @@ export function generateSnapshotName(): string {
   const dateStr = now.toISOString().slice(0, 10);
   const timeStr = now.toISOString().slice(11, 16).replace(':', '');
 
-  let commitHash = '';
+  let commitHash: string;
   try {
     const projectRoot = getProjectRoot();
     commitHash = execSync('git rev-parse --short HEAD', {

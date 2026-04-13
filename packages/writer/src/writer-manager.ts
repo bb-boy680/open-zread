@@ -1,8 +1,7 @@
 import type { AppConfig, WikiPage, DehydratedSkeleton, TechStackSummary, CacheManifest } from '@open-zread/types';
 import { writePage } from './writer-agent';
 import { WikiStore } from '@open-zread/storage';
-import { logger, getProjectRoot } from '@open-zread/utils';
-import { join } from 'path';
+import { logger } from '@open-zread/utils';
 import { createHash } from 'crypto';
 import pLimit from 'p-limit';
 import { BASE_SYSTEM_PROMPT, TYPE_PROMPTS } from './prompts';

@@ -13,7 +13,7 @@ export async function runClusterAgent(
 
   // Extract high-frequency reference files (top 50 hubs, threshold >= 5 refs)
   const highRefFiles = Object.entries(skeleton.referenceMap)
-    .filter(([_, count]) => count >= 5)
+    .filter(([, count]) => count >= 5)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 50)
     .map(([path, count]) => `${path}: ${count} refs`)

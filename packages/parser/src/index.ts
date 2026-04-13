@@ -1,11 +1,10 @@
 import Parser from 'web-tree-sitter';
 import { join } from 'path';
-import { readFile } from 'fs/promises';
 import type { FileManifest, SymbolManifest, SymbolInfo } from '@open-zread/types';
 import { logger, getProjectRoot, readTextFile } from '@open-zread/utils';
-import { isLanguageSupported, getParserName } from './language-map';
-import { loadParser, loadParsers } from './wasm-loader';
-import { extractVueScript, parseVueSfc } from './vue-handler';
+import { isLanguageSupported } from './language-map';
+import { loadParsers } from './wasm-loader';
+import { parseVueSfc } from './vue-handler';
 
 // SCM Queries - Use Tree-sitter S-expression syntax for precise extraction
 const SCM_QUERIES: Record<string, string> = {
@@ -80,7 +79,7 @@ function extractWithQuery(
     }
 
     return { imports, exports, functions };
-  } catch (error) {
+  } catch {
     logger.warn(`SCM Query failed, fallback to basic traversal: ${language}`);
     return extractBasic(tree);
   }
@@ -188,7 +187,7 @@ export async function parseFiles(manifest: FileManifest): Promise<SymbolManifest
       if (symbolInfo) {
         symbols.push(symbolInfo);
       }
-    } catch (error) {
+    } catch {
       logger.warn(`Parse failed: ${file.path}`);
     }
   }

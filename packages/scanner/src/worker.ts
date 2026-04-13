@@ -3,7 +3,7 @@
 
 import { readFile } from 'fs/promises';
 import { createHash } from 'crypto';
-import { parentPort, workerData } from 'worker_threads';
+import { parentPort } from 'worker_threads';
 
 interface HashTask {
   filePath: string;

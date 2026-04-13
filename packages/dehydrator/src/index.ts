@@ -10,7 +10,7 @@ function buildSkeletonContent(symbol: SymbolManifest['symbols'][0], source: stri
   const lines = source.split('\n');
 
   // Truncate large files
-  const limitedLines = lines.slice(0, DEHYDRATOR_CONFIG.header_lines_limit);
+  lines.slice(0, DEHYDRATOR_CONFIG.header_lines_limit);
 
   // Build skeleton: keep imports, exports, signatures, remove function bodies
   const skeletonLines: string[] = [];
@@ -59,7 +59,7 @@ export async function dehydrate(symbols: SymbolManifest): Promise<DehydratedSkel
 
       const content = buildSkeletonContent(symbol, source);
       skeleton.push({ file: symbol.file, content });
-    } catch (error) {
+    } catch {
       logger.warn(`Dehydrate failed: ${symbol.file}`);
     }
   }

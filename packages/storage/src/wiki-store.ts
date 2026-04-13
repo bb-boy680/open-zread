@@ -1,6 +1,5 @@
 import type { WikiPage } from '@open-zread/types';
 import { getProjectRoot, joinPath, ensureDir, writeTextFile } from '@open-zread/utils';
-import { existsSync, readdirSync, rmSync } from 'fs';
 import { dirname, join } from 'path';
 import { createVersionSnapshot } from './versioning';
 

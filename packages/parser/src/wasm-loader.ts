@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { homedir } from 'os';
 import { fileURLToPath } from 'url';
 import Parser from 'web-tree-sitter';
-import { WASM_CDN_URL, WASM_FILE_MAP, PARSER_CACHE_DIR } from './constants';
+import { WASM_CDN_URL, WASM_FILE_MAP } from './constants';
 import { LANGUAGE_TO_PARSER } from './language-map';
 import { logger } from '@open-zread/utils';
 
@@ -54,7 +54,7 @@ async function downloadWasmToCache(parserName: string): Promise<Uint8Array> {
 
     return wasmBuffer;
   } catch (error) {
-    throw new Error(`WASM download failed: ${parserName}\nPlease manually download to ~/.zread/parsers/`);
+    throw new Error(`WASM download failed: ${parserName}\nPlease manually download to ~/.zread/parsers/`, { cause: error });
   }
 }
 
@@ -116,7 +116,8 @@ async function initParser(): Promise<void> {
 export async function loadLanguage(parserName: string): Promise<Parser.Language> {
   // Check memory cache
   if (languageCache.has(parserName)) {
-    return languageCache.get(parserName)!;
+    const cached = languageCache.get(parserName);
+    if (cached) return cached;
   }
 
   // Initialize Parser (must be called once before any Language.load)

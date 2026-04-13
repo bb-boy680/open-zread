@@ -1,4 +1,4 @@
-import type { FileManifest, DehydratedSkeleton, WikiPage, AppConfig, TechStackSummary, CoreModules } from '@open-zread/types';
+import type { FileManifest, DehydratedSkeleton, WikiPage, AppConfig } from '@open-zread/types';
 import { runScanAgent } from './scan-agent';
 import { runClusterAgent } from './cluster-agent';
 import { runOutlineAgent } from './outline-agent';

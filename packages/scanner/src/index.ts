@@ -62,7 +62,7 @@ function calculateHashWithWorker(
 ): Promise<Map<string, string>> {
   const workerPath = getWorkerPath();
 
-  return new Promise((resolvePromise, reject) => {
+  return new Promise((resolvePromise) => {
     const results = new Map<string, string>();
     const queue = [...filePaths];
     let activeWorkers = 0;
@@ -89,8 +89,9 @@ function calculateHashWithWorker(
           processNext();
         });
 
-        worker.on('error', (error) => {
-          logger.warn(`Worker error: ${error.message}`);
+        worker.on('error', (error: unknown) => {
+          const message = error instanceof Error ? error.message : String(error);
+          logger.warn(`Worker error: ${message}`);
           activeWorkers--;
           worker.terminate();
           processNext();

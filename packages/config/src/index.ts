@@ -12,7 +12,7 @@ export async function loadConfig(): Promise<AppConfig> {
     const rawConfig = parse(content);
     return validateConfig(rawConfig);
   } catch (error) {
-    throw new Error(`Config file read failed: ${CONFIG_PATH}\nPlease ensure config file exists and format is correct`);
+    throw new Error(`Config file read failed: ${CONFIG_PATH}\nPlease ensure config file exists and format is correct`, { cause: error });
   }
 }
 

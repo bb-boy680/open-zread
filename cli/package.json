@@ -9,6 +9,8 @@
   "scripts": {
     "build": "bun scripts/build.ts",
     "dev": "bun run src/index.tsx",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "start": "node dist/index.js"
   },
   "dependencies": {

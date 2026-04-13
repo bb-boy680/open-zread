@@ -1,4 +1,4 @@
-import { appendFileSync, mkdirSync, existsSync, writeFileSync } from 'fs';
+import { appendFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 

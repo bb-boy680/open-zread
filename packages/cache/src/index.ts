@@ -52,7 +52,7 @@ export async function saveCachedManifestWithSkeleton(
       path: f.path,
       hash: f.hash,
       skeletonHash: skeletonMap.has(f.path)
-        ? createHash('md5').update(skeletonMap.get(f.path)!).digest('hex')
+        ? createHash('md5').update(skeletonMap.get(f.path) ?? '').digest('hex')
         : undefined,
       size: f.size,
     })),

@@ -49,7 +49,8 @@ const wasmFiles = [
 ];
 
 for (const { packagePath, name } of wasmFiles) {
-  const fileName = packagePath.split(/[\\/]/).pop()!;
+  const fileName = packagePath.split(/[\\/]/).pop();
+  if (!fileName) continue;
   const found = findFileRecursively(NODE_MODULES, fileName);
   if (found && existsSync(found)) {
     console.log(`Copying ${name}...`);
