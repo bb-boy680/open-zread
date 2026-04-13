@@ -1,14 +1,8 @@
 #!/usr/bin/env bun
-import { runAgents } from '@open-zread/agents';
-import { loadCachedManifest, loadCachedSkeleton, needsReprocess, saveCachedManifest, saveCachedSkeleton } from '@open-zread/cache';
-import { loadConfig } from '@open-zread/config';
-import { dehydrate } from '@open-zread/dehydrator';
-import { generateWikiJson } from '@open-zread/output';
-import { parseFiles } from '@open-zread/parser';
-import { scanFiles } from '@open-zread/scanner';
+import { runAgents, runWriterManager } from '@open-zread/ai';
+import { loadCachedManifest, loadCachedSkeleton, needsReprocess, saveCachedManifest, saveCachedSkeleton, loadConfig, generateWikiJson, getProjectRoot, readJsonFile } from '@open-zread/core';
+import { dehydrate, parseFiles, scanFiles } from '@open-zread/skeleton';
 import type { TechStackSummary, WikiOutput } from '@open-zread/types';
-import { getProjectRoot, readJsonFile } from '@open-zread/utils';
-import { runWriterManager } from '@open-zread/writer';
 import { Box, Static, render } from 'ink';
 import { join } from 'path';
 import React from 'react';

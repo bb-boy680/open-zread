@@ -27,17 +27,10 @@
         "open-zread": "./dist/index.js",
       },
       "dependencies": {
-        "@open-zread/agents": "workspace:*",
-        "@open-zread/cache": "workspace:*",
-        "@open-zread/config": "workspace:*",
-        "@open-zread/dehydrator": "workspace:*",
-        "@open-zread/output": "workspace:*",
-        "@open-zread/parser": "workspace:*",
-        "@open-zread/scanner": "workspace:*",
-        "@open-zread/storage": "workspace:*",
+        "@open-zread/ai": "workspace:*",
+        "@open-zread/core": "workspace:*",
+        "@open-zread/skeleton": "workspace:*",
         "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
-        "@open-zread/writer": "workspace:*",
         "ink": "^4.0.0",
         "react": "^18.0.0",
       },
@@ -47,14 +40,14 @@
         "typescript": "^5.0.0",
       },
     },
-    "packages/agents": {
-      "name": "@open-zread/agents",
+    "packages/ai": {
+      "name": "@open-zread/ai",
       "version": "0.1.0",
       "dependencies": {
         "@mariozechner/pi-ai": "^0.66.1",
-        "@open-zread/config": "workspace:*",
+        "@open-zread/core": "workspace:*",
         "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
+        "p-limit": "^6.0.0",
       },
       "devDependencies": {
         "@types/node": "^20.0.0",
@@ -62,21 +55,8 @@
         "typescript": "^5.0.0",
       },
     },
-    "packages/cache": {
-      "name": "@open-zread/cache",
-      "version": "0.1.0",
-      "dependencies": {
-        "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/config": {
-      "name": "@open-zread/config",
+    "packages/core": {
+      "name": "@open-zread/core",
       "version": "0.1.0",
       "dependencies": {
         "@open-zread/types": "workspace:*",
@@ -88,69 +68,16 @@
         "typescript": "^5.0.0",
       },
     },
-    "packages/dehydrator": {
-      "name": "@open-zread/dehydrator",
+    "packages/skeleton": {
+      "name": "@open-zread/skeleton",
       "version": "0.1.0",
       "dependencies": {
+        "@open-zread/core": "workspace:*",
         "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/output": {
-      "name": "@open-zread/output",
-      "version": "0.1.0",
-      "dependencies": {
-        "@open-zread/config": "workspace:*",
-        "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/parser": {
-      "name": "@open-zread/parser",
-      "version": "0.1.0",
-      "dependencies": {
-        "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
-        "web-tree-sitter": "^0.20.0",
-      },
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/scanner": {
-      "name": "@open-zread/scanner",
-      "version": "0.1.0",
-      "dependencies": {
-        "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
         "crypto-hash": "^1.3.0",
         "glob": "^10.0.0",
         "ignore": "^5.2.0",
-      },
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/storage": {
-      "name": "@open-zread/storage",
-      "version": "0.1.0",
-      "dependencies": {
-        "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
+        "web-tree-sitter": "^0.20.0",
       },
       "devDependencies": {
         "@types/node": "^20.0.0",
@@ -162,31 +89,6 @@
       "name": "@open-zread/types",
       "version": "0.1.0",
       "devDependencies": {
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/utils": {
-      "name": "@open-zread/utils",
-      "version": "0.1.0",
-      "devDependencies": {
-        "@types/node": "^20.0.0",
-        "tsup": "^8.5.1",
-        "typescript": "^5.0.0",
-      },
-    },
-    "packages/writer": {
-      "name": "@open-zread/writer",
-      "version": "0.1.0",
-      "dependencies": {
-        "@open-zread/agents": "workspace:*",
-        "@open-zread/storage": "workspace:*",
-        "@open-zread/types": "workspace:*",
-        "@open-zread/utils": "workspace:*",
-        "p-limit": "^6.0.0",
-      },
-      "devDependencies": {
-        "@types/node": "^20.0.0",
         "tsup": "^8.5.1",
         "typescript": "^5.0.0",
       },
@@ -357,29 +259,15 @@
 
     "@mistralai/mistralai": ["@mistralai/mistralai@1.14.1", "", { "dependencies": { "ws": "8.20.0", "zod": "4.3.6", "zod-to-json-schema": "3.25.2" } }, "sha512-IiLmmZFCCTReQgPAT33r7KQ1nYo5JPdvGkrkZqA8qQ2qB1GHgs5LoP5K2ICyrjnpw2n8oSxMM/VP+liiKcGNlQ=="],
 
-    "@open-zread/agents": ["@open-zread/agents@workspace:packages/agents"],
-
-    "@open-zread/cache": ["@open-zread/cache@workspace:packages/cache"],
+    "@open-zread/ai": ["@open-zread/ai@workspace:packages/ai"],
 
     "@open-zread/cli": ["@open-zread/cli@workspace:cli"],
 
-    "@open-zread/config": ["@open-zread/config@workspace:packages/config"],
+    "@open-zread/core": ["@open-zread/core@workspace:packages/core"],
 
-    "@open-zread/dehydrator": ["@open-zread/dehydrator@workspace:packages/dehydrator"],
-
-    "@open-zread/output": ["@open-zread/output@workspace:packages/output"],
-
-    "@open-zread/parser": ["@open-zread/parser@workspace:packages/parser"],
-
-    "@open-zread/scanner": ["@open-zread/scanner@workspace:packages/scanner"],
-
-    "@open-zread/storage": ["@open-zread/storage@workspace:packages/storage"],
+    "@open-zread/skeleton": ["@open-zread/skeleton@workspace:packages/skeleton"],
 
     "@open-zread/types": ["@open-zread/types@workspace:packages/types"],
-
-    "@open-zread/utils": ["@open-zread/utils@workspace:packages/utils"],
-
-    "@open-zread/writer": ["@open-zread/writer@workspace:packages/writer"],
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
@@ -1029,51 +917,23 @@
 
     "@mistralai/mistralai/ws": ["ws@8.20.0", "", {}, "sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA=="],
 
-    "@open-zread/agents/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
+    "@open-zread/ai/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
 
-    "@open-zread/agents/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/cache/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/cache/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+    "@open-zread/ai/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@open-zread/cli/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
 
     "@open-zread/cli/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
-    "@open-zread/config/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
+    "@open-zread/core/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
 
-    "@open-zread/config/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+    "@open-zread/core/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
-    "@open-zread/dehydrator/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
+    "@open-zread/skeleton/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
 
-    "@open-zread/dehydrator/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/output/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/output/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/parser/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/parser/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/scanner/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/scanner/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/storage/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/storage/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+    "@open-zread/skeleton/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@open-zread/types/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/utils/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/utils/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
-
-    "@open-zread/writer/@types/node": ["@types/node@20.19.39", "", { "dependencies": { "undici-types": "6.21.0" } }, "sha512-orrrD74MBUyK8jOAD/r0+lfa1I2MO6I+vAkmAWzMYbCcgrN4lCrmK52gRFQq/JRxfYPfonkr4b0jcY7Olqdqbw=="],
-
-    "@open-zread/writer/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@typescript-eslint/eslint-plugin/ignore": ["ignore@7.0.5", "", {}, "sha512-Hs59xBNfUIunMFgWAbGX5cq6893IbWg4KnrjbYwX3tx0ztorVgTDA6B2sxf8ejHJ4wz8BqGUMYlnzNBer5NvGg=="],
 
@@ -1123,27 +983,13 @@
 
     "@mariozechner/pi-ai/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
-    "@open-zread/agents/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/cache/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+    "@open-zread/ai/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "@open-zread/cli/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
-    "@open-zread/config/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+    "@open-zread/core/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
-    "@open-zread/dehydrator/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/output/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/parser/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/scanner/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/storage/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/utils/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
-
-    "@open-zread/writer/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
+    "@open-zread/skeleton/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "ajv-formats/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
