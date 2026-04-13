@@ -1,3 +1,5 @@
+// Reusable presentational components — base building blocks
+// These are the foundation that higher-level components build upon.
 import React from 'react';
 import { Box, Text } from 'ink';
 
@@ -9,7 +11,7 @@ interface ProgressProps {
 export function Progress({ step, detail }: ProgressProps) {
   return (
     <Box>
-      <Text color="cyan">🔄</Text>
+      <Text color="cyan">●</Text>
       <Text> {step}</Text>
       {detail && <Text color="gray"> {detail}</Text>}
     </Box>
@@ -24,7 +26,7 @@ export function Success({ message }: SuccessProps) {
   return (
     <Box>
       <Text color="green">✓</Text>
-      <Text> {message}</Text>
+      <Text color="green"> {message}</Text>
     </Box>
   );
 }
@@ -37,7 +39,7 @@ export function ErrorDisplay({ message }: ErrorProps) {
   return (
     <Box>
       <Text color="red">✗</Text>
-      <Text> {message}</Text>
+      <Text color="red"> {message}</Text>
     </Box>
   );
 }
@@ -49,7 +51,7 @@ interface ResultProps {
 export function Result({ outputPath }: ResultProps) {
   return (
     <Box flexDirection="column">
-      <Text color="green">✅ Blueprint generated</Text>
+      <Text color="green">✓ Blueprint generated</Text>
       <Text color="gray">  {outputPath}</Text>
     </Box>
   );

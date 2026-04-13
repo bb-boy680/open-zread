@@ -9,99 +9,155 @@ import { scanFiles } from '@open-zread/scanner';
 import type { TechStackSummary, WikiOutput } from '@open-zread/types';
 import { getProjectRoot, readJsonFile } from '@open-zread/utils';
 import { runWriterManager } from '@open-zread/writer';
-import { Box, render, Text } from 'ink';
+import { Box, Static, render } from 'ink';
 import { join } from 'path';
-import { useEffect, useState } from 'react';
+import React from 'react';
+import { Header } from './components/Header';
+import { CurrentStep } from './components/CurrentStep';
+import { ErrorView } from './components/ErrorView';
+import { ProgressBar } from './components/ProgressBar';
+import { StepHistoryItem } from './components/StepHistory';
+import { SuccessView } from './components/SuccessView';
+import { useProgress } from './hooks/use-progress';
+import { uiStore } from './state';
 
-interface AppState {
-  step: string;
-  detail?: string;
-  status: 'running' | 'success' | 'error';
-  outputPath?: string;
-  error?: string;
-}
+// ── App shell ───────────────────────────────────────────────────────────────
 
-function App({ initialState }: { initialState: AppState }) {
-  const [state, setState] = useState<AppState>(initialState);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToState(setState);
-    return unsubscribe;
-  }, []);
+function App() {
+  const state = useProgress();
 
   if (state.status === 'error') {
     return (
-      <Box>
-        <Text color="red">✗</Text>
-        <Text> {state.error}</Text>
+      <Box flexDirection="column" paddingX={1}>
+        <Header />
+        <Static items={state.stepHistory}>
+          {(item) => <StepHistoryItem key={item._key} item={item} />}
+        </Static>
+        <ErrorView message={state.errorMessage ?? 'Unknown error'} />
       </Box>
     );
   }
 
   if (state.status === 'success') {
     return (
-      <Box flexDirection="column">
-        <Text color="green">✅ Blueprint generated</Text>
-        <Text color="gray">  {state.outputPath}</Text>
+      <Box flexDirection="column" paddingX={1}>
+        <Header />
+        <Static items={state.stepHistory}>
+          {(item) => <StepHistoryItem key={item._key} item={item} />}
+        </Static>
+        <SuccessView
+          outputPath={state.outputPath ?? ''}
+          totalDuration={uiStore.getTotalDuration()}
+        />
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Text color="cyan">🔄</Text>
-      <Text> {state.step}</Text>
-      {state.detail && <Text color="gray"> {state.detail}</Text>}
+    <Box flexDirection="column" paddingX={1}>
+      <Header />
+      <ProgressBar
+        current={state.currentStepIndex}
+        total={state.totalSteps}
+      />
+      <Static items={state.stepHistory}>
+        {(item) => <StepHistoryItem key={item._key} item={item} />}
+      </Static>
+      {state.currentStep && <CurrentStep step={state.currentStep} />}
     </Box>
   );
 }
 
-// State subscription for real-time updates
-let stateListeners: Array<(state: AppState) => void> = [];
+// ── Phase 1: scan → parse → dehydrate → agents → wiki.json ──────────────────
 
-function subscribeToState(listener: (state: AppState) => void) {
-  stateListeners.push(listener);
-  return () => {
-    stateListeners = stateListeners.filter(l => l !== listener);
-  };
-}
-
-function updateState(state: AppState) {
-  stateListeners.forEach(listener => listener(state));
-}
-
-// Real-time progress logger
-const progress = {
-  start(step: string, detail?: string) {
-    updateState({ step, detail, status: 'running' });
-  },
-  success(outputPath: string) {
-    updateState({ step: 'Complete', status: 'success', outputPath });
-  },
-  error(message: string) {
-    updateState({ step: 'Error', status: 'error', error: message });
-  }
-};
-
-async function runWikiCommand() {
-  const { waitUntilExit } = render(<App initialState={{ step: 'Loading wiki blueprint...', status: 'running' }} />);
+async function runPhase1() {
+  uiStore.setTotalSteps(7);
+  uiStore.startStep('Initializing...');
+  const { waitUntilExit } = render(<App />);
 
   try {
-    progress.start('Loading config...');
+    uiStore.startStep('Loading config...');
     const config = await loadConfig();
+    uiStore.completeStep();
 
-    progress.start('Loading wiki.json blueprint...');
+    const projectRoot = getProjectRoot();
+
+    uiStore.startStep('Scanning files...');
+    const manifest = await scanFiles(projectRoot);
+    uiStore.completeStep();
+
+    if (manifest.totalFiles === 0) {
+      uiStore.failStep('No parseable source files found');
+      await waitUntilExit();
+      return;
+    }
+
+    uiStore.startStep('Checking cache...', `${manifest.totalFiles} files found`);
+    const cachedManifest = await loadCachedManifest();
+    const cachedSkeleton = await loadCachedSkeleton();
+    uiStore.completeStep();
+
+    let skeleton;
+
+    if (!needsReprocess(cachedManifest, manifest) && cachedSkeleton) {
+      uiStore.startStep('Using cached skeleton...');
+      skeleton = cachedSkeleton;
+      uiStore.completeStep();
+    } else {
+      uiStore.startStep('Parsing files...', `${manifest.totalFiles} files`);
+      const symbols = await parseFiles(manifest);
+      uiStore.completeStep();
+
+      uiStore.startStep('Dehydrating code...');
+      skeleton = await dehydrate(symbols);
+      uiStore.completeStep();
+
+      uiStore.startStep('Saving cache...');
+      await saveCachedManifest(manifest);
+      await saveCachedSkeleton(skeleton);
+      uiStore.completeStep();
+    }
+
+    uiStore.startStep('Running agents...', 'ScanAgent → ClusterAgent → OutlineAgent');
+    const pages = await runAgents(manifest, skeleton, config);
+    uiStore.completeStep();
+
+    uiStore.startStep('Generating wiki.json...', `${pages.length} pages`);
+    const outputPath = await generateWikiJson(pages, config);
+    uiStore.completeStep();
+
+    uiStore.succeed(outputPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    uiStore.failStep(message);
+  }
+
+  await waitUntilExit();
+}
+
+// ── Wiki command: wiki.json → markdown files ────────────────────────────────
+
+async function runWikiCommand() {
+  uiStore.startStep('Loading wiki blueprint...');
+  const { waitUntilExit } = render(<App />);
+
+  try {
+    uiStore.startStep('Loading config...');
+    const config = await loadConfig();
+    uiStore.completeStep();
+
     const projectRoot = getProjectRoot();
     const wikiJsonPath = join(projectRoot, '.open-zread', 'drafts', 'wiki.json');
     const wikiOutput = await readJsonFile<WikiOutput>(wikiJsonPath);
 
-    progress.start('Loading cached skeleton...');
+    uiStore.startStep('Loading cached skeleton...');
     const skeleton = await loadCachedSkeleton();
     if (!skeleton) {
-      progress.error('No cached skeleton found. Run Phase 1 first.');
+      uiStore.failStep('No cached skeleton found. Run Phase 1 first.');
       await waitUntilExit();
       return;
     }
+    uiStore.completeStep();
 
     const techStackSummary: TechStackSummary = wikiOutput.techStackSummary || {
       techStack: { languages: [], frameworks: [], buildTools: [] },
@@ -109,12 +165,14 @@ async function runWikiCommand() {
       entryPoints: [],
     };
 
-    progress.start('Loading cache manifest...');
+    uiStore.startStep('Loading cache manifest...');
     const lastManifest = await loadCachedManifest();
+    uiStore.completeStep();
 
     const force = process.argv.includes('--force');
+    uiStore.setTotalSteps(wikiOutput.pages.length + 4);
 
-    progress.start('Generating wiki pages...', `${wikiOutput.pages.length} pages, concurrency: ${config.concurrency?.max_concurrent}`);
+    uiStore.startStep('Generating wiki pages...', `${wikiOutput.pages.length} pages, concurrency: ${config.concurrency?.max_concurrent}`);
 
     const results = await runWriterManager({
       pages: wikiOutput.pages,
@@ -129,71 +187,19 @@ async function runWikiCommand() {
     const failedCount = results.filter(r => r.status === 'failed').length;
 
     if (failedCount > 0) {
-      progress.error(`${failedCount} page(s) failed`);
+      uiStore.failStep(`${failedCount} page(s) failed`);
     } else {
-      progress.success(`Wiki generated: ${successCount}/${wikiOutput.pages.length} pages`);
+      uiStore.succeed(`Wiki generated: ${successCount}/${wikiOutput.pages.length} pages`);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    progress.error(message);
+    uiStore.failStep(message);
   }
 
   await waitUntilExit();
 }
 
-async function runPhase1() {
-  const { waitUntilExit } = render(<App initialState={{ step: 'Initializing...', status: 'running' }} />);
-
-  try {
-    progress.start('Loading config...');
-    const config = await loadConfig();
-    const projectRoot = getProjectRoot();
-
-    progress.start('Scanning files...');
-    const manifest = await scanFiles(projectRoot);
-
-    if (manifest.totalFiles === 0) {
-      progress.error('No parseable source files found');
-      await waitUntilExit();
-      return;
-    }
-
-    progress.start('Checking cache...', `${manifest.totalFiles} files found`);
-
-    const cachedManifest = await loadCachedManifest();
-    const cachedSkeleton = await loadCachedSkeleton();
-
-    let skeleton;
-
-    if (!needsReprocess(cachedManifest, manifest) && cachedSkeleton) {
-      progress.start('Using cached skeleton...');
-      skeleton = cachedSkeleton;
-    } else {
-      progress.start('Parsing files...', `${manifest.totalFiles} files`);
-      const symbols = await parseFiles(manifest);
-
-      progress.start('Dehydrating code...');
-      skeleton = await dehydrate(symbols);
-
-      progress.start('Saving cache...');
-      await saveCachedManifest(manifest);
-      await saveCachedSkeleton(skeleton);
-    }
-
-    progress.start('Running agents...', 'ScanAgent → ClusterAgent → OutlineAgent');
-    const pages = await runAgents(manifest, skeleton, config);
-
-    progress.start('Generating wiki.json...', `${pages.length} pages`);
-    const outputPath = await generateWikiJson(pages, config);
-
-    progress.success(outputPath);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    progress.error(message);
-  }
-
-  await waitUntilExit();
-}
+// ── Entry point ──────────────────────────────────────────────────────────────
 
 async function main() {
   const args = process.argv.slice(2);
