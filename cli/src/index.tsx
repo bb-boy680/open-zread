@@ -1,5 +1,16 @@
 #!/usr/bin/env bun
 import { generateBlueprint } from '@open-zread/blueprint';
+import {
+  loadConfig,
+  getProjectRoot,
+  loadCachedManifest,
+  saveCachedManifest,
+  loadCachedSkeleton,
+  saveCachedSkeleton,
+  needsReprocess,
+  generateWikiJson,
+} from '@open-zread/core';
+import { scanFiles, parseFiles, dehydrate } from '@open-zread/skeleton';
 import { Box, Static, render } from 'ink';
 import React from 'react';
 import { Header } from './components/Header';

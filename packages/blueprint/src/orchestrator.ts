@@ -79,12 +79,12 @@ export async function generateBlueprint(options?: BlueprintOptions): Promise<Blu
     for await (const event of agent.query(mainPrompt)) {
       const msg = event as SDKMessage
 
-      // Log progress
+      // Log progress - no truncation
       if (msg.type === 'assistant') {
         for (const block of (msg as any).message?.content || []) {
           if (block.type === 'tool_use') {
             const toolName = block.name
-            const toolInput = JSON.stringify(block.input || {}).slice(0, 60)
+            const toolInput = JSON.stringify(block.input || {})
             logger.progress(`[${toolName}]`, toolInput)
 
             // Capture results for context
@@ -92,19 +92,18 @@ export async function generateBlueprint(options?: BlueprintOptions): Promise<Blu
               // Will be captured in tool_result
             }
           }
+          // Always print AI text output to terminal (streaming)
           if (block.type === 'text' && block.text) {
-            if (debug) {
-              logger.info(block.text.slice(0, 200))
-            }
+            // Print full text, not truncated
+            logger.info(block.text)
           }
         }
       }
 
       if (msg.type === 'tool_result') {
         const result = (msg as any).result
-        if (debug) {
-          logger.info(`Tool result: ${result.tool_name}`)
-        }
+        // Always log tool result, no truncation
+        logger.info(`[Tool Result: ${result.tool_name}] ${result.output}`)
 
         // Try to parse structured output
         try {

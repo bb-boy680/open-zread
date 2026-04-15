@@ -124,21 +124,35 @@ export const AgentTool: ToolDefinition = {
       includePartialMessages: false,
     })
 
-    // Run the subagent
+    // Run the subagent - stream all events to console for visibility
     let resultText = ''
     const toolCalls: string[] = []
+
+    // Prefix for subagent logs
+    const logPrefix = `[Subagent:${agentType}]`
 
     try {
       for await (const event of engine.submitMessage(input.prompt)) {
         if (event.type === 'assistant') {
           for (const block of event.message.content) {
+            // Log AI text output
             if ('text' in block && block.text) {
               resultText = block.text
+              console.log(`${logPrefix} AI: ${block.text}`)
             }
+            // Log tool calls
             if ('name' in block) {
-              toolCalls.push(block.name as string)
+              const toolName = block.name as string
+              const toolInput = JSON.stringify(block.input || {})
+              toolCalls.push(toolName)
+              console.log(`${logPrefix} Tool: [${toolName}] ${toolInput}`)
             }
           }
+        }
+        // Log tool results
+        if (event.type === 'tool_result') {
+          const result = (event as any).result
+          console.log(`${logPrefix} Result: [${result.tool_name}] ${result.output}`)
         }
       }
     } catch (err: any) {
@@ -154,6 +168,8 @@ export const AgentTool: ToolDefinition = {
     const toolSummary = toolCalls.length > 0
       ? `\n[Tools used: ${toolCalls.join(', ')}]`
       : ''
+
+    console.log(`${logPrefix} Done. Tools: ${toolCalls.length}`)
 
     return {
       type: 'tool_result',
