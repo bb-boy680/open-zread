@@ -1,203 +1,130 @@
 /**
- * Skeleton Tools - Call skeleton package functions
+ * Cache Tools - Read cached data from CLI
+ *
+ * These tools read data that CLI has already processed:
+ * - Manifest (file list with hash/size)
+ * - Skeleton (dehydrated code + reference map)
  */
 
 import type { ToolDefinition } from '@open-zread/agent'
-import { scanFiles, parseFiles, dehydrate, countReferences } from '@open-zread/skeleton'
-import { getProjectRoot } from '@open-zread/core'
-import type { FileManifest, SymbolManifest } from '@open-zread/types'
+import { getProjectRoot, loadCachedManifest, loadCachedSkeleton } from '@open-zread/core'
 
 /**
- * Scan Project Tool
+ * Get Cached Manifest Tool
  *
- * Scans project directory and returns file manifest.
+ * Retrieves cached file manifest from previous CLI run.
+ * Returns file list with path, hash, size information.
  */
-export const ScanProjectTool: ToolDefinition = {
-  name: 'scan_project',
-  description: '扫描项目目录，返回文件清单（包含路径、语言、大小、哈希等信息）。',
+export const GetCachedManifestTool: ToolDefinition = {
+  name: 'get_cached_manifest',
+  description: '获取 CLI 缓存的文件清单（如果存在）。返回文件路径、哈希、大小等信息。用于了解项目文件结构。',
   inputSchema: {
     type: 'object',
-    properties: {
-      projectRoot: {
-        type: 'string',
-        description: '项目根目录路径（可选，默认使用当前目录）'
-      }
-    },
+    properties: {},
     required: []
   },
   isReadOnly: () => true,
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() {
-    return 'Scan the project to get a complete file listing.'
+    return 'Get cached file manifest from previous CLI run.'
   },
-  async call(input: { projectRoot?: string }) {
+  async call() {
     try {
-      const root = input.projectRoot || getProjectRoot()
-      const manifest = await scanFiles(root)
+      const manifest = await loadCachedManifest()
 
-      return {
-        type: 'tool_result',
-        tool_use_id: '',
-        content: JSON.stringify(manifest, null, 2)
+      if (!manifest) {
+        return {
+          type: 'tool_result',
+          tool_use_id: '',
+          content: '缓存不存在。请先运行 CLI 执行扫描，或使用 Glob 工具获取文件列表。'
+        }
       }
-    } catch (err: any) {
-      return {
-        type: 'tool_result',
-        tool_use_id: '',
-        content: `扫描失败: ${err.message}`,
-        is_error: true
+
+      // Group files by extension for summary
+      const extGroups: Record<string, number> = {}
+      for (const file of manifest.files) {
+        const ext = file.path.split('.').pop() || 'unknown'
+        extGroups[ext] = (extGroups[ext] || 0) + 1
       }
-    }
-  }
-}
-
-/**
- * Parse Symbols Tool
- *
- * Parses code files and extracts symbols (imports, exports, functions, etc.)
- */
-export const ParseSymbolsTool: ToolDefinition = {
-  name: 'parse_symbols',
-  description: '解析代码文件，提取导入、导出、函数签名等符号信息。需要提供文件清单。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      manifest: {
-        type: 'object',
-        description: 'FileManifest 对象（从 scan_project 获得）'
-      },
-      projectRoot: {
-        type: 'string',
-        description: '项目根目录路径（可选）'
-      }
-    },
-    required: ['manifest']
-  },
-  isReadOnly: () => true,
-  isConcurrencySafe: () => true,
-  isEnabled: () => true,
-  async prompt() {
-    return 'Parse files to extract code symbols.'
-  },
-  async call(input: { manifest: FileManifest; projectRoot?: string }) {
-    try {
-      const manifest = input.manifest as FileManifest
-
-      // Note: parseFiles uses getProjectRoot() internally
-      const symbolManifest = await parseFiles(manifest)
-
-      return {
-        type: 'tool_result',
-        tool_use_id: '',
-        content: JSON.stringify(symbolManifest, null, 2)
-      }
-    } catch (err: any) {
-      return {
-        type: 'tool_result',
-        tool_use_id: '',
-        content: `解析失败: ${err.message}`,
-        is_error: true
-      }
-    }
-  }
-}
-
-/**
- * Dehydrate Skeleton Tool
- *
- * Generates dehydrated skeleton from symbol manifest.
- * Returns skeleton content and reference map.
- */
-export const DehydrateSkeletonTool: ToolDefinition = {
-  name: 'dehydrate_skeleton',
-  description: '将代码脱水为骨架，保留签名和文档注释，移除函数体细节。返回骨架内容和引用计数。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      symbols: {
-        type: 'object',
-        description: 'SymbolManifest 对象（从 parse_symbols 获得）'
-      }
-    },
-    required: ['symbols']
-  },
-  isReadOnly: () => true,
-  isConcurrencySafe: () => true,
-  isEnabled: () => true,
-  async prompt() {
-    return 'Generate dehydrated code skeleton with reference counts.'
-  },
-  async call(input: { symbols: SymbolManifest }) {
-    try {
-      const symbols = input.symbols as SymbolManifest
-
-      const skeleton = await dehydrate(symbols)
-
-      return {
-        type: 'tool_result',
-        tool_use_id: '',
-        content: JSON.stringify(skeleton, null, 2)
-      }
-    } catch (err: any) {
-      return {
-        type: 'tool_result',
-        tool_use_id: '',
-        content: `脱水失败: ${err.message}`,
-        is_error: true
-      }
-    }
-  }
-}
-
-/**
- * Count References Tool
- *
- * Analyzes reference counts from symbol manifest.
- */
-export const CountReferencesTool: ToolDefinition = {
-  name: 'count_references',
-  description: '分析符号引用计数，返回每个文件被引用的次数。',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      symbols: {
-        type: 'object',
-        description: 'SymbolManifest 对象'
-      }
-    },
-    required: ['symbols']
-  },
-  isReadOnly: () => true,
-  isConcurrencySafe: () => true,
-  isEnabled: () => true,
-  async prompt() {
-    return 'Count file references to identify core modules.'
-  },
-  async call(input: { symbols: SymbolManifest }) {
-    try {
-      const symbols = input.symbols as SymbolManifest
-
-      const referenceMap = countReferences(symbols)
-
-      // Sort by reference count (descending)
-      const sorted = Object.entries(referenceMap)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 50) // Top 50 files
 
       return {
         type: 'tool_result',
         tool_use_id: '',
         content: JSON.stringify({
-          topFiles: sorted.map(([file, count]) => ({ file, count })),
-          totalFiles: Object.keys(referenceMap).length
+          cached: true,
+          totalFiles: manifest.files.length,
+          generatedAt: manifest.generated_at,
+          extensions: Object.entries(extGroups)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 15)
+            .map(([ext, count]) => ({ extension: ext, count })),
+          files: manifest.files.slice(0, 30) // First 30 files as sample
         }, null, 2)
       }
     } catch (err: any) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `引用计数失败: ${err.message}`,
+        content: `读取缓存失败: ${err.message}`,
+        is_error: true
+      }
+    }
+  }
+}
+
+/**
+ * Get Cached Skeleton Tool
+ *
+ * Retrieves cached skeleton data from previous CLI run.
+ * Returns skeleton content and reference map if cache exists.
+ */
+export const GetCachedSkeletonTool: ToolDefinition = {
+  name: 'get_cached_skeleton',
+  description: '获取 CLI 缓存的代码骨架数据（如果存在）。返回 skeleton（骨架内容）和 referenceMap（引用计数）。用于分析核心模块。',
+  inputSchema: {
+    type: 'object',
+    properties: {},
+    required: []
+  },
+  isReadOnly: () => true,
+  isConcurrencySafe: () => true,
+  isEnabled: () => true,
+  async prompt() {
+    return 'Get cached skeleton data from previous CLI run.'
+  },
+  async call() {
+    try {
+      const skeleton = await loadCachedSkeleton()
+
+      if (!skeleton) {
+        return {
+          type: 'tool_result',
+          tool_use_id: '',
+          content: '缓存不存在。请先运行 CLI 执行扫描和脱水。'
+        }
+      }
+
+      // Sort reference map by count (descending) for easier analysis
+      const sortedRefs = Object.entries(skeleton.referenceMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 100) // Top 100 most referenced files
+
+      return {
+        type: 'tool_result',
+        tool_use_id: '',
+        content: JSON.stringify({
+          cached: true,
+          skeletonCount: skeleton.skeleton.length,
+          topReferences: sortedRefs.map(([file, count]) => ({ file, count })),
+          skeleton: skeleton.skeleton.slice(0, 20) // First 20 skeleton items as sample
+        }, null, 2)
+      }
+    } catch (err: any) {
+      return {
+        type: 'tool_result',
+        tool_use_id: '',
+        content: `读取缓存失败: ${err.message}`,
         is_error: true
       }
     }

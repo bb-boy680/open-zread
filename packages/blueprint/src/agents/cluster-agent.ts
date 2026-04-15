@@ -11,9 +11,7 @@ export const ClusterAgentDefinition: AgentDefinition = {
   description: '聚类分析核心模块。基于引用计数识别高频引用的文件，标记为核心模块。',
   prompt: CLUSTER_AGENT_PROMPT,
   tools: [
-    'parse_symbols',
-    'dehydrate_skeleton',
-    'count_references',
+    'get_cached_skeleton',
     'analyze_references',
     'Read',
     'Grep'

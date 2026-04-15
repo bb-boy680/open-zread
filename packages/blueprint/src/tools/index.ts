@@ -7,16 +7,14 @@ export * from './analysis-tools.js'
 export * from './output-tools.js'
 
 // Tool collections
-import { ScanProjectTool, ParseSymbolsTool, DehydrateSkeletonTool, CountReferencesTool } from './skeleton-tools.js'
+import { GetCachedManifestTool, GetCachedSkeletonTool } from './skeleton-tools.js'
 import { DetectTechStackTool, GetDirectoryTreeTool, AnalyzeReferencesTool } from './analysis-tools.js'
 import { GenerateBlueprintTool, ValidateBlueprintTool } from './output-tools.js'
 import type { ToolDefinition } from '@open-zread/agent'
 
 export const skeletonTools: ToolDefinition[] = [
-  ScanProjectTool,
-  ParseSymbolsTool,
-  DehydrateSkeletonTool,
-  CountReferencesTool
+  GetCachedManifestTool,
+  GetCachedSkeletonTool
 ]
 
 export const analysisTools: ToolDefinition[] = [
