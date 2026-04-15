@@ -1,10 +1,6 @@
 #!/usr/bin/env bun
-import { runAgents, runWriterManager } from '@open-zread/ai';
-import { loadCachedManifest, loadCachedSkeleton, needsReprocess, saveCachedManifest, saveCachedSkeleton, loadConfig, generateWikiJson, getProjectRoot, readJsonFile } from '@open-zread/core';
-import { dehydrate, parseFiles, scanFiles } from '@open-zread/skeleton';
-import type { TechStackSummary, WikiOutput } from '@open-zread/types';
+import { generateBlueprint } from '@open-zread/blueprint';
 import { Box, Static, render } from 'ink';
-import { join } from 'path';
 import React from 'react';
 import { Header } from './components/Header';
 import { CurrentStep } from './components/CurrentStep';
@@ -113,11 +109,12 @@ async function runPhase1() {
     }
 
     uiStore.startStep('Running agents...', 'ScanAgent → ClusterAgent → OutlineAgent');
-    const pages = await runAgents(manifest, skeleton, config);
+    const language = (config.language === 'zh' || config.language === 'en') ? config.language : 'zh';
+    const result = await generateBlueprint({ projectRoot, language });
     uiStore.completeStep();
 
-    uiStore.startStep('Generating wiki.json...', `${pages.length} pages`);
-    const outputPath = await generateWikiJson(pages, config);
+    uiStore.startStep('Generating wiki.json...', `${result.pagesCount || 'unknown'} pages`);
+    const outputPath = result.outputPath || await generateWikiJson([], config);
     uiStore.completeStep();
 
     uiStore.succeed(outputPath);
@@ -129,62 +126,23 @@ async function runPhase1() {
   await waitUntilExit();
 }
 
-// ── Wiki command: wiki.json → markdown files ────────────────────────────────
+// ── Wiki command: wiki.json → markdown files (Phase 2) ────────────────────────
 
 async function runWikiCommand() {
   uiStore.startStep('Loading wiki blueprint...');
   const { waitUntilExit } = render(<App />);
 
   try {
-    uiStore.startStep('Loading config...');
-    const config = await loadConfig();
-    uiStore.completeStep();
+    uiStore.startStep('Phase 2 not implemented yet...');
+    uiStore.failStep('Wiki content generation will be implemented in Phase 2');
+    await waitUntilExit();
+    return;
 
-    const projectRoot = getProjectRoot();
-    const wikiJsonPath = join(projectRoot, '.open-zread', 'drafts', 'wiki.json');
-    const wikiOutput = await readJsonFile<WikiOutput>(wikiJsonPath);
-
-    uiStore.startStep('Loading cached skeleton...');
-    const skeleton = await loadCachedSkeleton();
-    if (!skeleton) {
-      uiStore.failStep('No cached skeleton found. Run Phase 1 first.');
-      await waitUntilExit();
-      return;
-    }
-    uiStore.completeStep();
-
-    const techStackSummary: TechStackSummary = wikiOutput.techStackSummary || {
-      techStack: { languages: [], frameworks: [], buildTools: [] },
-      projectType: 'unknown',
-      entryPoints: [],
-    };
-
-    uiStore.startStep('Loading cache manifest...');
-    const lastManifest = await loadCachedManifest();
-    uiStore.completeStep();
-
-    const force = process.argv.includes('--force');
-    uiStore.setTotalSteps(wikiOutput.pages.length + 4);
-
-    uiStore.startStep('Generating wiki pages...', `${wikiOutput.pages.length} pages, concurrency: ${config.concurrency?.max_concurrent}`);
-
-    const results = await runWriterManager({
-      pages: wikiOutput.pages,
-      config,
-      skeleton,
-      techStackSummary,
-      lastManifest,
-      force,
-    });
-
-    const successCount = results.filter(r => r.status === 'success').length;
-    const failedCount = results.filter(r => r.status === 'failed').length;
-
-    if (failedCount > 0) {
-      uiStore.failStep(`${failedCount} page(s) failed`);
-    } else {
-      uiStore.succeed(`Wiki generated: ${successCount}/${wikiOutput.pages.length} pages`);
-    }
+    // TODO: Phase 2 implementation
+    // uiStore.startStep('Loading config...');
+    // const config = await loadConfig();
+    // uiStore.completeStep();
+    // ...
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     uiStore.failStep(message);

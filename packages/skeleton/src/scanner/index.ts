@@ -1,28 +1,10 @@
 import { readdir, stat, readFile } from 'fs/promises';
-import { join, extname, relative, resolve, dirname } from 'path';
-import { Worker } from 'worker_threads';
-import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { join, extname, relative, resolve } from 'path';
 import Ignore, { type Ignore as IgnoreType } from 'ignore';
+import { createHash } from 'crypto';
 import type { FileManifest, FileInfo } from '@open-zread/types';
 import { logger, getProjectRoot } from '@open-zread/core';
 import { SCANNER_CONFIG, LANGUAGE_MAP } from './constants';
-
-function getWorkerPath(): string {
-  const possiblePaths = [
-    join(dirname(fileURLToPath(import.meta.url)), 'worker.js'),
-    resolve(process.cwd(), 'packages/skeleton/dist/scanner/worker.js'),
-    resolve(dirname(fileURLToPath(import.meta.url)), '../skeleton/dist/scanner/worker.js'),
-  ];
-
-  for (const path of possiblePaths) {
-    if (existsSync(path)) {
-      return path;
-    }
-  }
-
-  return possiblePaths[0];
-}
 
 function detectLanguage(filePath: string): string {
   const ext = extname(filePath).toLowerCase();
@@ -45,53 +27,21 @@ async function createIgnoreFilter(projectRoot: string): Promise<IgnoreType> {
   return ig;
 }
 
-function calculateHashWithWorker(
-  filePaths: string[],
-  maxWorkers: number = SCANNER_CONFIG.max_workers
-): Promise<Map<string, string>> {
-  const workerPath = getWorkerPath();
+async function calculateHashes(filePaths: string[]): Promise<Map<string, string>> {
+  const results = new Map<string, string>();
 
-  return new Promise((resolvePromise) => {
-    const results = new Map<string, string>();
-    const queue = [...filePaths];
-    let activeWorkers = 0;
-    let currentIndex = 0;
+  for (const filePath of filePaths) {
+    try {
+      const content = await readFile(filePath);
+      const hash = createHash('md5').update(content).digest('hex').slice(0, 12);
+      results.set(filePath, hash);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn(`Failed to hash ${filePath}: ${message}`);
+    }
+  }
 
-    const processNext = () => {
-      if (currentIndex >= queue.length && activeWorkers === 0) {
-        resolvePromise(results);
-        return;
-      }
-
-      while (activeWorkers < maxWorkers && currentIndex < queue.length) {
-        const filePath = queue[currentIndex++];
-        activeWorkers++;
-
-        const worker = new Worker(workerPath);
-
-        worker.on('message', (result: { filePath: string; hash: string; error?: string }) => {
-          if (result.hash) {
-            results.set(result.filePath, result.hash);
-          }
-          activeWorkers--;
-          worker.terminate();
-          processNext();
-        });
-
-        worker.on('error', (error: unknown) => {
-          const message = error instanceof Error ? error.message : String(error);
-          logger.warn(`Worker error: ${message}`);
-          activeWorkers--;
-          worker.terminate();
-          processNext();
-        });
-
-        worker.postMessage({ filePath });
-      }
-    };
-
-    processNext();
-  });
+  return results;
 }
 
 async function collectFiles(
@@ -153,7 +103,7 @@ export async function scanFiles(projectRoot?: string): Promise<FileManifest> {
 
   const projectRootResolved = resolve(root);
   const filePaths = collectedFiles.map(f => join(projectRootResolved, f.path));
-  const hashMap = await calculateHashWithWorker(filePaths);
+  const hashMap = await calculateHashes(filePaths);
 
   const files: FileInfo[] = collectedFiles.map(f => ({
     path: f.path,

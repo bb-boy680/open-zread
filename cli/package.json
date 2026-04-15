@@ -17,7 +17,8 @@
     "@open-zread/types": "workspace:*",
     "@open-zread/core": "workspace:*",
     "@open-zread/skeleton": "workspace:*",
-    "@open-zread/ai": "workspace:*",
+    "@open-zread/blueprint": "workspace:*",
+    "@open-zread/agent": "workspace:*",
     "ink": "^4.0.0",
     "react": "^18.0.0"
   },
