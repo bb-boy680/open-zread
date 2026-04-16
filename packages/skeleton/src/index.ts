@@ -10,6 +10,11 @@ export { parseVueSfc, extractVueScript } from './parser/vue-handler.js';
 // Repo Map
 export { buildRepoMap, REPO_MAP_CONFIG } from './repo-map/index.js';
 export {
+  buildDirectoryTreeOnly,
+  buildCoreSignatures,
+  buildModuleDetails,
+} from './repo-map/index.js';
+export {
   estimateTokens,
   getDepth,
   estimateTotalTokens,

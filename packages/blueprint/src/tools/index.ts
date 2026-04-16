@@ -9,7 +9,9 @@ export * from './repo-map-tools.js';
 // Tool collections
 import { GetCachedManifestTool } from './cache-tools.js';
 import { GenerateBlueprintTool, ValidateBlueprintTool } from './output-tools.js';
-import { GetRepoMapTool } from './repo-map-tools.js';
+import {
+  getAllRepoMapTools,
+} from './repo-map-tools.js';
 import type { ToolDefinition } from '@open-zread/agent';
 
 export const cacheTools: ToolDefinition[] = [
@@ -21,9 +23,8 @@ export const outputTools: ToolDefinition[] = [
   ValidateBlueprintTool,
 ];
 
-export const repoMapTools: ToolDefinition[] = [
-  GetRepoMapTool,
-];
+// 三层 Repo Map 工具集合
+export const repoMapTools: ToolDefinition[] = getAllRepoMapTools();
 
 /**
  * Get all blueprint tools
@@ -32,6 +33,6 @@ export function getAllBlueprintTools(): ToolDefinition[] {
   return [
     ...cacheTools,
     ...outputTools,
-    ...repoMapTools,
+    ...getAllRepoMapTools(),
   ];
 }

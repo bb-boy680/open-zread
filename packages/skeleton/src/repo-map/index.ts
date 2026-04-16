@@ -4,13 +4,13 @@
  * Replaces Dehydrator with a tree-structured output optimized for LLM comprehension.
  */
 
-import type { SymbolManifest, RepoMapOptions, RepoMapOutput } from '@open-zread/types';
+import type { SymbolManifest, RepoMapOptions, RepoMapOutput, DirectoryTreeOutput, CoreSignaturesOutput, ModuleDetailsOutput, DirectoryTreeNode } from '@open-zread/types';
 import { logger, getCacheDir, writeTextFile } from '@open-zread/core';
 import { join } from 'path';
 import { countReferences } from './reference-counter.js';
 import { REPO_MAP_CONFIG } from './constants.js';
 import { calculateAllPriorities, selectByTokenBudget } from './prioritizer.js';
-import { buildDirectoryTree, formatRepoMap, buildRepoMapOutput } from './formatter.js';
+import { buildDirectoryTree, formatRepoMap, buildRepoMapOutput, trimSignature } from './formatter.js';
 
 /**
  * Build Repo Map from SymbolManifest
@@ -70,8 +70,188 @@ export async function buildRepoMap(
   return output;
 }
 
+// ==================== 三层 Repo Map 函数 ====================
+
+/**
+ * Layer 1: Build Directory Tree (纯目录结构)
+ *
+ * 生成不含符号的纯目录树，Token 消耗极低。
+ * 用于 AI 建立全局模块框架。
+ *
+ * @param symbols - Symbol manifest from Parser
+ * @returns DirectoryTreeOutput with pure directory structure
+ */
+export function buildDirectoryTreeOnly(symbols: SymbolManifest): DirectoryTreeOutput {
+  // Use Set for O(n) directory extraction instead of O(n²) with includes()
+  const dirSet = new Set<string>();
+
+  for (const symbol of symbols.symbols) {
+    const parts = symbol.file.split('/');
+    // Build all parent directories
+    for (let i = 1; i < parts.length; i++) {
+      dirSet.add(parts.slice(0, i).join('/'));
+    }
+  }
+
+  // Convert to sorted array
+  const directories = [...dirSet].sort();
+
+  // Build tree string
+  const lines: string[] = ['Project Structure', ''];
+  const tree = buildDirectoryTree(symbols.symbols);
+
+  // Format tree without symbols
+  formatTreeOnly(tree.children || [], lines, '');
+
+  const content = lines.join('\n');
+
+  return {
+    content,
+    directories,
+  };
+}
+
+/**
+ * Format directory tree without symbols (helper for Layer 1)
+ */
+function formatTreeOnly(
+  nodes: DirectoryTreeNode[],
+  lines: string[],
+  prefix: string
+): void {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const isLast = i === nodes.length - 1;
+    const nodePrefix = isLast ? '└── ' : '├── ';
+    const childPrefix = isLast ? '    ' : REPO_MAP_CONFIG.tree_indent;
+
+    if (node.type === 'directory') {
+      lines.push(`${prefix}${nodePrefix}${node.name}/`);
+      if (node.children && node.children.length > 0) {
+        formatTreeOnly(node.children, lines, prefix + childPrefix);
+      }
+    } else {
+      // File: just name, no symbols
+      lines.push(`${prefix}${nodePrefix}${node.name}`);
+    }
+  }
+}
+
+/**
+ * Layer 2: Build Core Signatures (核心文件签名)
+ *
+ * 仅包含高引用文件 (Ref >= threshold) 的导出签名。
+ * 用于 AI 理解核心 API 边界。
+ *
+ * @param symbols - Symbol manifest from Parser
+ * @param threshold - Reference count threshold (default: 5)
+ * @returns CoreSignaturesOutput with core file signatures
+ */
+export function buildCoreSignatures(
+  symbols: SymbolManifest,
+  threshold: number = 5
+): CoreSignaturesOutput {
+  // Calculate reference counts
+  const referenceMap = countReferences(symbols);
+
+  // Filter by threshold
+  const coreSymbols = symbols.symbols.filter(symbol => {
+    const refCount = referenceMap[symbol.file] || 0;
+    return refCount >= threshold;
+  });
+
+  // Sort by reference count descending
+  coreSymbols.sort((a, b) => {
+    const refA = referenceMap[a.file] || 0;
+    const refB = referenceMap[b.file] || 0;
+    return refB - refA;
+  });
+
+  // Build signatures string
+  const lines: string[] = [`Core Files Signatures (Ref >= ${threshold})`, ''];
+
+  for (const symbol of coreSymbols) {
+    const refCount = referenceMap[symbol.file] || 0;
+
+    lines.push(`├── ${symbol.file} [Ref: ${refCount}]`);
+
+    // Add exports only (no functions body)
+    for (const exp of symbol.exports) {
+      const trimmed = trimSignature(exp, REPO_MAP_CONFIG.max_signature_length);
+      lines.push(`│   [Export] ${trimmed}`);
+    }
+
+    // Empty line after file
+    if (symbol.exports.length > 0) {
+      lines.push('│');
+    }
+  }
+
+  const content = lines.join('\n');
+  const files = coreSymbols.map(s => s.file);
+
+  return {
+    content,
+    files,
+    threshold,
+  };
+}
+
+/**
+ * Layer 3: Build Module Details (模块完整详情)
+ *
+ * 指定模块路径的完整 Repo Map，包含所有符号。
+ * 用于 AI 深入分析某个模块。
+ *
+ * @param symbols - Symbol manifest from Parser
+ * @param modulePath - Module path (e.g. "packages/auth/src/")
+ * @returns ModuleDetailsOutput with complete module repo map
+ */
+export function buildModuleDetails(
+  symbols: SymbolManifest,
+  modulePath: string
+): ModuleDetailsOutput {
+  // Normalize module path
+  const normalizedPath = modulePath.endsWith('/') ? modulePath : modulePath + '/';
+
+  // Filter symbols by module path
+  const moduleSymbols = symbols.symbols.filter(symbol =>
+    symbol.file.startsWith(normalizedPath)
+  );
+
+  if (moduleSymbols.length === 0) {
+    return {
+      content: `Module not found: ${modulePath}`,
+      modulePath,
+      fileCount: 0,
+      tokenCount: 0,
+    };
+  }
+
+  // Calculate reference counts
+  const referenceMap = countReferences(symbols);
+
+  // Build module tree
+  const tree = buildDirectoryTree(moduleSymbols);
+
+  // Format with full details
+  const content = formatRepoMap(tree, moduleSymbols, referenceMap);
+
+  // Estimate tokens
+  const lines = content.split('\n').length;
+  const tokenCount = lines * 10;
+
+  return {
+    content,
+    modulePath,
+    fileCount: moduleSymbols.length,
+    tokenCount,
+  };
+}
+
 // Re-export sub-modules (direct re-export, no local binding)
 export { REPO_MAP_CONFIG } from './constants.js';
 export { estimateTokens, getDepth, estimateTotalTokens } from './token-counter.js';
 export { calculatePriority, calculateAllPriorities, selectByTokenBudget, getTopCoreFiles } from './prioritizer.js';
 export { buildDirectoryTree, formatRepoMap, trimSignature, buildRepoMapOutput } from './formatter.js';
+// Note: buildDirectoryTreeOnly, buildCoreSignatures, buildModuleDetails are already exported above
