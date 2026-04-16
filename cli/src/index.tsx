@@ -5,12 +5,11 @@ import {
   getProjectRoot,
   loadCachedManifest,
   saveCachedManifest,
-  loadCachedSkeleton,
-  saveCachedSkeleton,
+  loadCachedSymbols,
+  saveCachedSymbols,
   needsReprocess,
-  generateWikiJson,
 } from '@open-zread/core';
-import { scanFiles, parseFiles, dehydrate } from '@open-zread/skeleton';
+import { scanFiles, parseFiles } from '@open-zread/skeleton';
 import { Box, Static, render } from 'ink';
 import React from 'react';
 import { Header } from './components/Header';
@@ -69,10 +68,10 @@ function App() {
   );
 }
 
-// ── Phase 1: scan → parse → dehydrate → agents → wiki.json ──────────────────
+// ── Phase 1: scan → parse → buildRepoMap → agents → wiki.json ──────────────────
 
 async function runPhase1() {
-  uiStore.setTotalSteps(7);
+  uiStore.setTotalSteps(5);
   uiStore.startStep('Initializing...');
   const { waitUntilExit } = render(<App />);
 
@@ -95,40 +94,40 @@ async function runPhase1() {
 
     uiStore.startStep('Checking cache...', `${manifest.totalFiles} files found`);
     const cachedManifest = await loadCachedManifest();
-    const cachedSkeleton = await loadCachedSkeleton();
+    const cachedSymbols = await loadCachedSymbols();
     uiStore.completeStep();
 
-    let skeleton;
+    let symbols;
 
-    if (!needsReprocess(cachedManifest, manifest) && cachedSkeleton) {
-      uiStore.startStep('Using cached skeleton...');
-      skeleton = cachedSkeleton;
+    if (!needsReprocess(cachedManifest, manifest) && cachedSymbols) {
+      uiStore.startStep('Using cached symbols...');
+      symbols = cachedSymbols;
       uiStore.completeStep();
     } else {
       uiStore.startStep('Parsing files...', `${manifest.totalFiles} files`);
-      const symbols = await parseFiles(manifest);
-      uiStore.completeStep();
-
-      uiStore.startStep('Dehydrating code...');
-      skeleton = await dehydrate(symbols);
+      symbols = await parseFiles(manifest);
       uiStore.completeStep();
 
       uiStore.startStep('Saving cache...');
       await saveCachedManifest(manifest);
-      await saveCachedSkeleton(skeleton);
+      await saveCachedSymbols(symbols);
       uiStore.completeStep();
     }
 
-    uiStore.startStep('Running agents...', 'ScanAgent → ClusterAgent → OutlineAgent');
+    uiStore.startStep('Running Blueprint Agent...');
     const language = (config.language === 'zh' || config.language === 'en') ? config.language : 'zh';
     const result = await generateBlueprint({ projectRoot, language });
     uiStore.completeStep();
 
-    uiStore.startStep('Generating wiki.json...', `${result.pagesCount || 'unknown'} pages`);
-    const outputPath = result.outputPath || await generateWikiJson([], config);
-    uiStore.completeStep();
+    // Blueprint Agent already saves wiki.json via generate_blueprint tool
+    // If outputPath is empty, something went wrong
+    if (!result.outputPath) {
+      uiStore.failStep('Blueprint Agent did not generate wiki.json');
+      await waitUntilExit();
+      return;
+    }
 
-    uiStore.succeed(outputPath);
+    uiStore.succeed(result.outputPath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     uiStore.failStep(message);

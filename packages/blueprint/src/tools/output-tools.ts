@@ -39,7 +39,7 @@ export const GenerateBlueprintTool: ToolDefinition = {
             associatedFiles: {
               type: 'array',
               items: { type: 'string' },
-              description: '关联的源文件路径'
+              description: '关联的源文件或目录路径（目录以 / 结尾）'
             }
           },
           required: ['slug', 'title', 'file', 'section']
@@ -137,11 +137,11 @@ export const GenerateBlueprintTool: ToolDefinition = {
 /**
  * Validate Blueprint Tool
  *
- * Validates that associatedFiles in pages point to real files.
+ * Validates that associatedFiles in pages point to real files or directories.
  */
 export const ValidateBlueprintTool: ToolDefinition = {
   name: 'validate_blueprint',
-  description: '验证蓝图中的 associatedFiles 字段指向真实存在的文件。',
+  description: '验证蓝图中的 associatedFiles 字段指向真实存在的文件或目录。',
   inputSchema: {
     type: 'object',
     properties: {
@@ -160,46 +160,82 @@ export const ValidateBlueprintTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() {
-    return 'Validate blueprint associated files exist.'
+    return 'Validate blueprint associated files/directories exist.'
   },
   async call(input: { pages: WikiPage[]; projectRoot?: string }) {
     try {
       const pages = input.pages as WikiPage[]
-      const { stat } = await import('fs/promises')
+      const { stat, readdir } = await import('fs/promises')
       const { join } = await import('path')
       const { getProjectRoot } = await import('@open-zread/core')
 
       const root = input.projectRoot || getProjectRoot()
 
+      interface PathInfo {
+        path: string
+        type: 'file' | 'directory' | 'missing'
+        fileCount?: number  // 目录下的文件数
+      }
+
       const validation: {
         validPages: string[]
-        invalidPages: { slug: string; missingFiles: string[] }[]
+        invalidPages: { slug: string; missingPaths: string[] }[]
         warnings: string[]
+        pathDetails: { slug: string; paths: PathInfo[] }[]
       } = {
         validPages: [],
         invalidPages: [],
-        warnings: []
+        warnings: [],
+        pathDetails: []
       }
 
       for (const page of pages) {
         if (!page.associatedFiles || page.associatedFiles.length === 0) {
-          validation.warnings.push(`${page.slug}: 无关联文件`)
+          validation.warnings.push(`${page.slug}: 无关联路径`)
           continue
         }
 
-        const missingFiles: string[] = []
-        for (const file of page.associatedFiles) {
+        const missingPaths: string[] = []
+        const pathInfos: PathInfo[] = []
+
+        for (const pathStr of page.associatedFiles) {
+          const fullPath = join(root, pathStr)
           try {
-            await stat(join(root, file))
+            const stats = await stat(fullPath)
+            if (stats.isDirectory()) {
+              // 目录：统计文件数
+              const files = await readdir(fullPath, { recursive: true, withFileTypes: true })
+              const tsFiles = files.filter(f => f.isFile() && (f.name.endsWith('.ts') || f.name.endsWith('.tsx') || f.name.endsWith('.js')))
+              pathInfos.push({
+                path: pathStr,
+                type: 'directory',
+                fileCount: tsFiles.length
+              })
+            } else {
+              // 文件
+              pathInfos.push({
+                path: pathStr,
+                type: 'file'
+              })
+            }
           } catch {
-            missingFiles.push(file)
+            missingPaths.push(pathStr)
+            pathInfos.push({
+              path: pathStr,
+              type: 'missing'
+            })
           }
         }
 
-        if (missingFiles.length > 0) {
+        validation.pathDetails.push({
+          slug: page.slug,
+          paths: pathInfos
+        })
+
+        if (missingPaths.length > 0) {
           validation.invalidPages.push({
             slug: page.slug,
-            missingFiles
+            missingPaths
           })
         } else {
           validation.validPages.push(page.slug)
@@ -213,7 +249,13 @@ export const ValidateBlueprintTool: ToolDefinition = {
         tool_use_id: '',
         content: JSON.stringify({
           isValid,
-          validation
+          validation,
+          summary: {
+            totalPages: pages.length,
+            validPages: validation.validPages.length,
+            invalidPages: validation.invalidPages.length,
+            warnings: validation.warnings.length
+          }
         }, null, 2)
       }
     } catch (err: any) {

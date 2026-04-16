@@ -17,6 +17,9 @@
 - `bun run lint:fix` - 自动修复 ESLint 问题
 - `bun run typecheck` - TypeScript 类型检查（不生成文件）
 
+测试：
+- `bun test packages/skeleton/src/repo-map/__tests__/repo-map.test.ts` - 运行 Repo Map 单元测试
+
 ## 包管理器
 
 本项目使用 **Bun**（v1.3.0）。请勿使用 npm 或 pnpm 命令。
@@ -26,7 +29,7 @@
 这是一个由 Turbo 管理的 monorepo，包含 5 个包 + CLI。数据流程如下：
 
 ```
-CLI (React/Ink 终端 UI) → Blueprint → Agents → Skeleton/Core → wiki.json 输出
+CLI (React/Ink 终端 UI) → Blueprint Agent → Repo Map → wiki.json 输出
 ```
 
 ### 包依赖关系
@@ -34,7 +37,7 @@ CLI (React/Ink 终端 UI) → Blueprint → Agents → Skeleton/Core → wiki.js
 ```
 types        → （无依赖，共享类型定义）
 core         → types（文件 I/O、配置、缓存、存储、输出）
-skeleton     → types, core（文件扫描、解析、脱水）
+skeleton     → types, core（文件扫描、解析、Repo Map 生成）
 agent        → （独立 Agent SDK - 支持 Anthropic/OpenAI）
 blueprint    → agent, skeleton, core, types（Wiki 蓝图生成）
 cli          → blueprint, core, skeleton（Ink 终端 UI）
@@ -42,22 +45,29 @@ cli          → blueprint, core, skeleton（Ink 终端 UI）
 
 ### 各包概述
 
-- **@open-zread/types**: 共享 TypeScript 接口（FileManifest、SymbolManifest、DehydratedSkeleton、WikiPage、AppConfig 等）
-- **@open-zread/core**: 文件 I/O 工具、从 `~/.zread/config.yaml` 加载配置、缓存管理（manifest/skeleton 差异比对）、存储（WikiStore、版本管理）、输出生成
-- **@open-zread/skeleton**: 三阶段代码处理：
+- **@open-zread/types**: 共享 TypeScript 接口（FileManifest、SymbolManifest、WikiPage、AppConfig、RepoMapOptions 等）
+- **@open-zread/core**: 文件 I/O 工具、从 `~/.zread/config.yaml` 加载配置、缓存管理（last_manifest.json、last_symbols.json）、存储（WikiStore、版本管理）、输出生成
+- **@open-zread/skeleton**: 两阶段代码处理 + Repo Map：
   1. Scanner - 使用 glob/ignore 模式查找源文件
   2. Parser - 使用 web-tree-sitter WASM 解析器提取符号
-  3. Dehydrator - 将代码压缩为骨架格式并进行引用计数
+  3. Repo Map Builder - 生成树状结构上下文（Token 预算管理、优先级计算、引用计数）
 - **@open-zread/agent**: 完整的 Agent SDK，包含 30+ 工具（文件 I/O、shell、web、agents、tasks、teams）、MCP 服务器集成、技能系统、上下文压缩、重试逻辑、会话持久化、钩子系统。支持 Anthropic 和 OpenAI 提供商。
-- **@open-zread/blueprint**: 协调三个子代理生成 wiki.json：
-  1. ScanAgent - 检测技术栈和项目类型
-  2. ClusterAgent - 分析代码引用，识别核心模块
-  3. OutlineAgent - 设计 Wiki 结构，生成蓝图
+- **@open-zread/blueprint**: 单一 Blueprint Agent，基于 Repo Map 生成 wiki.json
 
-### CLI 入口点
+### CLI 流程（5 步）
 
-- 默认命令（无参数）：运行 Phase 1 - 扫描 → 解析 → 脱水 → 代理 → wiki.json
-- `bun run dev wiki`: Phase 2（尚未实现）- wiki.json → markdown 文件
+```
+1. Load config    → ~/.zread/config.yaml
+2. Scan files     → FileManifest
+3. Check cache    → 增量处理（哈希比对）
+4. Parse files    → SymbolManifest → last_symbols.json
+5. Blueprint Agent → get_repo_map → generate_blueprint → wiki.json
+```
+
+### 缓存文件
+
+- `last_manifest.json` - 文件清单（路径、哈希、大小）
+- `last_symbols.json` - 符号信息（exports、functions、imports、docstrings）
 
 ### 必需配置
 

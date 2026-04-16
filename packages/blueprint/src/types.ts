@@ -2,68 +2,67 @@
  * Blueprint Generation Types
  */
 
-import type { FileManifest, SymbolManifest, DehydratedSkeleton } from '@open-zread/types'
+import type { FileManifest, SymbolManifest } from '@open-zread/types';
 
 /**
- * Tech stack summary from ScanAgent
+ * Tech stack summary (parsed from Repo Map or package.json)
  */
 export interface TechStackSummary {
   techStack: {
-    languages: string[]
-    frameworks: string[]
-    buildTools: string[]
-    testFrameworks?: string[]
-  }
-  projectType: 'frontend' | 'backend' | 'fullstack' | 'library' | 'cli' | 'unknown'
-  entryPoints: string[]
+    languages: string[];
+    frameworks: string[];
+    buildTools: string[];
+    testFrameworks?: string[];
+  };
+  projectType: 'frontend' | 'backend' | 'fullstack' | 'library' | 'cli' | 'unknown';
+  entryPoints: string[];
 }
 
 /**
- * Core module from ClusterAgent
+ * Core module identified from Repo Map reference counts
  */
 export interface CoreModule {
-  name: string
-  files: string[]
-  reason: string
-  referenceCount: number
+  name: string;
+  files: string[];
+  reason: string;
+  referenceCount?: number;
 }
 
 /**
- * Module grouping from ClusterAgent
+ * Module grouping by directory or functionality
  */
 export interface ModuleGroups {
-  [groupName: string]: string[]
+  [groupName: string]: string[];
 }
 
 /**
- * Core modules analysis result
+ * Core modules analysis result from Repo Map
  */
 export interface CoreModules {
-  coreModules: CoreModule[]
-  moduleGroups: ModuleGroups
+  coreModules: CoreModule[];
+  moduleGroups: ModuleGroups;
 }
 
 /**
- * Context passed between agents
+ * Context for Blueprint Agent
  */
 export interface BlueprintContext {
-  projectRoot: string
-  fileManifest?: FileManifest
-  symbolManifest?: SymbolManifest
-  skeleton?: DehydratedSkeleton
-  techStackSummary?: TechStackSummary
-  coreModules?: CoreModules
+  projectRoot: string;
+  fileManifest?: FileManifest;
+  symbolManifest?: SymbolManifest;
+  techStackSummary?: TechStackSummary;
+  coreModules?: CoreModules;
 }
 
 /**
  * Blueprint generation result
  */
 export interface BlueprintResult {
-  outputPath: string
-  pagesCount: number
-  techStackSummary?: TechStackSummary
-  coreModules?: CoreModules
-  durationMs: number
+  outputPath: string;
+  pagesCount: number;
+  techStackSummary?: TechStackSummary;
+  coreModules?: CoreModules;
+  durationMs: number;
 }
 
 /**
@@ -71,7 +70,7 @@ export interface BlueprintResult {
  * Note: LLM config is loaded from ~/.zread/config.yaml, not passed here
  */
 export interface BlueprintOptions {
-  projectRoot?: string
-  language?: 'zh' | 'en'
-  debug?: boolean
+  projectRoot?: string;
+  language?: 'zh' | 'en';
+  debug?: boolean;
 }

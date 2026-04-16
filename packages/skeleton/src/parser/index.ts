@@ -36,6 +36,74 @@ const SCM_QUERIES: Record<string, string> = {
   `,
 };
 
+/**
+ * Extract function signature from declaration node (without body)
+ *
+ * Universal approach: use tree-sitter field names instead of node types.
+ * Most languages define: name, parameters, body
+ *
+ * Works for: TypeScript, JavaScript, Python, Go, Rust, etc.
+ */
+function extractFunctionSignature(node: Parser.SyntaxNode): string {
+  // Try to get body via field name (universal)
+  const bodyNode = node.childForFieldName('body');
+
+  if (bodyNode) {
+    // Build signature from all children except body
+    const parts: string[] = [];
+    for (const child of node.children) {
+      if (child === bodyNode) continue;
+      parts.push(child.text);
+    }
+    return parts.join(' ').trim();
+  }
+
+  // Fallback: no body field found, use first line
+  const firstLine = node.text.split('\n')[0].trim();
+  return firstLine;
+}
+
+/**
+ * Extract export signature - universal approach
+ *
+ * For languages with export (TS/JS), build signature without body.
+ * For others, just return first line.
+ */
+function extractExportFromNode(node: Parser.SyntaxNode): string {
+  // Check if this language has export statements (TS/JS only)
+  const firstLine = node.text.split('\n')[0].trim();
+
+  // Re-exports: export { ... } from '...'
+  if (firstLine.includes(' from ')) {
+    return firstLine;
+  }
+
+  // Find the declaration inside export_statement
+  const decl = node.children.find(c =>
+    c.type.includes('declaration') ||
+    c.type === 'lexical_declaration'
+  );
+
+  if (!decl) {
+    return firstLine;
+  }
+
+  // Use same logic as function signature - exclude body
+  const bodyNode = decl.childForFieldName('body');
+  if (bodyNode) {
+    const parts: string[] = ['export'];
+    for (const child of decl.children) {
+      if (child === bodyNode) continue;
+      parts.push(child.text);
+    }
+    return parts.join(' ').trim();
+  }
+
+  // For interface/type (no body), truncate if long
+  const declLine = decl.text.split('\n')[0].trim();
+  return declLine.length > 100 ? declLine.slice(0, 100) + '...' : declLine;
+}
+
 function extractWithQuery(
   tree: Parser.Tree,
   language: string,
@@ -63,13 +131,13 @@ function extractWithQuery(
         if (name === 'import') {
           imports.push(node.text);
         } else if (name === 'export') {
-          exports.push(node.text);
+          exports.push(extractExportFromNode(node));
         } else if (name === 'fn' || name === 'arrow_fn' || name === 'method') {
           const fnNameNode = node.childForFieldName('name');
           const fnName = fnNameNode?.text || 'anonymous';
           functions.push({
             name: fnName,
-            signature: node.text.slice(0, 150),
+            signature: extractFunctionSignature(node),
           });
         }
       }
@@ -92,14 +160,14 @@ function extractBasic(tree: Parser.Tree): { imports: string[]; exports: string[]
       imports.push(child.text);
     }
     if (child.type.startsWith('export')) {
-      exports.push(child.text);
+      exports.push(extractExportFromNode(child));
     }
     if (child.type === 'function_declaration') {
       const nameNode = child.childForFieldName('name');
       if (nameNode) {
         functions.push({
           name: nameNode.text,
-          signature: child.text.slice(0, 100),
+          signature: extractFunctionSignature(child),
         });
       }
     }

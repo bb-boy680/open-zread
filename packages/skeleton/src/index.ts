@@ -7,6 +7,18 @@ export { loadParsers, loadLanguage, loadParser, getCachedLanguage } from './pars
 export { isLanguageSupported, getParserName } from './parser/language-map.js';
 export { parseVueSfc, extractVueScript } from './parser/vue-handler.js';
 
-// Dehydrator
-export { dehydrate, DEHYDRATOR_CONFIG } from './dehydrator/index.js';
-export { countReferences } from './dehydrator/reference-counter.js';
+// Repo Map
+export { buildRepoMap, REPO_MAP_CONFIG } from './repo-map/index.js';
+export {
+  estimateTokens,
+  getDepth,
+  estimateTotalTokens,
+  calculatePriority,
+  calculateAllPriorities,
+  selectByTokenBudget,
+  getTopCoreFiles,
+  buildDirectoryTree,
+  formatRepoMap,
+  trimSignature,
+  buildRepoMapOutput,
+} from './repo-map/index.js';

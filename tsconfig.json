@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "declaration": false,
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node", "bun-types"]
   },
   "include": [
     "*.ts",

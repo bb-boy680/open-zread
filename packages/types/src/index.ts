@@ -41,21 +41,6 @@ export interface SymbolInfo {
   docstrings: string[];
 }
 
-// DehydratedSkeleton - Dehydrator output
-export interface DehydratedSkeleton {
-  skeleton: Array<{
-    file: string;
-    content: string;
-  }>;
-  referenceMap: Record<string, number>;
-}
-
-// SkeletonItem - Single file skeleton
-export interface SkeletonItem {
-  file: string;
-  content: string;
-}
-
 // TechStackSummary - ScanAgent output
 export interface TechStackSummary {
   techStack: {
@@ -85,6 +70,12 @@ export interface WikiPage {
   section: string;
   level: string;
   type?: 'overview' | 'architecture' | 'code' | 'spec' | 'reference';
+  /**
+   * 关联的源文件或目录路径
+   * - 文件路径: "packages/web-integration/src/index.ts"
+   * - 目录路径: "packages/web-integration/src/" (以 / 结尾)
+   * 后续生成 Wiki 内容时，会读取这些路径获取上下文
+   */
   associatedFiles?: string[];
 }
 
@@ -121,7 +112,48 @@ export interface CacheManifest {
   files: Array<{
     path: string;
     hash: string;
-    skeletonHash?: string; // NEW: 骨架字符串的 MD5
     size: number;
   }>;
+}
+
+// ==================== Repo Map Types ====================
+
+/**
+ * Repo Map Options
+ */
+export interface RepoMapOptions {
+  tokenBudget: number;      // Token 预算（默认 2048）
+  includeAll?: boolean;     // 强制包含所有文件
+  maxSignatureLength?: number; // 签名最大长度（默认 80）
+}
+
+/**
+ * File Priority Score
+ */
+export interface FilePriority {
+  file: string;
+  score: number;            // 综合优先级分数
+  referenceCount: number;   // 来自 referenceMap
+  exportCount: number;      // 导出数量
+  depth: number;            // 目录深度（越浅越重要）
+}
+
+/**
+ * Directory Tree Node
+ */
+export interface DirectoryTreeNode {
+  name: string;
+  type: 'file' | 'directory';
+  path?: string;            // 文件节点：完整路径
+  children?: DirectoryTreeNode[];
+}
+
+/**
+ * Repo Map Output
+ */
+export interface RepoMapOutput {
+  content: string;          // 树状格式化字符串
+  tokenCount: number;       // 估算 Token 数
+  fileCount: number;        // 包含的文件数
+  topFiles: string[];       // Top 10 核心文件路径
 }

@@ -2,39 +2,36 @@
  * Custom tools export
  */
 
-export * from './skeleton-tools.js'
-export * from './analysis-tools.js'
-export * from './output-tools.js'
+export * from './cache-tools.js';
+export * from './output-tools.js';
+export * from './repo-map-tools.js';
 
 // Tool collections
-import { GetCachedManifestTool, GetCachedSkeletonTool } from './skeleton-tools.js'
-import { DetectTechStackTool, GetDirectoryTreeTool, AnalyzeReferencesTool } from './analysis-tools.js'
-import { GenerateBlueprintTool, ValidateBlueprintTool } from './output-tools.js'
-import type { ToolDefinition } from '@open-zread/agent'
+import { GetCachedManifestTool } from './cache-tools.js';
+import { GenerateBlueprintTool, ValidateBlueprintTool } from './output-tools.js';
+import { GetRepoMapTool } from './repo-map-tools.js';
+import type { ToolDefinition } from '@open-zread/agent';
 
-export const skeletonTools: ToolDefinition[] = [
+export const cacheTools: ToolDefinition[] = [
   GetCachedManifestTool,
-  GetCachedSkeletonTool
-]
-
-export const analysisTools: ToolDefinition[] = [
-  DetectTechStackTool,
-  GetDirectoryTreeTool,
-  AnalyzeReferencesTool
-]
+];
 
 export const outputTools: ToolDefinition[] = [
   GenerateBlueprintTool,
-  ValidateBlueprintTool
-]
+  ValidateBlueprintTool,
+];
+
+export const repoMapTools: ToolDefinition[] = [
+  GetRepoMapTool,
+];
 
 /**
  * Get all blueprint tools
  */
 export function getAllBlueprintTools(): ToolDefinition[] {
   return [
-    ...skeletonTools,
-    ...analysisTools,
-    ...outputTools
-  ]
+    ...cacheTools,
+    ...outputTools,
+    ...repoMapTools,
+  ];
 }

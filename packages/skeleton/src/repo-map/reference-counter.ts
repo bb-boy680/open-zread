@@ -1,3 +1,7 @@
+/**
+ * Reference Counter - Count file references from import statements
+ */
+
 import type { SymbolManifest } from '@open-zread/types';
 
 export function countReferences(symbols: SymbolManifest): Record<string, number> {

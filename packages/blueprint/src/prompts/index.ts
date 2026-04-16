@@ -1,7 +1,7 @@
 /**
- * Prompts export
+ * Blueprint Agent Prompts
+ *
+ * Simplified to single BlueprintAgentPrompt.
  */
 
-export { SCAN_AGENT_PROMPT } from './scan-prompt.js'
-export { CLUSTER_AGENT_PROMPT } from './cluster-prompt.js'
-export { OUTLINE_AGENT_PROMPT } from './outline-prompt.js'
+export { BLUEPRINT_AGENT_PROMPT, BLUEPRINT_AGENT_NAME } from './blueprint-prompt.js';

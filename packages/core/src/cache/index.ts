@@ -1,6 +1,5 @@
-import { createHash } from 'crypto';
 import { join } from 'path';
-import type { FileManifest, CacheManifest, DehydratedSkeleton } from '@open-zread/types';
+import type { FileManifest, CacheManifest } from '@open-zread/types';
 import { getCacheDir, readJsonFile, writeJsonFile, ensureDir } from '../file-io.js';
 import { CACHE_FILES, CACHE_VERSION } from './constants';
 
@@ -31,51 +30,6 @@ export async function saveCachedManifest(manifest: FileManifest): Promise<void> 
 
   const manifestPath = join(cacheDir, CACHE_FILES.manifest);
   await writeJsonFile(manifestPath, cacheManifest);
-}
-
-export async function saveCachedManifestWithSkeleton(
-  manifest: FileManifest,
-  skeleton: DehydratedSkeleton
-): Promise<void> {
-  const cacheDir = getCacheDir();
-  await ensureDir(cacheDir);
-
-  const skeletonMap = new Map(skeleton.skeleton.map(s => [s.file, s.content]));
-
-  const cacheManifest: CacheManifest = {
-    version: CACHE_VERSION,
-    generated_at: new Date().toISOString(),
-    files: manifest.files.map(f => ({
-      path: f.path,
-      hash: f.hash,
-      skeletonHash: skeletonMap.has(f.path)
-        ? createHash('md5').update(skeletonMap.get(f.path) ?? '').digest('hex')
-        : undefined,
-      size: f.size,
-    })),
-  };
-
-  const manifestPath = join(cacheDir, CACHE_FILES.manifest);
-  await writeJsonFile(manifestPath, cacheManifest);
-}
-
-export async function loadCachedSkeleton(): Promise<DehydratedSkeleton | null> {
-  const cacheDir = getCacheDir();
-  const skeletonPath = join(cacheDir, CACHE_FILES.skeleton);
-
-  try {
-    return await readJsonFile<DehydratedSkeleton>(skeletonPath);
-  } catch {
-    return null;
-  }
-}
-
-export async function saveCachedSkeleton(skeleton: DehydratedSkeleton): Promise<void> {
-  const cacheDir = getCacheDir();
-  await ensureDir(cacheDir);
-
-  const skeletonPath = join(cacheDir, CACHE_FILES.skeleton);
-  await writeJsonFile(skeletonPath, skeleton);
 }
 
 export function diffManifests(
@@ -115,3 +69,6 @@ export function needsReprocess(
   const diff = diffManifests(cached, current);
   return diff.added.length > 0 || diff.modified.length > 0 || diff.removed.length > 0;
 }
+
+// Symbol cache
+export { saveCachedSymbols, loadCachedSymbols } from './symbol-cache.js';

@@ -22,11 +22,10 @@ export { loadConfig, validateConfig, getDefaultLanguage } from './config/index.j
 export {
   loadCachedManifest,
   saveCachedManifest,
-  saveCachedManifestWithSkeleton,
-  loadCachedSkeleton,
-  saveCachedSkeleton,
   diffManifests,
   needsReprocess,
+  loadCachedSymbols,
+  saveCachedSymbols,
 } from './cache/index.js';
 
 // Storage
