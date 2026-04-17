@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { buildRepoMap } from '../index.js';
+import { buildRepoMap, buildModuleDetails, buildDirectoryTreeOnly, buildCoreSignatures } from '../index.js';
 import { estimateTokens, getDepth } from '../token-counter.js';
 import { calculatePriority, selectByTokenBudget, getTopCoreFiles } from '../prioritizer.js';
 import { buildDirectoryTree, trimSignature } from '../formatter.js';
@@ -167,6 +167,131 @@ describe('Repo Map Builder', () => {
       const trimmed = trimSignature(shortSig, 80);
 
       expect(trimmed).toBe(shortSig);
+    });
+  });
+
+  describe('buildModuleDetails - Path Compatibility', () => {
+    // 模拟 Windows 格式的符号缓存（缓存路径使用反斜杠）
+    const windowsSymbols: SymbolManifest = {
+      symbols: [
+        {
+          file: 'packages\\core\\src\\index.ts',
+          exports: ['export * from "./common"'],
+          functions: [],
+          imports: [],
+          docstrings: [],
+        },
+        {
+          file: 'packages\\core\\src\\common.ts',
+          exports: ['export function foo(): void'],
+          functions: [{ name: 'foo', signature: 'function foo(): void' }],
+          imports: ['import { bar } from "./bar"'],
+          docstrings: ['/** Common utilities */'],
+        },
+        {
+          file: 'packages\\shared\\src\\utils.ts',
+          exports: ['export const util = {}'],
+          functions: [],
+          imports: [],
+          docstrings: [],
+        },
+        {
+          file: 'packages\\cli\\src\\bin.ts',
+          exports: ['export function main()'],
+          functions: [],
+          imports: ['import { core } from "@open-zread/core"'],
+          docstrings: [],
+        },
+      ],
+      loadedParsers: ['typescript'],
+    };
+
+    test('should match Unix-style input path with Windows cached paths', () => {
+      // Agent 传入 Unix 格式路径：packages/core/src/
+      const result = buildModuleDetails(windowsSymbols, 'packages/core/src/');
+
+      expect(result.fileCount).toBe(2);
+      // 输出为树状格式，检查目录层级和文件名
+      expect(result.content).toContain('packages/');
+      expect(result.content).toContain('core/');
+      expect(result.content).toContain('src/');
+      expect(result.content).toContain('index.ts');
+      expect(result.content).toContain('common.ts');
+      expect(result.modulePath).toBe('packages/core/src/');
+    });
+
+    test('should match Windows-style input path with Windows cached paths', () => {
+      // Agent 传入 Windows 格式路径：packages\core\src\
+      const result = buildModuleDetails(windowsSymbols, 'packages\\core\\src\\');
+
+      expect(result.fileCount).toBe(2);
+      // 检查树状输出包含正确的目录结构
+      expect(result.content).toContain('packages/');
+      expect(result.content).toContain('index.ts');
+    });
+
+    test('should return empty result for non-existent module', () => {
+      const result = buildModuleDetails(windowsSymbols, 'packages/nonexistent/src/');
+
+      expect(result.fileCount).toBe(0);
+      expect(result.content).toContain('Module not found');
+    });
+
+    test('should handle path without trailing slash', () => {
+      // 传入不带斜杠的路径
+      const result = buildModuleDetails(windowsSymbols, 'packages/core/src');
+
+      expect(result.fileCount).toBe(2);
+    });
+  });
+
+  describe('buildDirectoryTreeOnly', () => {
+    test('should generate pure directory tree without symbols', () => {
+      const result = buildDirectoryTreeOnly(mockSymbols);
+
+      expect(result.content).toContain('Project Structure');
+      expect(result.directories.length).toBeGreaterThan(0);
+      // 不应包含符号信息
+      expect(result.content).not.toContain('[Export]');
+      expect(result.content).not.toContain('[Ref:');
+    });
+  });
+
+  describe('buildCoreSignatures', () => {
+    test('should filter files by reference threshold', () => {
+      // 构造有引用计数的符号
+      const symbolsWithRefs: SymbolManifest = {
+        symbols: [
+          {
+            file: 'src/core.ts',
+            exports: ['export function core()'],
+            functions: [],
+            imports: [],
+            docstrings: [],
+          },
+          {
+            file: 'src/utils.ts',
+            exports: ['export const helper'],
+            functions: [],
+            imports: ['import { core } from "./core"'],
+            docstrings: [],
+          },
+          {
+            file: 'src/low-ref.ts',
+            exports: ['export const minor'],
+            functions: [],
+            imports: [],
+            docstrings: [],
+          },
+        ],
+        loadedParsers: ['typescript'],
+      };
+
+      const result = buildCoreSignatures(symbolsWithRefs, 1);
+
+      expect(result.threshold).toBe(1);
+      expect(result.files.length).toBeGreaterThan(0);
+      expect(result.content).toContain('Core Files Signatures');
     });
   });
 });

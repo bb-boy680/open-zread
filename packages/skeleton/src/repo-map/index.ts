@@ -215,13 +215,14 @@ export function buildModuleDetails(
   modulePath: string,
   referenceMap?: Record<string, number>
 ): ModuleDetailsOutput {
-  // Normalize module path
-  const normalizedPath = modulePath.endsWith('/') ? modulePath : modulePath + '/';
+  // Normalize module path - convert both to same separator for comparison
+  const normalizedInputPath = modulePath.replace(/\\/g, '/').replace(/\/+$/, '/');
 
-  // Filter symbols by module path
-  const moduleSymbols = symbols.symbols.filter(symbol =>
-    symbol.file.startsWith(normalizedPath)
-  );
+  // Filter symbols by module path (handle both / and \ in cached paths)
+  const moduleSymbols = symbols.symbols.filter(symbol => {
+    const normalizedFilePath = symbol.file.replace(/\\/g, '/');
+    return normalizedFilePath.startsWith(normalizedInputPath);
+  });
 
   if (moduleSymbols.length === 0) {
     return {
