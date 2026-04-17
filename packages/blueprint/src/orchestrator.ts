@@ -4,11 +4,26 @@
  * Coordinates single Blueprint Agent to generate wiki.json blueprint.
  */
 
-import { createAgent, getAllBaseTools, type SDKMessage, type AgentDefinition } from '@open-zread/agent';
+import { createAgent, getAllBaseTools, type SDKMessage, type AgentDefinition, type SDKAssistantMessage, type SDKToolResultMessage, type SDKResultMessage } from '@open-zread/agent';
 import { logger, getProjectRoot, loadConfig } from '@open-zread/core';
 import { getAllBlueprintTools } from './tools/index.js';
 import { BlueprintAgentDefinition, BLUEPRINT_AGENT_NAME } from './agents/index.js';
 import type { BlueprintOptions, BlueprintResult, CoreModules } from './types.js';
+
+/** Type guard for SDKAssistantMessage */
+function isAssistantMessage(msg: SDKMessage): msg is SDKAssistantMessage {
+  return msg.type === 'assistant'
+}
+
+/** Type guard for SDKToolResultMessage */
+function isToolResultMessage(msg: SDKMessage): msg is SDKToolResultMessage {
+  return msg.type === 'tool_result'
+}
+
+/** Type guard for SDKResultMessage */
+function isResultMessage(msg: SDKMessage): msg is SDKResultMessage {
+  return msg.type === 'result'
+}
 
 /**
  * Generate Wiki Blueprint
@@ -72,8 +87,8 @@ export async function generateBlueprint(options?: BlueprintOptions): Promise<Blu
       const msg = event as SDKMessage;
 
       // Log progress
-      if (msg.type === 'assistant') {
-        for (const block of (msg as any).message?.content || []) {
+      if (isAssistantMessage(msg)) {
+        for (const block of msg.message?.content || []) {
           if (block.type === 'tool_use') {
             const toolName = block.name;
             const toolInput = JSON.stringify(block.input || {});
@@ -85,8 +100,8 @@ export async function generateBlueprint(options?: BlueprintOptions): Promise<Blu
         }
       }
 
-      if (msg.type === 'tool_result') {
-        const result = (msg as any).result;
+      if (isToolResultMessage(msg)) {
+        const result = msg.result;
         logger.info(`[Tool Result: ${result.tool_name}] ${result.output}`);
 
         // Try to parse structured output
@@ -109,25 +124,25 @@ export async function generateBlueprint(options?: BlueprintOptions): Promise<Blu
         }
       }
 
-      if (msg.type === 'result') {
-        const result = msg as any;
-        if (result.subtype === 'success') {
+      if (isResultMessage(msg)) {
+        if (msg.subtype === 'success') {
           logger.success('蓝图生成完成');
-          if (result.result?.includes('Blueprint generated')) {
-            outputPath = result.result.match(/Blueprint generated: (.+)/)?.[1] || '';
+          if (msg.result?.includes('Blueprint generated')) {
+            outputPath = msg.result.match(/Blueprint generated: (.+)/)?.[1] || '';
           }
         } else {
-          logger.error(`蓝图生成失败: ${result.subtype}`);
-          if (result.errors) {
-            for (const err of result.errors) {
+          logger.error(`蓝图生成失败: ${msg.subtype}`);
+          if (msg.errors) {
+            for (const err of msg.errors) {
               logger.error(err);
             }
           }
         }
       }
     }
-  } catch (err: any) {
-    logger.error(`Agent 执行错误: ${err.message}`);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    logger.error(`Agent 执行错误: ${message}`);
     throw err;
   }
 

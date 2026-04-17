@@ -19,7 +19,7 @@
 
 import { z, type ZodRawShape, type ZodObject } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
-import type { ToolDefinition, ToolResult, ToolContext } from './types.js'
+import type { ToolDefinition, ToolResult, ToolContext, ToolInputParams, ToolInputSchemaProperty } from './types.js'
 
 /**
  * Tool annotations (MCP standard).
@@ -78,8 +78,15 @@ export function tool<T extends ZodRawShape>(
 /**
  * Convert an SdkMcpToolDefinition to a ToolDefinition for the engine.
  */
-export function sdkToolToToolDefinition(sdkTool: SdkMcpToolDefinition<any>): ToolDefinition {
-  const jsonSchema = zodToJsonSchema(sdkTool.inputSchema, { target: 'openApi3' }) as any
+export function sdkToolToToolDefinition<T extends ZodRawShape>(
+  sdkTool: SdkMcpToolDefinition<T>
+): ToolDefinition {
+  // zodToJsonSchema returns JSON Schema Draft 7 format
+  const jsonSchema = zodToJsonSchema(sdkTool.inputSchema, { target: 'openApi3' }) as {
+    type?: string
+    properties?: Record<string, ToolInputSchemaProperty>
+    required?: string[]
+  }
 
   return {
     name: sdkTool.name,
@@ -93,7 +100,7 @@ export function sdkToolToToolDefinition(sdkTool: SdkMcpToolDefinition<any>): Too
     isConcurrencySafe: () => sdkTool.annotations?.readOnlyHint ?? false,
     isEnabled: () => true,
     async prompt() { return sdkTool.description },
-    async call(input: any, _context: ToolContext): Promise<ToolResult> {
+    async call(input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
       try {
         const parsed = sdkTool.inputSchema.parse(input)
         const result = await sdkTool.handler(parsed, {})
@@ -114,11 +121,12 @@ export function sdkToolToToolDefinition(sdkTool: SdkMcpToolDefinition<any>): Too
           content: text,
           is_error: result.isError || false,
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
         return {
           type: 'tool_result',
           tool_use_id: '',
-          content: `Error: ${err.message}`,
+          content: `Error: ${message}`,
           is_error: true,
         }
       }

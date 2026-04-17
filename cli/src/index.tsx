@@ -145,14 +145,6 @@ async function runWikiCommand() {
   try {
     uiStore.startStep('Phase 2 not implemented yet...');
     uiStore.failStep('Wiki content generation will be implemented in Phase 2');
-    await waitUntilExit();
-    return;
-
-    // TODO: Phase 2 implementation
-    // uiStore.startStep('Loading config...');
-    // const config = await loadConfig();
-    // uiStore.completeStep();
-    // ...
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     uiStore.failStep(message);

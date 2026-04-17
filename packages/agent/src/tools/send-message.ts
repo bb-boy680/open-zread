@@ -5,7 +5,8 @@
  * between teammates in a multi-agent setup.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
+import { getRequiredString, getString } from './types.js'
 
 /**
  * Message inbox for inter-agent communication.
@@ -65,16 +66,20 @@ export const SendMessageTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Send a message to another agent.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const to = getRequiredString(input, 'to')
+    const content = getRequiredString(input, 'content')
+    const typeStr = getString(input, 'type') || 'text'
+
     const message: AgentMessage = {
       from: 'self',
-      to: input.to,
-      content: input.content,
+      to,
+      content,
       timestamp: new Date().toISOString(),
-      type: input.type || 'text',
+      type: typeStr as AgentMessage['type'],
     }
 
-    if (input.to === '*') {
+    if (to === '*') {
       // Broadcast to all known mailboxes
       for (const [name] of mailboxes) {
         writeToMailbox(name, { ...message, to: name })
@@ -86,11 +91,11 @@ export const SendMessageTool: ToolDefinition = {
       }
     }
 
-    writeToMailbox(input.to, message)
+    writeToMailbox(to, message)
     return {
       type: 'tool_result',
       tool_use_id: '',
-      content: `Message sent to ${input.to}`,
+      content: `Message sent to ${to}`,
     }
   },
 }

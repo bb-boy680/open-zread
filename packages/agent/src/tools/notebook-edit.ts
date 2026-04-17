@@ -4,7 +4,7 @@
 
 import { readFile, writeFile } from 'fs/promises'
 import { resolve } from 'path'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getString, getNumber } from './types.js'
 
 export const NotebookEditTool = defineTool({
   name: 'NotebookEdit',
@@ -40,7 +40,7 @@ export const NotebookEditTool = defineTool({
   isReadOnly: false,
   isConcurrencySafe: false,
   async call(input, context) {
-    const filePath = resolve(context.cwd, input.file_path)
+    const filePath = resolve(context.cwd, getRequiredString(input, 'file_path'))
 
     try {
       const content = await readFile(filePath, 'utf-8')
@@ -50,44 +50,51 @@ export const NotebookEditTool = defineTool({
         return { data: 'Error: Invalid notebook format', is_error: true }
       }
 
-      const { command, cell_number, cell_type, source } = input
+      const command = getRequiredString(input, 'command')
+      const cellNumber = getNumber(input, 'cell_number')
+      const cellType = getString(input, 'cell_type')
+      const source = getString(input, 'source')
+
+      if (cellNumber === undefined) {
+        return { data: 'Error: cell_number is required', is_error: true }
+      }
 
       switch (command) {
         case 'insert': {
           const newCell = {
-            cell_type: cell_type || 'code',
+            cell_type: cellType || 'code',
             source: (source || '').split('\n').map((l: string, i: number, arr: string[]) =>
               i < arr.length - 1 ? l + '\n' : l
             ),
             metadata: {},
-            ...(cell_type !== 'markdown' ? { outputs: [], execution_count: null } : {}),
+            ...(cellType !== 'markdown' ? { outputs: [], execution_count: null } : {}),
           }
-          notebook.cells.splice(cell_number, 0, newCell)
+          notebook.cells.splice(cellNumber, 0, newCell)
           break
         }
         case 'replace': {
-          if (cell_number >= notebook.cells.length) {
-            return { data: `Error: Cell ${cell_number} does not exist`, is_error: true }
+          if (cellNumber >= notebook.cells.length) {
+            return { data: `Error: Cell ${cellNumber} does not exist`, is_error: true }
           }
-          notebook.cells[cell_number].source = (source || '').split('\n').map(
+          notebook.cells[cellNumber].source = (source || '').split('\n').map(
             (l: string, i: number, arr: string[]) => i < arr.length - 1 ? l + '\n' : l
           )
-          if (cell_type) notebook.cells[cell_number].cell_type = cell_type
+          if (cellType) notebook.cells[cellNumber].cell_type = cellType
           break
         }
         case 'delete': {
-          if (cell_number >= notebook.cells.length) {
-            return { data: `Error: Cell ${cell_number} does not exist`, is_error: true }
+          if (cellNumber >= notebook.cells.length) {
+            return { data: `Error: Cell ${cellNumber} does not exist`, is_error: true }
           }
-          notebook.cells.splice(cell_number, 1)
+          notebook.cells.splice(cellNumber, 1)
           break
         }
       }
 
       await writeFile(filePath, JSON.stringify(notebook, null, 1), 'utf-8')
-      return `Notebook ${command}: cell ${cell_number} in ${filePath}`
-    } catch (err: any) {
-      return { data: `Error: ${err.message}`, is_error: true }
+      return `Notebook ${command}: cell ${cellNumber} in ${filePath}`
+    } catch (err: unknown) {
+      return { data: `Error: ${err instanceof Error ? err.message : String(err)}`, is_error: true }
     }
   },
 })

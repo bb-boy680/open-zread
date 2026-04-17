@@ -26,6 +26,7 @@ import type {
   CanUseToolFn,
   Message,
   PermissionMode,
+  ContentBlock,
 } from './types.js'
 import { QueryEngine } from './engine.js'
 import { getAllBaseTools, filterTools } from './tools/index.js'
@@ -36,7 +37,7 @@ import {
   saveSession,
   loadSession,
 } from './session.js'
-import { createHookRegistry, type HookRegistry } from './hooks.js'
+import { createHookRegistry, type HookRegistry, type HookEvent, HOOK_EVENTS } from './hooks.js'
 import { initBundledSkills } from './skills/index.js'
 import { createProvider, type LLMProvider, type ApiType } from './providers/index.js'
 import type { NormalizedMessageParam } from './providers/types.js'
@@ -87,9 +88,12 @@ export class Agent {
     if (this.cfg.hooks) {
       // Convert AgentOptions hooks format to HookConfig
       for (const [event, defs] of Object.entries(this.cfg.hooks)) {
+        // Validate event is a known HookEvent
+        if (!HOOK_EVENTS.includes(event as HookEvent)) continue
+        const hookEvent = event as HookEvent
         for (const def of defs) {
           for (const handler of def.hooks) {
-            this.hookRegistry.register(event as any, {
+            this.hookRegistry.register(hookEvent, {
               matcher: def.matcher,
               timeout: def.timeout,
               handler: async (input) => {
@@ -209,8 +213,9 @@ export class Agent {
               this.toolPool = [...this.toolPool, ...connection.tools]
             }
           }
-        } catch (err: any) {
-          console.error(`[MCP] Failed to connect to "${name}": ${err.message}`)
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err)
+          console.error(`[MCP] Failed to connect to "${name}": ${message}`)
         }
       }
     }
@@ -315,7 +320,7 @@ export class Agent {
 
     // Inject existing conversation history
     for (const msg of this.history) {
-      (engine as any).messages.push(msg)
+      engine.messages.push(msg)
     }
 
     // Run the engine
@@ -363,9 +368,9 @@ export class Agent {
       switch (ev.type) {
         case 'assistant': {
           // Extract the last assistant text (multi-turn: only final answer matters)
-          const fragments = (ev.message.content as any[])
-            .filter((c: any) => c.type === 'text')
-            .map((c: any) => c.text)
+          const fragments = ev.message.content
+            .filter((c: ContentBlock) => c.type === 'text')
+            .map((c: ContentBlock) => (c as { type: 'text'; text: string }).text)
           if (fragments.length) collected.text = fragments.join('')
           break
         }

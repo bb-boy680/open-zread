@@ -4,7 +4,7 @@
  * Manages a session-scoped todo list for tracking work items.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams, ToolContext } from '../types.js'
 
 export interface TodoItem {
   id: number
@@ -56,38 +56,41 @@ export const TodoWriteTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Manage session todo list.' },
-  async call(input: any): Promise<ToolResult> {
-    switch (input.action) {
+  async call(input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
+    const action = input.action as 'add' | 'toggle' | 'remove' | 'list' | 'clear'
+    switch (action) {
       case 'add': {
         if (!input.text) {
           return { type: 'tool_result', tool_use_id: '', content: 'text required', is_error: true }
         }
         const item: TodoItem = {
           id: ++todoCounter,
-          text: input.text,
+          text: String(input.text),
           done: false,
-          priority: input.priority,
+          priority: input.priority as 'high' | 'medium' | 'low' | undefined,
         }
         todoList.push(item)
         return { type: 'tool_result', tool_use_id: '', content: `Todo added: #${item.id} "${item.text}"` }
       }
 
       case 'toggle': {
-        const item = todoList.find(t => t.id === input.id)
+        const id = Number(input.id)
+        const item = todoList.find(t => t.id === id)
         if (!item) {
-          return { type: 'tool_result', tool_use_id: '', content: `Todo #${input.id} not found`, is_error: true }
+          return { type: 'tool_result', tool_use_id: '', content: `Todo #${id} not found`, is_error: true }
         }
         item.done = !item.done
         return { type: 'tool_result', tool_use_id: '', content: `Todo #${item.id} ${item.done ? 'completed' : 'reopened'}` }
       }
 
       case 'remove': {
-        const idx = todoList.findIndex(t => t.id === input.id)
+        const id = Number(input.id)
+        const idx = todoList.findIndex(t => t.id === id)
         if (idx === -1) {
-          return { type: 'tool_result', tool_use_id: '', content: `Todo #${input.id} not found`, is_error: true }
+          return { type: 'tool_result', tool_use_id: '', content: `Todo #${id} not found`, is_error: true }
         }
         todoList.splice(idx, 1)
-        return { type: 'tool_result', tool_use_id: '', content: `Todo #${input.id} removed` }
+        return { type: 'tool_result', tool_use_id: '', content: `Todo #${id} removed` }
       }
 
       case 'list': {

@@ -1,10 +1,6 @@
 import { Box, Text } from 'ink';
 import React from 'react';
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
+import { formatDuration } from '../utils/format.js';
 
 interface SuccessViewProps {
   outputPath: string;

@@ -4,7 +4,7 @@
 
 import { spawn } from 'child_process'
 import { resolve } from 'path'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getString, getNumber, getBoolean } from './types.js'
 
 export const GrepTool = defineTool({
   name: 'Grep',
@@ -52,9 +52,11 @@ export const GrepTool = defineTool({
   isReadOnly: true,
   isConcurrencySafe: true,
   async call(input, context) {
-    const searchPath = input.path ? resolve(context.cwd, input.path) : context.cwd
-    const outputMode = input.output_mode || 'files_with_matches'
-    const headLimit = input.head_limit ?? 250
+    const pattern = getRequiredString(input, 'pattern')
+    const pathValue = getString(input, 'path')
+    const searchPath = pathValue ? resolve(context.cwd, pathValue) : context.cwd
+    const outputMode = getString(input, 'output_mode') || 'files_with_matches'
+    const headLimit = getNumber(input, 'head_limit') ?? 250
 
     // Build rg command (fall back to grep if rg unavailable)
     const args: string[] = []
@@ -68,18 +70,22 @@ export const GrepTool = defineTool({
       args.push('--count')
     } else {
       // content mode
-      if (input['-n'] !== false) args.push('--line-number')
+      if (getBoolean(input, '-n') !== false) args.push('--line-number')
     }
 
-    if (input['-i']) args.push('--ignore-case')
-    if (input['-A']) args.push('-A', String(input['-A']))
-    if (input['-B']) args.push('-B', String(input['-B']))
-    const ctx = input['-C'] ?? input.context
-    if (ctx) args.push('-C', String(ctx))
-    if (input.glob) args.push('--glob', input.glob)
-    if (input.type) args.push('--type', input.type)
+    if (getBoolean(input, '-i')) args.push('--ignore-case')
+    const aVal = getNumber(input, '-A')
+    if (aVal !== undefined) args.push('-A', String(aVal))
+    const bVal = getNumber(input, '-B')
+    if (bVal !== undefined) args.push('-B', String(bVal))
+    const ctx = getNumber(input, '-C') ?? getNumber(input, 'context')
+    if (ctx !== undefined) args.push('-C', String(ctx))
+    const glob = getString(input, 'glob')
+    if (glob) args.push('--glob', glob)
+    const typeVal = getString(input, 'type')
+    if (typeVal) args.push('--type', typeVal)
 
-    args.push('--', input.pattern, searchPath)
+    args.push('--', pattern, searchPath)
 
     return new Promise<string>((resolvePromise) => {
       const proc = spawn(cmd, args, {
@@ -98,12 +104,12 @@ export const GrepTool = defineTool({
         if (!result && code !== 0) {
           // Try fallback to grep
           const grepArgs = ['-r']
-          if (input['-i']) grepArgs.push('-i')
+          if (getBoolean(input, '-i')) grepArgs.push('-i')
           if (outputMode === 'files_with_matches') grepArgs.push('-l')
           if (outputMode === 'count') grepArgs.push('-c')
-          if (outputMode === 'content' && input['-n'] !== false) grepArgs.push('-n')
-          if (input.glob) grepArgs.push('--include', input.glob)
-          grepArgs.push('--', input.pattern, searchPath)
+          if (outputMode === 'content' && getBoolean(input, '-n') !== false) grepArgs.push('-n')
+          if (glob) grepArgs.push('--include', glob)
+          grepArgs.push('--', pattern, searchPath)
 
           const grepProc = spawn('grep', grepArgs, {
             cwd: context.cwd,
@@ -115,7 +121,7 @@ export const GrepTool = defineTool({
           grepProc.on('close', () => {
             const grepResult = Buffer.concat(grepChunks).toString('utf-8').trim()
             if (!grepResult) {
-              resolvePromise(`No matches found for pattern "${input.pattern}"`)
+              resolvePromise(`No matches found for pattern "${pattern}"`)
             } else {
               // Apply head limit
               const lines = grepResult.split('\n')
@@ -127,13 +133,13 @@ export const GrepTool = defineTool({
             }
           })
           grepProc.on('error', () => {
-            resolvePromise(`No matches found for pattern "${input.pattern}"`)
+            resolvePromise(`No matches found for pattern "${pattern}"`)
           })
           return
         }
 
         if (!result) {
-          resolvePromise(`No matches found for pattern "${input.pattern}"`)
+          resolvePromise(`No matches found for pattern "${pattern}"`)
           return
         }
 
@@ -148,7 +154,7 @@ export const GrepTool = defineTool({
 
       proc.on('error', () => {
         // rg not found, try grep directly
-        const grepArgs = ['-r', '-n', '--', input.pattern, searchPath]
+        const grepArgs = ['-r', '-n', '--', pattern, searchPath]
         const grepProc = spawn('grep', grepArgs, {
           cwd: context.cwd,
           timeout: 30000,
@@ -157,7 +163,7 @@ export const GrepTool = defineTool({
         grepProc.stdout?.on('data', (d: Buffer) => grepChunks.push(d))
         grepProc.on('close', () => {
           const grepResult = Buffer.concat(grepChunks).toString('utf-8').trim()
-          resolvePromise(grepResult || `No matches found for pattern "${input.pattern}"`)
+          resolvePromise(grepResult || `No matches found for pattern "${pattern}"`)
         })
         grepProc.on('error', () => {
           resolvePromise(`Error: neither rg nor grep available`)

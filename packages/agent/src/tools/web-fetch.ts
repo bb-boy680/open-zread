@@ -2,7 +2,7 @@
  * WebFetchTool - Fetch web content
  */
 
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getObject } from './types.js'
 
 export const WebFetchTool = defineTool({
   name: 'WebFetch',
@@ -24,7 +24,8 @@ export const WebFetchTool = defineTool({
   isReadOnly: true,
   isConcurrencySafe: true,
   async call(input, _context) {
-    const { url, headers } = input
+    const url = getRequiredString(input, 'url')
+    const headers = getObject<Record<string, string>>(input, 'headers')
 
     try {
       const response = await fetch(url, {
@@ -59,8 +60,9 @@ export const WebFetchTool = defineTool({
       }
 
       return text || '(empty response)'
-    } catch (err: any) {
-      return { data: `Error fetching ${url}: ${err.message}`, is_error: true }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      return { data: `Error fetching ${url}: ${message}`, is_error: true }
     }
   },
 })

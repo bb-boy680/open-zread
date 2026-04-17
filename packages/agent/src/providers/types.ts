@@ -8,6 +8,8 @@
  * representation. Providers convert to/from their native API format.
  */
 
+import type { ToolInputParams, ImageSource, ToolInputSchemaProperty } from '../types.js'
+
 // --------------------------------------------------------------------------
 // API Type
 // --------------------------------------------------------------------------
@@ -38,9 +40,9 @@ export interface NormalizedMessageParam {
 
 export type NormalizedContentBlock =
   | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: any }
+  | { type: 'tool_use'; id: string; name: string; input: ToolInputParams }
   | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean }
-  | { type: 'image'; source: any }
+  | { type: 'image'; source: ImageSource }
   | { type: 'thinking'; thinking: string }
 
 export interface NormalizedTool {
@@ -48,7 +50,7 @@ export interface NormalizedTool {
   description: string
   input_schema: {
     type: 'object'
-    properties: Record<string, any>
+    properties: Record<string, ToolInputSchemaProperty>
     required?: string[]
   }
 }
@@ -70,7 +72,7 @@ export interface CreateMessageResponse {
 
 export type NormalizedResponseBlock =
   | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: any }
+  | { type: 'tool_use'; id: string; name: string; input: ToolInputParams }
 
 // --------------------------------------------------------------------------
 // Provider Interface

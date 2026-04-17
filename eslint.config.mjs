@@ -31,7 +31,8 @@ export default tseslint.config(
           "caughtErrorsIgnorePattern": "^_",
         },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      // 禁止使用 any 类型
+      "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {
@@ -43,28 +44,6 @@ export default tseslint.config(
   // Examples can use any for simplicity
   {
     files: ["**/examples/**/*.ts"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-    },
-  },
-  // Tools and MCP client use any for dynamic tool input/API types
-  {
-    files: [
-      "**/packages/agent/src/tools/**/*.ts",
-      "**/packages/agent/src/mcp/**/*.ts",
-      "**/packages/agent/src/providers/**/*.ts",
-      "**/packages/agent/src/tool-helper.ts",
-      "**/packages/agent/src/sdk-mcp-server.ts",
-      "**/packages/agent/src/types.ts",
-      "**/packages/agent/src/utils/messages.ts",
-      "**/packages/agent/src/utils/compact.ts",
-      "**/packages/agent/src/utils/retry.ts",
-      "**/packages/agent/src/utils/tokens.ts",
-      "**/packages/agent/src/engine.ts",
-      "**/packages/agent/src/agent.ts",
-      "**/packages/agent/src/hooks.ts",
-      "**/packages/blueprint/src/**/*.ts",
-    ],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },

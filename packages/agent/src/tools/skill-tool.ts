@@ -5,8 +5,9 @@
  * Skills are prompt templates that provide specialized capabilities.
  */
 
-import type { ToolDefinition, ToolResult, ToolContext } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolContext, ToolInputParams } from '../types.js'
 import { getSkill, getUserInvocableSkills } from '../skills/registry.js'
+import { getRequiredString, getString } from './types.js'
 
 export const SkillTool: ToolDefinition = {
   name: 'Skill',
@@ -54,9 +55,9 @@ export const SkillTool: ToolDefinition = {
     )
   },
 
-  async call(input: any, context: ToolContext): Promise<ToolResult> {
-    const skillName: string = input.skill
-    const args: string = input.args || ''
+  async call(input: ToolInputParams, context: ToolContext): Promise<ToolResult> {
+    const skillName = getRequiredString(input, 'skill')
+    const args = getString(input, 'args') ?? ''
 
     if (!skillName) {
       return {
@@ -121,11 +122,11 @@ export const SkillTool: ToolDefinition = {
         tool_use_id: '',
         content: JSON.stringify(result),
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `Error executing skill "${skillName}": ${err.message}`,
+        content: `Error executing skill "${skillName}": ${err instanceof Error ? err.message : String(err)}`,
         is_error: true,
       }
     }

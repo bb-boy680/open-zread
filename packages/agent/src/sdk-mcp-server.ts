@@ -23,6 +23,7 @@
  *   })
  */
 
+import type { ZodRawShape } from 'zod'
 import type { SdkMcpToolDefinition } from './tool-helper.js'
 import { sdkToolToToolDefinition } from './tool-helper.js'
 import type { ToolDefinition } from './types.js'
@@ -35,7 +36,7 @@ export interface McpSdkServerConfig {
   name: string
   version: string
   tools: ToolDefinition[]
-  _sdkTools: SdkMcpToolDefinition<any>[]
+  _sdkTools: SdkMcpToolDefinition<ZodRawShape>[]
 }
 
 /**
@@ -47,7 +48,7 @@ export interface McpSdkServerConfig {
 export function createSdkMcpServer(options: {
   name: string
   version?: string
-  tools?: SdkMcpToolDefinition<any>[]
+  tools?: SdkMcpToolDefinition<ZodRawShape>[]
 }): McpSdkServerConfig {
   const sdkTools = options.tools || []
 
@@ -73,6 +74,11 @@ export function createSdkMcpServer(options: {
 /**
  * Check if a server config is an in-process SDK server.
  */
-export function isSdkServerConfig(config: any): config is McpSdkServerConfig {
-  return config?.type === 'sdk' && Array.isArray(config.tools)
+export function isSdkServerConfig(config: unknown): config is McpSdkServerConfig {
+  return (
+    typeof config === 'object' &&
+    config !== null &&
+    (config as Record<string, unknown>).type === 'sdk' &&
+    Array.isArray((config as Record<string, unknown>).tools)
+  )
 }

@@ -172,9 +172,10 @@ export class HookRegistry {
         if (output) {
           results.push(output)
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Log but don't fail on hook errors
-        console.error(`[Hook] ${event} hook failed: ${err.message}`)
+        const message = err instanceof Error ? err.message : String(err)
+        console.error(`[Hook] ${event} hook failed: ${message}`)
       }
     }
 

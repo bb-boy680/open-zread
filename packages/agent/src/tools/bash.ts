@@ -3,7 +3,7 @@
  */
 
 import { spawn } from 'child_process'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getNumber } from './types.js'
 
 export const BashTool = defineTool({
   name: 'Bash',
@@ -25,8 +25,8 @@ export const BashTool = defineTool({
   isReadOnly: false,
   isConcurrencySafe: false,
   async call(input, context) {
-    const { command, timeout: userTimeout } = input
-    const timeoutMs = Math.min(userTimeout || 120000, 600000)
+    const command = getRequiredString(input, 'command')
+    const timeoutMs = Math.min(getNumber(input, 'timeout') ?? 120000, 600000)
 
     return new Promise<string>((resolve) => {
       const chunks: Buffer[] = []

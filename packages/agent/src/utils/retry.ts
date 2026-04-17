@@ -5,6 +5,42 @@
  * and transient failures.
  */
 
+/** Error object with status code */
+interface ErrorWithStatus {
+  status?: number
+  code?: string
+  error?: { type?: string }
+  message?: string
+}
+
+/**
+ * Extract error properties safely
+ */
+function getErrorInfo(err: unknown): ErrorWithStatus {
+  if (err instanceof Error) {
+    return {
+      status: (err as Error & { status?: number }).status,
+      code: (err as Error & { code?: string }).code,
+      message: err.message,
+    }
+  }
+  if (typeof err === 'object' && err !== null) {
+    const obj = err as Record<string, unknown>
+    const errorObj = typeof obj.error === 'object' && obj.error !== null
+      ? obj.error as Record<string, unknown>
+      : undefined
+    return {
+      status: typeof obj.status === 'number' ? obj.status : undefined,
+      code: typeof obj.code === 'string' ? obj.code : undefined,
+      error: errorObj
+        ? { type: typeof errorObj.type === 'string' ? errorObj.type as string : undefined }
+        : undefined,
+      message: typeof obj.message === 'string' ? obj.message : undefined,
+    }
+  }
+  return {}
+}
+
 /**
  * Retry configuration.
  */
@@ -28,18 +64,19 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
 /**
  * Check if an error is retryable.
  */
-export function isRetryableError(err: any, config: RetryConfig = DEFAULT_RETRY_CONFIG): boolean {
-  if (err?.status && config.retryableStatusCodes.includes(err.status)) {
+export function isRetryableError(err: unknown, config: RetryConfig = DEFAULT_RETRY_CONFIG): boolean {
+  const info = getErrorInfo(err)
+  if (info.status && config.retryableStatusCodes.includes(info.status)) {
     return true
   }
 
   // Network errors
-  if (err?.code === 'ECONNRESET' || err?.code === 'ETIMEDOUT' || err?.code === 'ECONNREFUSED') {
+  if (info.code === 'ECONNRESET' || info.code === 'ETIMEDOUT' || info.code === 'ECONNREFUSED') {
     return true
   }
 
   // API overloaded
-  if (err?.error?.type === 'overloaded_error') {
+  if (info.error?.type === 'overloaded_error') {
     return true
   }
 
@@ -64,7 +101,7 @@ export async function withRetry<T>(
   config: RetryConfig = DEFAULT_RETRY_CONFIG,
   abortSignal?: AbortSignal,
 ): Promise<T> {
-  let lastError: any
+  let lastError: unknown
 
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     if (abortSignal?.aborted) {
@@ -73,7 +110,7 @@ export async function withRetry<T>(
 
     try {
       return await fn()
-    } catch (err: any) {
+    } catch (err: unknown) {
       lastError = err
 
       if (!isRetryableError(err, config)) {
@@ -96,9 +133,10 @@ export async function withRetry<T>(
 /**
  * Check if an error is a "prompt too long" error.
  */
-export function isPromptTooLongError(err: any): boolean {
-  if (err?.status === 400) {
-    const message = err?.error?.error?.message || err?.message || ''
+export function isPromptTooLongError(err: unknown): boolean {
+  const info = getErrorInfo(err)
+  if (info.status === 400) {
+    const message = info.message || ''
     return message.includes('prompt is too long') ||
       message.includes('max_tokens') ||
       message.includes('context length')
@@ -109,32 +147,35 @@ export function isPromptTooLongError(err: any): boolean {
 /**
  * Check if error is an auth error.
  */
-export function isAuthError(err: any): boolean {
-  return err?.status === 401 || err?.status === 403
+export function isAuthError(err: unknown): boolean {
+  const info = getErrorInfo(err)
+  return info.status === 401 || info.status === 403
 }
 
 /**
  * Check if error is a rate limit error.
  */
-export function isRateLimitError(err: any): boolean {
-  return err?.status === 429
+export function isRateLimitError(err: unknown): boolean {
+  const info = getErrorInfo(err)
+  return info.status === 429
 }
 
 /**
  * Format an API error for display.
  */
-export function formatApiError(err: any): string {
+export function formatApiError(err: unknown): string {
+  const info = getErrorInfo(err)
   if (isAuthError(err)) {
     return 'Authentication failed. Check your CODEANY_API_KEY.'
   }
   if (isRateLimitError(err)) {
     return 'Rate limit exceeded. Please retry after a short wait.'
   }
-  if (err?.status === 529) {
+  if (info.status === 529) {
     return 'API overloaded. Please retry later.'
   }
   if (isPromptTooLongError(err)) {
     return 'Prompt too long. Auto-compacting conversation...'
   }
-  return `API error: ${err.message || err}`
+  return `API error: ${info.message || String(err)}`
 }

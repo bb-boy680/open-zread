@@ -5,10 +5,11 @@
  * Agents run as nested query loops with their own context and tool sets.
  */
 
-import type { ToolDefinition, ToolContext, ToolResult, AgentDefinition } from '../types.js'
+import type { ToolDefinition, ToolContext, ToolResult, AgentDefinition, ToolInputParams, SDKToolResultMessage } from '../types.js'
 import { QueryEngine } from '../engine.js'
 import { getAllBaseTools, filterTools } from './index.js'
 import { createProvider, type ApiType } from '../providers/index.js'
+import { getString, getRequiredString } from './types.js'
 
 // Store for registered agent definitions
 let registeredAgents: Record<string, AgentDefinition> = {}
@@ -82,8 +83,8 @@ export const AgentTool: ToolDefinition = {
   async prompt() {
     return 'Launch a subagent to handle complex tasks autonomously.'
   },
-  async call(input: any, context: ToolContext): Promise<ToolResult> {
-    const agentType = input.subagent_type || 'general-purpose'
+  async call(input: ToolInputParams, context: ToolContext): Promise<ToolResult> {
+    const agentType = getString(input, 'subagent_type') || 'general-purpose'
 
     // Find agent definition
     const agentDef = registeredAgents[agentType] || BUILTIN_AGENTS[agentType]
@@ -102,7 +103,7 @@ export const AgentTool: ToolDefinition = {
       'You are a helpful assistant. Complete the given task using the available tools.'
 
     // Inherit provider and model from parent agent context, fall back to env vars
-    const subModel = input.model || context.model || process.env.CODEANY_MODEL || 'claude-sonnet-4-6'
+    const subModel = getString(input, 'model') || context.model || process.env.CODEANY_MODEL || 'claude-sonnet-4-6'
     const provider = context.provider ?? createProvider(
       (context.apiType || process.env.CODEANY_API_TYPE as ApiType) || 'anthropic-messages',
       {
@@ -130,9 +131,10 @@ export const AgentTool: ToolDefinition = {
 
     // Prefix for subagent logs
     const logPrefix = `[Subagent:${agentType}]`
+    const prompt = getRequiredString(input, 'prompt')
 
     try {
-      for await (const event of engine.submitMessage(input.prompt)) {
+      for await (const event of engine.submitMessage(prompt)) {
         if (event.type === 'assistant') {
           for (const block of event.message.content) {
             // Log AI text output
@@ -151,15 +153,15 @@ export const AgentTool: ToolDefinition = {
         }
         // Log tool results
         if (event.type === 'tool_result') {
-          const result = (event as any).result
+          const result = (event as SDKToolResultMessage).result
           console.log(`${logPrefix} Result: [${result.tool_name}] ${result.output}`)
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `Subagent error: ${err.message}`,
+        content: `Subagent error: ${err instanceof Error ? err.message : String(err)}`,
         is_error: true,
       }
     }

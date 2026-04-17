@@ -2,16 +2,50 @@
  * Core type definitions for the Agent SDK
  */
 
+// --------------------------------------------------------------------------
+// JSON Value Types (for schema definitions and tool inputs)
+// --------------------------------------------------------------------------
+
+export type JsonValue = string | number | boolean | null | JsonObject | JsonArray
+export type JsonObject = { [key: string]: JsonValue }
+export type JsonArray = JsonValue[]
+
+// --------------------------------------------------------------------------
+// Content Block Types
+// --------------------------------------------------------------------------
+
+/** Image source types for multimodal content */
+export interface ImageSourceBase64 {
+  type: 'base64'
+  media_type: string
+  data: string
+}
+
+export interface ImageSourceUrl {
+  type: 'url'
+  url: string
+}
+
+export type ImageSource = ImageSourceBase64 | ImageSourceUrl
+
+/** Tool input parameters (JSON object) */
+export type ToolInputParams = JsonObject
+
+/** Tool result content block */
+export type ToolResultContent = string | ContentBlockParam[]
+
 // Content block types (provider-agnostic, compatible with Anthropic format)
 export type ContentBlockParam =
   | { type: 'text'; text: string }
-  | { type: 'image'; source: any }
-  | { type: 'tool_use'; id: string; name: string; input: any }
-  | { type: 'tool_result'; tool_use_id: string; content: string | any[]; is_error?: boolean }
+  | { type: 'image'; source: ImageSource }
+  | { type: 'tool_use'; id: string; name: string; input: ToolInputParams }
+  | { type: 'tool_result'; tool_use_id: string; content: ToolResultContent; is_error?: boolean }
 
 export type ContentBlock =
   | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: any }
+  | { type: 'tool_use'; id: string; name: string; input: ToolInputParams }
+  | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean }
+  | { type: 'image'; source: ImageSource }
   | { type: 'thinking'; thinking: string }
 
 // --------------------------------------------------------------------------
@@ -171,21 +205,32 @@ export interface TokenUsage {
 // Tool Types
 // --------------------------------------------------------------------------
 
-export interface ToolDefinition {
-  name: string
-  description: string
-  inputSchema: ToolInputSchema
-  call: (input: any, context: ToolContext) => Promise<ToolResult>
-  isReadOnly?: () => boolean
-  isConcurrencySafe?: () => boolean
-  isEnabled?: () => boolean
-  prompt?: (context: ToolContext) => Promise<string>
+/** Tool input schema property definition */
+export interface ToolInputSchemaProperty {
+  type?: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'null'
+  description?: string
+  enum?: string[]
+  default?: JsonValue
+  items?: ToolInputSchemaProperty
+  properties?: Record<string, ToolInputSchemaProperty>
+  required?: string[]
 }
 
 export interface ToolInputSchema {
   type: 'object'
-  properties: Record<string, any>
+  properties: Record<string, ToolInputSchemaProperty>
   required?: string[]
+}
+
+export interface ToolDefinition {
+  name: string
+  description: string
+  inputSchema: ToolInputSchema
+  call: (input: ToolInputParams, context: ToolContext) => Promise<ToolResult>
+  isReadOnly?: () => boolean
+  isConcurrencySafe?: () => boolean
+  isEnabled?: () => boolean
+  prompt?: (context: ToolContext) => Promise<string>
 }
 
 export interface ToolContext {
@@ -202,7 +247,7 @@ export interface ToolContext {
 export interface ToolResult {
   type: 'tool_result'
   tool_use_id: string
-  content: string | any[]
+  content: ToolResultContent
   is_error?: boolean
 }
 
@@ -239,6 +284,7 @@ export type McpServerConfig =
   | McpStdioConfig
   | McpSseConfig
   | McpHttpConfig
+  | McpSdkServerConfig
 
 export interface McpStdioConfig {
   type?: 'stdio'
@@ -257,6 +303,14 @@ export interface McpHttpConfig {
   type: 'http'
   url: string
   headers?: Record<string, string>
+}
+
+/** SDK MCP server config for in-process tools */
+export interface McpSdkServerConfig {
+  type: 'sdk'
+  name: string
+  version: string
+  tools: ToolDefinition[]
 }
 
 // --------------------------------------------------------------------------
@@ -390,7 +444,7 @@ export interface AgentOptions {
   /** Tool names to deny */
   disallowedTools?: string[]
   /** MCP server configurations */
-  mcpServers?: Record<string, McpServerConfig | any> // supports McpSdkServerConfig
+  mcpServers?: Record<string, McpServerConfig | McpSdkServerConfig>
   /** Custom subagent definitions */
   agents?: Record<string, AgentDefinition>
   /** Maximum tokens for responses */
@@ -437,10 +491,10 @@ export interface AgentOptions {
   betas?: string[]
   /** Permission prompt tool name override */
   permissionPromptToolName?: string
-  /** Hook configurations */
+  /** Hook configurations (AgentOptions format) */
   hooks?: Record<string, Array<{
     matcher?: string
-    hooks: Array<(input: any, toolUseId: string, context: { signal: AbortSignal }) => Promise<any>>
+    hooks: Array<(input: Record<string, unknown>, toolUseId: string, context: { signal: AbortSignal }) => Promise<unknown>>
     timeout?: number
   }>>
 }

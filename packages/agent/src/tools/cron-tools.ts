@@ -5,7 +5,8 @@
  * RemoteTrigger - Manage remote scheduled agent triggers.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
+import { getRequiredString } from './types.js'
 
 /**
  * Cron job definition.
@@ -56,13 +57,13 @@ export const CronCreateTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Create a scheduled cron job.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
     const id = `cron_${++cronCounter}`
     const job: CronJob = {
       id,
-      name: input.name,
-      schedule: input.schedule,
-      command: input.command,
+      name: getRequiredString(input, 'name'),
+      schedule: getRequiredString(input, 'schedule'),
+      command: getRequiredString(input, 'command'),
       enabled: true,
       createdAt: new Date().toISOString(),
     }
@@ -90,12 +91,13 @@ export const CronDeleteTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Delete a cron job.' },
-  async call(input: any): Promise<ToolResult> {
-    if (!cronStore.has(input.id)) {
-      return { type: 'tool_result', tool_use_id: '', content: `Cron job not found: ${input.id}`, is_error: true }
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const jobId = getRequiredString(input, 'id')
+    if (!cronStore.has(jobId)) {
+      return { type: 'tool_result', tool_use_id: '', content: `Cron job not found: ${jobId}`, is_error: true }
     }
-    cronStore.delete(input.id)
-    return { type: 'tool_result', tool_use_id: '', content: `Cron job deleted: ${input.id}` }
+    cronStore.delete(jobId)
+    return { type: 'tool_result', tool_use_id: '', content: `Cron job deleted: ${jobId}` }
   },
 }
 
@@ -141,13 +143,14 @@ export const RemoteTriggerTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Manage remote agent triggers.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
     // RemoteTrigger operations are typically handled by the remote backend
     // In standalone SDK mode, we provide a stub implementation
+    const action = getRequiredString(input, 'action')
     return {
       type: 'tool_result',
       tool_use_id: '',
-      content: `RemoteTrigger ${input.action}: This feature requires a connected remote backend. In standalone SDK mode, use CronCreate/CronList/CronDelete for local scheduling.`,
+      content: `RemoteTrigger ${action}: This feature requires a connected remote backend. In standalone SDK mode, use CronCreate/CronList/CronDelete for local scheduling.`,
     }
   },
 }

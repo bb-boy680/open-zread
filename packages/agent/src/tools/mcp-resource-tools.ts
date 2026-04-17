@@ -4,8 +4,31 @@
  * ListMcpResources / ReadMcpResource - Access resources from MCP servers.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
 import type { MCPConnection } from '../mcp/client.js'
+
+// MCP Resource types (for accessing resources via internal client)
+interface MCPResource {
+  name: string
+  uri: string
+  description?: string
+}
+
+interface MCPResourceContent {
+  text?: string
+  uri?: string
+  mimeType?: string
+  blob?: string
+}
+
+interface MCPClientWithResources {
+  listResources?: () => Promise<{ resources: MCPResource[] }>
+  readResource?: (params: { uri: string }) => Promise<{ contents: MCPResourceContent[] }>
+}
+
+interface MCPConnectionWithClient extends MCPConnection {
+  _client?: MCPClientWithResources
+}
 
 // Registry of MCP connections (set by the agent)
 let mcpConnections: MCPConnection[] = []
@@ -30,9 +53,10 @@ export const ListMcpResourcesTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'List MCP resources.' },
-  async call(input: any): Promise<ToolResult> {
-    const connections = input.server
-      ? mcpConnections.filter(c => c.name === input.server)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const serverName = input.server as string | undefined
+    const connections = serverName
+      ? mcpConnections.filter(c => c.name === serverName)
       : mcpConnections
 
     if (connections.length === 0) {
@@ -50,10 +74,11 @@ export const ListMcpResourcesTool: ToolDefinition = {
 
       try {
         // Access the underlying client to list resources
-        const resources = (conn as any)._client?.listResources?.()
+        const connWithClient = conn as MCPConnectionWithClient
+        const resources = await connWithClient._client?.listResources?.()
         if (resources) {
           results.push(`Server: ${conn.name}`)
-          for (const r of resources) {
+          for (const r of resources.resources) {
             results.push(`  - ${r.name}: ${r.description || r.uri || ''}`)
           }
         } else {
@@ -87,21 +112,24 @@ export const ReadMcpResourceTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Read an MCP resource.' },
-  async call(input: any): Promise<ToolResult> {
-    const conn = mcpConnections.find(c => c.name === input.server)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const serverName = input.server as string
+    const resourceUri = input.uri as string
+    const conn = mcpConnections.find(c => c.name === serverName)
     if (!conn) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `MCP server not found: ${input.server}`,
+        content: `MCP server not found: ${serverName}`,
         is_error: true,
       }
     }
 
     try {
-      const result = await (conn as any)._client?.readResource?.({ uri: input.uri })
+      const connWithClient = conn as MCPConnectionWithClient
+      const result = await connWithClient._client?.readResource?.({ uri: resourceUri })
       if (result?.contents) {
-        const texts = result.contents.map((c: any) => c.text || JSON.stringify(c)).join('\n')
+        const texts = result.contents.map((c: MCPResourceContent) => c.text || JSON.stringify(c)).join('\n')
         return {
           type: 'tool_result',
           tool_use_id: '',
@@ -113,11 +141,12 @@ export const ReadMcpResourceTool: ToolDefinition = {
         tool_use_id: '',
         content: 'Resource read returned no content.',
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `Error reading resource: ${err.message}`,
+        content: `Error reading resource: ${message}`,
         is_error: true,
       }
     }

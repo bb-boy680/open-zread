@@ -2,7 +2,7 @@
  * WebSearchTool - Web search (via web fetch of search engines)
  */
 
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getNumber } from './types.js'
 
 export const WebSearchTool = defineTool({
   name: 'WebSearch',
@@ -24,7 +24,7 @@ export const WebSearchTool = defineTool({
   isReadOnly: true,
   isConcurrencySafe: true,
   async call(input, _context) {
-    const { query } = input
+    const query = getRequiredString(input, 'query')
 
     try {
       // Use DuckDuckGo HTML search as a free fallback
@@ -65,7 +65,7 @@ export const WebSearchTool = defineTool({
         snippets.push(match[1].replace(/<[^>]+>/g, '').trim())
       }
 
-      const numResults = Math.min(input.num_results || 5, links.length)
+      const numResults = Math.min(getNumber(input, 'num_results') ?? 5, links.length)
       for (let i = 0; i < numResults; i++) {
         const link = links[i]
         if (!link) continue
@@ -79,8 +79,9 @@ export const WebSearchTool = defineTool({
       return results.length > 0
         ? results.join('\n\n')
         : `No results found for "${query}"`
-    } catch (err: any) {
-      return { data: `Search error: ${err.message}`, is_error: true }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
+      return { data: `Search error: ${message}`, is_error: true }
     }
   },
 })

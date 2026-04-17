@@ -5,7 +5,8 @@
  * Manages team composition, task lists, and inter-agent messaging.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
+import { getRequiredString, getArray } from './types.js'
 
 /**
  * Team definition.
@@ -72,12 +73,12 @@ export const TeamCreateTool: ToolDefinition = {
   isConcurrencySafe: () => false,
   isEnabled: () => true,
   async prompt() { return 'Create a team for multi-agent coordination.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
     const id = `team_${++teamCounter}`
     const team: Team = {
       id,
-      name: input.name,
-      members: input.members || [],
+      name: getRequiredString(input, 'name'),
+      members: getArray<string>(input, 'members') ?? [],
       leaderId: 'self',
       createdAt: new Date().toISOString(),
       status: 'active',
@@ -110,14 +111,15 @@ export const TeamDeleteTool: ToolDefinition = {
   isConcurrencySafe: () => false,
   isEnabled: () => true,
   async prompt() { return 'Delete/disband a team.' },
-  async call(input: any): Promise<ToolResult> {
-    const team = teamStore.get(input.id)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const id = getRequiredString(input, 'id')
+    const team = teamStore.get(id)
     if (!team) {
-      return { type: 'tool_result', tool_use_id: '', content: `Team not found: ${input.id}`, is_error: true }
+      return { type: 'tool_result', tool_use_id: '', content: `Team not found: ${id}`, is_error: true }
     }
 
     team.status = 'disbanded'
-    teamStore.delete(input.id)
+    teamStore.delete(id)
 
     return {
       type: 'tool_result',

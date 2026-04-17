@@ -8,8 +8,7 @@
  * 3. Session memory compaction: consolidates across sessions
  */
 
-import type { LLMProvider } from '../providers/types.js'
-import type { NormalizedMessageParam } from '../providers/types.js'
+import type { LLMProvider, NormalizedMessageParam, NormalizedContentBlock } from '../providers/types.js'
 import {
   estimateMessagesTokens,
   getAutoCompactThreshold,
@@ -39,7 +38,7 @@ export function createAutoCompactState(): AutoCompactState {
  * Check if auto-compaction should trigger.
  */
 export function shouldAutoCompact(
-  messages: any[],
+  messages: NormalizedMessageParam[],
   model: string,
   state: AutoCompactState,
 ): boolean {
@@ -60,7 +59,7 @@ export function shouldAutoCompact(
 export async function compactConversation(
   provider: LLMProvider,
   model: string,
-  messages: any[],
+  messages: NormalizedMessageParam[],
   state: AutoCompactState,
 ): Promise<{
   compactedMessages: NormalizedMessageParam[]
@@ -128,12 +127,12 @@ export async function compactConversation(
  * Strip images from messages for compaction safety.
  */
 function stripImagesFromMessages(
-  messages: any[],
-): any[] {
-  return messages.map((msg: any) => {
+  messages: NormalizedMessageParam[],
+): NormalizedMessageParam[] {
+  return messages.map((msg) => {
     if (typeof msg.content === 'string') return msg
 
-    const filtered = (msg.content as any[]).filter((block: any) => {
+    const filtered = msg.content.filter((block: NormalizedContentBlock) => {
       return block.type !== 'image'
     })
 
@@ -144,7 +143,7 @@ function stripImagesFromMessages(
 /**
  * Build compaction prompt from messages.
  */
-function buildCompactionPrompt(messages: any[]): string {
+function buildCompactionPrompt(messages: NormalizedMessageParam[]): string {
   const parts: string[] = ['Please summarize this conversation:\n']
 
   for (const msg of messages) {
@@ -154,7 +153,7 @@ function buildCompactionPrompt(messages: any[]): string {
       parts.push(`${role}: ${msg.content.slice(0, 5000)}`)
     } else if (Array.isArray(msg.content)) {
       const texts: string[] = []
-      for (const block of msg.content as any[]) {
+      for (const block of msg.content) {
         if (block.type === 'text') {
           texts.push(block.text.slice(0, 3000))
         } else if (block.type === 'tool_use') {
@@ -180,14 +179,14 @@ function buildCompactionPrompt(messages: any[]): string {
  * to fit within token budgets.
  */
 export function microCompactMessages(
-  messages: any[],
+  messages: NormalizedMessageParam[],
   maxToolResultChars: number = 50000,
-): any[] {
-  return messages.map((msg: any) => {
+): NormalizedMessageParam[] {
+  return messages.map((msg) => {
     if (typeof msg.content === 'string') return msg
     if (!Array.isArray(msg.content)) return msg
 
-    const content = (msg.content as any[]).map((block: any) => {
+    const content = msg.content.map((block: NormalizedContentBlock) => {
       if (block.type === 'tool_result' && typeof block.content === 'string') {
         if (block.content.length > maxToolResultChars) {
           return {

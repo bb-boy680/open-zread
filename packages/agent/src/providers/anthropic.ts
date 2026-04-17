@@ -12,6 +12,27 @@ import type {
   CreateMessageResponse,
 } from './types.js'
 
+/** Extended Anthropic usage with cache metrics */
+interface ExtendedUsage {
+  input_tokens: number
+  output_tokens: number
+  cache_creation_input_tokens?: number
+  cache_read_input_tokens?: number
+}
+
+/** Extended message params with thinking support */
+interface ExtendedMessageParams {
+  model: string
+  max_tokens: number
+  system: string
+  messages: Anthropic.MessageParam[]
+  tools?: Anthropic.Tool[]
+  thinking?: {
+    type: 'enabled'
+    budget_tokens: number
+  }
+}
+
 export class AnthropicProvider implements LLMProvider {
   readonly apiType = 'anthropic-messages' as const
   private client: Anthropic
@@ -24,7 +45,7 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async createMessage(params: CreateMessageParams): Promise<CreateMessageResponse> {
-    const requestParams: Anthropic.MessageCreateParamsNonStreaming = {
+    const requestParams: ExtendedMessageParams = {
       model: params.model,
       max_tokens: params.maxTokens,
       system: params.system,
@@ -36,13 +57,17 @@ export class AnthropicProvider implements LLMProvider {
 
     // Add extended thinking if configured
     if (params.thinking?.type === 'enabled' && params.thinking.budget_tokens) {
-      (requestParams as any).thinking = {
+      requestParams.thinking = {
         type: 'enabled',
         budget_tokens: params.thinking.budget_tokens,
       }
     }
 
-    const response = await this.client.messages.create(requestParams)
+    const response = await this.client.messages.create(
+      requestParams as Anthropic.MessageCreateParamsNonStreaming
+    )
+
+    const extendedUsage = response.usage as ExtendedUsage
 
     return {
       content: response.content as CreateMessageResponse['content'],
@@ -50,10 +75,8 @@ export class AnthropicProvider implements LLMProvider {
       usage: {
         input_tokens: response.usage.input_tokens,
         output_tokens: response.usage.output_tokens,
-        cache_creation_input_tokens:
-          (response.usage as any).cache_creation_input_tokens,
-        cache_read_input_tokens:
-          (response.usage as any).cache_read_input_tokens,
+        cache_creation_input_tokens: extendedUsage.cache_creation_input_tokens,
+        cache_read_input_tokens: extendedUsage.cache_read_input_tokens,
       },
     }
   }

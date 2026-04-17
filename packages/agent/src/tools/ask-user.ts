@@ -6,7 +6,8 @@
  * In non-interactive mode, returns a default or denies.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolInputParams, ToolResult } from '../types.js'
+import { getRequiredString, getArray } from './types.js'
 
 // Callback for handling user questions (set by the agent)
 let questionHandler: ((question: string, options?: string[]) => Promise<string>) | null = null
@@ -50,20 +51,23 @@ export const AskUserQuestionTool: ToolDefinition = {
   isConcurrencySafe: () => false,
   isEnabled: () => true,
   async prompt() { return 'Ask the user a question.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const question = getRequiredString(input, 'question')
+    const options = getArray<string>(input, 'options')
+
     if (questionHandler) {
       try {
-        const answer = await questionHandler(input.question, input.options)
+        const answer = await questionHandler(question, options)
         return {
           type: 'tool_result',
           tool_use_id: '',
           content: answer,
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         return {
           type: 'tool_result',
           tool_use_id: '',
-          content: `User declined to answer: ${err.message}`,
+          content: `User declined to answer: ${err instanceof Error ? err.message : String(err)}`,
           is_error: true,
         }
       }
@@ -73,7 +77,7 @@ export const AskUserQuestionTool: ToolDefinition = {
     return {
       type: 'tool_result',
       tool_use_id: '',
-      content: `[Non-interactive mode] Question: ${input.question}${input.options ? `\nOptions: ${input.options.join(', ')}` : ''}\n\nNo user available to answer. Proceeding with best judgment.`,
+      content: `[Non-interactive mode] Question: ${question}${options ? `\nOptions: ${options.join(', ')}` : ''}\n\nNo user available to answer. Proceeding with best judgment.`,
     }
   },
 }

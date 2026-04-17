@@ -3,7 +3,7 @@
  */
 
 import { resolve } from 'path'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getString } from './types.js'
 
 export const GlobTool = defineTool({
   name: 'Glob',
@@ -25,8 +25,9 @@ export const GlobTool = defineTool({
   isReadOnly: true,
   isConcurrencySafe: true,
   async call(input, context) {
-    const searchDir = input.path ? resolve(context.cwd, input.path) : context.cwd
-    const { pattern } = input
+    const pattern = getRequiredString(input, 'pattern')
+    const pathValue = getString(input, 'path')
+    const searchDir = pathValue ? resolve(context.cwd, pathValue) : context.cwd
 
     try {
       // Use Node.js glob (available in Node 22+) or fall back to bash find

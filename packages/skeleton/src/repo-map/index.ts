@@ -145,25 +145,27 @@ function formatTreeOnly(
  *
  * @param symbols - Symbol manifest from Parser
  * @param threshold - Reference count threshold (default: 5)
+ * @param referenceMap - Optional pre-computed reference map (avoid re-computation)
  * @returns CoreSignaturesOutput with core file signatures
  */
 export function buildCoreSignatures(
   symbols: SymbolManifest,
-  threshold: number = 5
+  threshold: number = 5,
+  referenceMap?: Record<string, number>
 ): CoreSignaturesOutput {
-  // Calculate reference counts
-  const referenceMap = countReferences(symbols);
+  // Use provided referenceMap or calculate once
+  const refMap = referenceMap ?? countReferences(symbols);
 
   // Filter by threshold
   const coreSymbols = symbols.symbols.filter(symbol => {
-    const refCount = referenceMap[symbol.file] || 0;
+    const refCount = refMap[symbol.file] || 0;
     return refCount >= threshold;
   });
 
   // Sort by reference count descending
   coreSymbols.sort((a, b) => {
-    const refA = referenceMap[a.file] || 0;
-    const refB = referenceMap[b.file] || 0;
+    const refA = refMap[a.file] || 0;
+    const refB = refMap[b.file] || 0;
     return refB - refA;
   });
 
@@ -171,7 +173,7 @@ export function buildCoreSignatures(
   const lines: string[] = [`Core Files Signatures (Ref >= ${threshold})`, ''];
 
   for (const symbol of coreSymbols) {
-    const refCount = referenceMap[symbol.file] || 0;
+    const refCount = refMap[symbol.file] || 0;
 
     lines.push(`├── ${symbol.file} [Ref: ${refCount}]`);
 
@@ -205,11 +207,13 @@ export function buildCoreSignatures(
  *
  * @param symbols - Symbol manifest from Parser
  * @param modulePath - Module path (e.g. "packages/auth/src/")
+ * @param referenceMap - Optional pre-computed reference map (avoid re-computation)
  * @returns ModuleDetailsOutput with complete module repo map
  */
 export function buildModuleDetails(
   symbols: SymbolManifest,
-  modulePath: string
+  modulePath: string,
+  referenceMap?: Record<string, number>
 ): ModuleDetailsOutput {
   // Normalize module path
   const normalizedPath = modulePath.endsWith('/') ? modulePath : modulePath + '/';
@@ -228,14 +232,14 @@ export function buildModuleDetails(
     };
   }
 
-  // Calculate reference counts
-  const referenceMap = countReferences(symbols);
+  // Use provided referenceMap or calculate once
+  const refMap = referenceMap ?? countReferences(symbols);
 
   // Build module tree
   const tree = buildDirectoryTree(moduleSymbols);
 
   // Format with full details
-  const content = formatRepoMap(tree, moduleSymbols, referenceMap);
+  const content = formatRepoMap(tree, moduleSymbols, refMap);
 
   // Estimate tokens
   const lines = content.split('\n').length;
@@ -249,9 +253,7 @@ export function buildModuleDetails(
   };
 }
 
-// Re-export sub-modules (direct re-export, no local binding)
+// Public exports
 export { REPO_MAP_CONFIG } from './constants.js';
-export { estimateTokens, getDepth, estimateTotalTokens } from './token-counter.js';
-export { calculatePriority, calculateAllPriorities, selectByTokenBudget, getTopCoreFiles } from './prioritizer.js';
-export { buildDirectoryTree, formatRepoMap, trimSignature, buildRepoMapOutput } from './formatter.js';
-// Note: buildDirectoryTreeOnly, buildCoreSignatures, buildModuleDetails are already exported above
+
+// Internal exports for use within repo-map module only (not exported to public API)

@@ -19,12 +19,16 @@ import type {
   ToolResult,
   ToolContext,
   TokenUsage,
+  ToolInputParams,
+  ContentBlockParam,
+  ContentBlock,
 } from './types.js'
 import type {
   LLMProvider,
   CreateMessageResponse,
   NormalizedMessageParam,
   NormalizedTool,
+  NormalizedContentBlock,
 } from './providers/types.js'
 import {
   estimateCost,
@@ -65,7 +69,7 @@ interface ToolUseBlock {
   type: 'tool_use'
   id: string
   name: string
-  input: any
+  input: ToolInputParams
 }
 
 // ============================================================================
@@ -183,7 +187,7 @@ export class QueryEngine {
    * Yields SDKMessage events as the agent works.
    */
   async *submitMessage(
-    prompt: string | any[],
+    prompt: string | ContentBlockParam[],
   ): AsyncGenerator<SDKMessage> {
     // Hook: SessionStart
     await this.executeHooks('SessionStart')
@@ -207,7 +211,7 @@ export class QueryEngine {
     }
 
     // Add user message
-    this.messages.push({ role: 'user', content: prompt as any })
+    this.messages.push({ role: 'user', content: prompt as string | NormalizedContentBlock[] })
 
     // Build tool definitions for provider
     const tools = this.config.tools.map(toProviderTool)
@@ -243,16 +247,16 @@ export class QueryEngine {
       }
 
       // Auto-compact if context is too large
-      if (shouldAutoCompact(this.messages as any[], this.config.model, this.compactState)) {
+      if (shouldAutoCompact(this.messages, this.config.model, this.compactState)) {
         await this.executeHooks('PreCompact')
         try {
           const result = await compactConversation(
             this.provider,
             this.config.model,
-            this.messages as any[],
+            this.messages,
             this.compactState,
           )
-          this.messages = result.compactedMessages as NormalizedMessageParam[]
+          this.messages = result.compactedMessages
           this.compactState = result.state
           await this.executeHooks('PostCompact')
         } catch {
@@ -262,8 +266,8 @@ export class QueryEngine {
 
       // Micro-compact: truncate large tool results
       const apiMessages = microCompactMessages(
-        normalizeMessagesForAPI(this.messages as any[]),
-      ) as NormalizedMessageParam[]
+        normalizeMessagesForAPI(this.messages),
+      )
 
       this.turnCount++
       turnsRemaining--
@@ -293,14 +297,14 @@ export class QueryEngine {
           undefined,
           this.config.abortSignal,
         )
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Handle prompt-too-long by compacting
         if (isPromptTooLongError(err) && !this.compactState.compacted) {
           try {
             const result = await compactConversation(
               this.provider,
               this.config.model,
-              this.messages as any[],
+              this.messages as NormalizedMessageParam[],
               this.compactState,
             )
             this.messages = result.compactedMessages as NormalizedMessageParam[]
@@ -344,14 +348,17 @@ export class QueryEngine {
       }
 
       // Add assistant message to conversation
-      this.messages.push({ role: 'assistant', content: response.content as any })
+      this.messages.push({ role: 'assistant', content: response.content as NormalizedContentBlock[] })
 
-      // Yield assistant message
+      // Yield assistant message (convert NormalizedResponseBlock[] to ContentBlock[])
       yield {
         type: 'assistant',
         message: {
           role: 'assistant',
-          content: response.content as any,
+          content: response.content.map(block => {
+            if (block.type === 'text') return { type: 'text', text: block.text }
+            return { type: 'tool_use', id: block.id, name: block.name, input: block.input }
+          }) as ContentBlock[],
         },
       }
 
@@ -542,13 +549,18 @@ export class QueryEngine {
           }
         }
         if (permission.updatedInput !== undefined) {
-          block = { ...block, input: permission.updatedInput }
+          // Validate updatedInput is a valid object
+          const updated = permission.updatedInput
+          if (updated !== null && typeof updated === 'object' && !Array.isArray(updated)) {
+            block = { ...block, input: updated as ToolInputParams }
+          }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err)
         return {
           type: 'tool_result',
           tool_use_id: block.id,
-          content: `Permission check error: ${err.message}`,
+          content: `Permission check error: ${message}`,
           is_error: true,
           tool_name: block.name,
         }
@@ -586,19 +598,20 @@ export class QueryEngine {
       })
 
       return { ...result, tool_use_id: block.id, tool_name: block.name }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err)
       // Hook: PostToolUseFailure
       await this.executeHooks('PostToolUseFailure', {
         toolName: block.name,
         toolInput: block.input,
         toolUseId: block.id,
-        error: err.message,
+        error: errorMsg,
       })
 
       return {
         type: 'tool_result',
         tool_use_id: block.id,
-        content: `Tool execution error: ${err.message}`,
+        content: `Tool execution error: ${errorMsg}`,
         is_error: true,
         tool_name: block.name,
       }

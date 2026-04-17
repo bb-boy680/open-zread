@@ -14,8 +14,10 @@ export function estimateTokens(text: string): number {
 
 /**
  * Estimate tokens for a message array.
+ * Accepts any message format with role and content.
  */
 export function estimateMessagesTokens(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- token estimation works with any message format
   messages: Array<{ role: string; content: any }>,
 ): number {
   let total = 0
@@ -24,13 +26,17 @@ export function estimateMessagesTokens(
       total += estimateTokens(msg.content)
     } else if (Array.isArray(msg.content)) {
       for (const block of msg.content) {
-        if ('text' in block && typeof block.text === 'string') {
-          total += estimateTokens(block.text)
-        } else if ('content' in block && typeof block.content === 'string') {
-          total += estimateTokens(block.content)
-        } else {
-          // tool_use, image, etc - rough estimate
-          total += estimateTokens(JSON.stringify(block))
+        if (block && typeof block === 'object') {
+          if ('text' in block && typeof block.text === 'string') {
+            total += estimateTokens(block.text)
+          } else if ('thinking' in block && typeof block.thinking === 'string') {
+            total += estimateTokens(block.thinking)
+          } else if ('content' in block && typeof block.content === 'string') {
+            total += estimateTokens(block.content)
+          } else {
+            // tool_use, image, etc - rough estimate
+            total += estimateTokens(JSON.stringify(block))
+          }
         }
       }
     }

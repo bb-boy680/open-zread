@@ -1,11 +1,7 @@
 import { Box, Text } from 'ink';
 import React from 'react';
 import type { StepRecord } from '../state';
-
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
+import { formatDuration } from '../utils/format.js';
 
 function getStatusIcon(status: StepRecord['status']): string {
   switch (status) {

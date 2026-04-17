@@ -4,7 +4,7 @@
 
 import { writeFile, mkdir } from 'fs/promises'
 import { resolve, dirname } from 'path'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString } from './types.js'
 
 export const FileWriteTool = defineTool({
   name: 'Write',
@@ -26,17 +26,18 @@ export const FileWriteTool = defineTool({
   isReadOnly: false,
   isConcurrencySafe: false,
   async call(input, context) {
-    const filePath = resolve(context.cwd, input.file_path)
+    const filePath = resolve(context.cwd, getRequiredString(input, 'file_path'))
+    const content = getRequiredString(input, 'content')
 
     try {
       await mkdir(dirname(filePath), { recursive: true })
-      await writeFile(filePath, input.content, 'utf-8')
+      await writeFile(filePath, content, 'utf-8')
 
-      const lines = input.content.split('\n').length
-      const bytes = Buffer.byteLength(input.content, 'utf-8')
+      const lines = content.split('\n').length
+      const bytes = Buffer.byteLength(content, 'utf-8')
       return `File written: ${filePath} (${lines} lines, ${bytes} bytes)`
-    } catch (err: any) {
-      return { data: `Error writing file: ${err.message}`, is_error: true }
+    } catch (err: unknown) {
+      return { data: `Error writing file: ${err instanceof Error ? err.message : String(err)}`, is_error: true }
     }
   },
 })

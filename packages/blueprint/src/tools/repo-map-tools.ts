@@ -6,7 +6,7 @@
  * Layer 3: get_module_details - 模块完整详情
  */
 
-import type { ToolDefinition } from '@open-zread/agent';
+import type { ToolDefinition, ToolInputParams, ToolContext, ToolResult } from '@open-zread/agent';
 import { loadCachedSymbols } from '@open-zread/core';
 import { buildDirectoryTreeOnly, buildCoreSignatures, buildModuleDetails } from '@open-zread/skeleton';
 
@@ -30,7 +30,7 @@ export const GetDirectoryTreeTool: ToolDefinition = {
   async prompt() {
     return 'Get project directory tree structure.';
   },
-  async call() {
+  async call(_input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
     try {
       const symbols = await loadCachedSymbols();
 
@@ -53,11 +53,12 @@ export const GetDirectoryTreeTool: ToolDefinition = {
           directoryCount: output.directories.length,
         }, null, 2),
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `生成目录树失败: ${err.message}`,
+        content: `生成目录树失败: ${message}`,
         is_error: true,
       };
     }
@@ -89,7 +90,7 @@ export const GetCoreSignaturesTool: ToolDefinition = {
   async prompt() {
     return 'Get core file signatures.';
   },
-  async call(input: { threshold?: number }) {
+  async call(input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
     try {
       const symbols = await loadCachedSymbols();
 
@@ -101,7 +102,7 @@ export const GetCoreSignaturesTool: ToolDefinition = {
         };
       }
 
-      const threshold = input.threshold ?? 5;
+      const threshold = (input.threshold as number | undefined) ?? 5;
       const output = buildCoreSignatures(symbols, threshold);
 
       return {
@@ -114,11 +115,12 @@ export const GetCoreSignaturesTool: ToolDefinition = {
           coreFileCount: output.files.length,
         }, null, 2),
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `生成核心签名失败: ${err.message}`,
+        content: `生成核心签名失败: ${message}`,
         is_error: true,
       };
     }
@@ -151,8 +153,9 @@ export const GetModuleDetailsTool: ToolDefinition = {
   async prompt() {
     return 'Get detailed module repo map.';
   },
-  async call(input: { modulePath: string }) {
+  async call(input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
     try {
+      const modulePath = input.modulePath as string;
       const symbols = await loadCachedSymbols();
 
       if (!symbols || symbols.symbols.length === 0) {
@@ -163,13 +166,13 @@ export const GetModuleDetailsTool: ToolDefinition = {
         };
       }
 
-      const output = buildModuleDetails(symbols, input.modulePath);
+      const output = buildModuleDetails(symbols, modulePath);
 
       if (output.fileCount === 0) {
         return {
           type: 'tool_result',
           tool_use_id: '',
-          content: `模块未找到: ${input.modulePath}\n请检查路径是否正确（以 / 结尾）`,
+          content: `模块未找到: ${modulePath}\n请检查路径是否正确（以 / 结尾）`,
           is_error: true,
         };
       }
@@ -184,11 +187,12 @@ export const GetModuleDetailsTool: ToolDefinition = {
           tokenCount: output.tokenCount,
         }, null, 2),
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `生成模块详情失败: ${err.message}`,
+        content: `生成模块详情失败: ${message}`,
         is_error: true,
       };
     }

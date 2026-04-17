@@ -7,7 +7,8 @@
 
 import { execSync } from 'child_process'
 import { join } from 'path'
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolInputParams, ToolResult } from '../types.js'
+import { getString, getRequiredString } from './types.js'
 
 // Track active worktrees
 const activeWorktrees = new Map<string, { path: string; branch: string; originalCwd: string }>()
@@ -26,13 +27,13 @@ export const EnterWorktreeTool: ToolDefinition = {
   isConcurrencySafe: () => false,
   isEnabled: () => true,
   async prompt() { return 'Create an isolated git worktree for parallel work.' },
-  async call(input: any, context: { cwd: string }): Promise<ToolResult> {
+  async call(input: ToolInputParams, context: { cwd: string }): Promise<ToolResult> {
     try {
       // Check if we're in a git repo
       execSync('git rev-parse --git-dir', { cwd: context.cwd, encoding: 'utf-8' })
 
-      const branch = input.branch || `worktree-${Date.now()}`
-      const worktreePath = input.path || join(context.cwd, '..', `.worktree-${branch}`)
+      const branch = getString(input, 'branch') || `worktree-${Date.now()}`
+      const worktreePath = getString(input, 'path') || join(context.cwd, '..', `.worktree-${branch}`)
 
       // Create the branch if it doesn't exist
       try {
@@ -59,11 +60,11 @@ export const EnterWorktreeTool: ToolDefinition = {
         tool_use_id: '',
         content: `Worktree created:\n  ID: ${id}\n  Path: ${worktreePath}\n  Branch: ${branch}\n\nYou are now working in the isolated worktree.`,
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `Error creating worktree: ${err.message}`,
+        content: `Error creating worktree: ${err instanceof Error ? err.message : String(err)}`,
         is_error: true,
       }
     }
@@ -89,18 +90,19 @@ export const ExitWorktreeTool: ToolDefinition = {
   isConcurrencySafe: () => false,
   isEnabled: () => true,
   async prompt() { return 'Exit a git worktree.' },
-  async call(input: any): Promise<ToolResult> {
-    const worktree = activeWorktrees.get(input.id)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const id = getRequiredString(input, 'id')
+    const worktree = activeWorktrees.get(id)
     if (!worktree) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `Worktree not found: ${input.id}`,
+        content: `Worktree not found: ${id}`,
         is_error: true,
       }
     }
 
-    const action = input.action || 'remove'
+    const action = getString(input, 'action') || 'remove'
 
     try {
       if (action === 'remove') {
@@ -120,18 +122,18 @@ export const ExitWorktreeTool: ToolDefinition = {
         }
       }
 
-      activeWorktrees.delete(input.id)
+      activeWorktrees.delete(id)
 
       return {
         type: 'tool_result',
         tool_use_id: '',
         content: `Worktree ${action === 'remove' ? 'removed' : 'kept'}: ${worktree.path}`,
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `Error: ${err.message}`,
+        content: `Error: ${err instanceof Error ? err.message : String(err)}`,
         is_error: true,
       }
     }

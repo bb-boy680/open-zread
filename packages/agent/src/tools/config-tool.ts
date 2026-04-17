@@ -4,7 +4,8 @@
  * Get/set global configuration and session settings.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
+import { getString, getValue } from './types.js'
 
 // In-memory config store
 const configStore = new Map<string, unknown>()
@@ -50,28 +51,45 @@ export const ConfigTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Manage configuration settings.' },
-  async call(input: any): Promise<ToolResult> {
-    switch (input.action) {
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const actionStr = getString(input, 'action')
+    const key = getString(input, 'key')
+    const value = getValue(input, 'value')
+
+    if (!actionStr) {
+      return { type: 'tool_result', tool_use_id: '', content: 'action is required', is_error: true }
+    }
+
+    const validActions = ['get', 'set', 'list'] as const
+    const action = validActions.includes(actionStr as typeof validActions[number])
+      ? actionStr as 'get' | 'set' | 'list'
+      : null
+
+    if (!action) {
+      return { type: 'tool_result', tool_use_id: '', content: `Invalid action: ${actionStr}. Must be one of: get, set, list`, is_error: true }
+    }
+
+    switch (action) {
       case 'get': {
-        if (!input.key) {
+        if (!key) {
           return { type: 'tool_result', tool_use_id: '', content: 'key required for get', is_error: true }
         }
-        const value = configStore.get(input.key)
+        const storedValue = configStore.get(key)
         return {
           type: 'tool_result',
           tool_use_id: '',
-          content: value !== undefined ? JSON.stringify(value) : `Config key "${input.key}" not found`,
+          content: storedValue !== undefined ? JSON.stringify(storedValue) : `Config key "${key}" not found`,
         }
       }
       case 'set': {
-        if (!input.key) {
+        if (!key) {
           return { type: 'tool_result', tool_use_id: '', content: 'key required for set', is_error: true }
         }
-        configStore.set(input.key, input.value)
+        configStore.set(key, value)
         return {
           type: 'tool_result',
           tool_use_id: '',
-          content: `Config set: ${input.key} = ${JSON.stringify(input.value)}`,
+          content: `Config set: ${key} = ${JSON.stringify(value)}`,
         }
       }
       case 'list': {
@@ -83,7 +101,7 @@ export const ConfigTool: ToolDefinition = {
         return { type: 'tool_result', tool_use_id: '', content: lines.join('\n') }
       }
       default:
-        return { type: 'tool_result', tool_use_id: '', content: `Unknown action: ${input.action}`, is_error: true }
+        return { type: 'tool_result', tool_use_id: '', content: `Unknown action: ${action}`, is_error: true }
     }
   },
 }

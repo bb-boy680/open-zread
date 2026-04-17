@@ -84,6 +84,13 @@ export {
   // Helpers
   defineTool,
   toApiTool,
+  getString,
+  getRequiredString,
+  getNumber,
+  getBoolean,
+  getArray,
+  getObject,
+  getValue,
 
   // Core file I/O & execution
   BashTool,
@@ -381,6 +388,7 @@ export type {
   // Tool types
   ToolDefinition,
   ToolInputSchema,
+  ToolInputParams,
   ToolContext,
   ToolResult,
 

@@ -6,7 +6,8 @@
  */
 
 import { execSync } from 'child_process'
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
+import { getRequiredString, getString, getNumber } from './types.js'
 
 export const LSPTool: ToolDefinition = {
   name: 'LSP',
@@ -40,8 +41,12 @@ export const LSPTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Code intelligence via Language Server Protocol.' },
-  async call(input: any, context: { cwd: string }): Promise<ToolResult> {
-    const { operation, file_path, line, character, query } = input
+  async call(input: ToolInputParams, context: { cwd: string }): Promise<ToolResult> {
+    const operation = getRequiredString(input, 'operation')
+    const file_path = getString(input, 'file_path')
+    const line = getNumber(input, 'line')
+    const character = getNumber(input, 'character')
+    const query = getString(input, 'query')
 
     // LSP requires a running language server. In standalone mode,
     // we fall back to basic grep/ripgrep-based symbol lookup.
@@ -116,11 +121,11 @@ export const LSPTool: ToolDefinition = {
             content: `LSP operation "${operation}" requires a running language server.`,
           }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `LSP error: ${err.message}`,
+        content: `LSP error: ${err instanceof Error ? err.message : String(err)}`,
         is_error: true,
       }
     }

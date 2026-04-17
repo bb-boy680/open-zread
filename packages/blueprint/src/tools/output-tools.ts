@@ -2,17 +2,10 @@
  * Output Tools - Generate and save wiki.json blueprint
  */
 
-import type { ToolDefinition } from '@open-zread/agent'
+import type { ToolDefinition, ToolInputParams, ToolContext, ToolResult } from '@open-zread/agent'
 import { generateWikiJson } from '@open-zread/core'
 import type { WikiPage, AppConfig } from '@open-zread/types'
-import type { TechStackSummary, CoreModules } from '../types.js'
-
-interface BlueprintInput {
-  pages: WikiPage[]
-  techStackSummary?: TechStackSummary
-  coreModules?: CoreModules
-  language?: 'zh' | 'en'
-}
+import type { TechStackSummary } from '../types.js'
 
 /**
  * Generate Blueprint Tool
@@ -67,14 +60,14 @@ export const GenerateBlueprintTool: ToolDefinition = {
   async prompt() {
     return 'Generate and save wiki blueprint JSON file.'
   },
-  async call(input: BlueprintInput) {
+  async call(input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
     try {
-      const pages = input.pages as WikiPage[]
-      const techStackSummary = input.techStackSummary as TechStackSummary | undefined
-      const language = input.language || 'zh'
+      const pages = input.pages as unknown as WikiPage[]
+      const techStackSummary = input.techStackSummary as unknown as TechStackSummary | undefined
+      const language = (input.language as unknown as 'zh' | 'en' | undefined) || 'zh'
 
       // Validate pages
-      if (!pages || pages.length === 0) {
+      if (!pages || !Array.isArray(pages) || pages.length === 0) {
         return {
           type: 'tool_result',
           tool_use_id: '',
@@ -99,9 +92,6 @@ export const GenerateBlueprintTool: ToolDefinition = {
         }
       }
 
-      // Add tech stack summary to pages if provided
-      // (The generateWikiJson function handles this)
-
       // Generate and save wiki.json
       const outputPath = await generateWikiJson(pages, config, techStackSummary)
 
@@ -123,11 +113,12 @@ export const GenerateBlueprintTool: ToolDefinition = {
         tool_use_id: '',
         content: `Wiki 蓝图已生成: ${outputPath}\n\n详情:\n${JSON.stringify(summary, null, 2)}`
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `生成蓝图失败: ${err.message}`,
+        content: `生成蓝图失败: ${message}`,
         is_error: true
       }
     }
@@ -162,14 +153,15 @@ export const ValidateBlueprintTool: ToolDefinition = {
   async prompt() {
     return 'Validate blueprint associated files/directories exist.'
   },
-  async call(input: { pages: WikiPage[]; projectRoot?: string }) {
+  async call(input: ToolInputParams, _context: ToolContext): Promise<ToolResult> {
     try {
-      const pages = input.pages as WikiPage[]
+      const pages = input.pages as unknown as WikiPage[]
+      const projectRoot = input.projectRoot as unknown as string | undefined
       const { stat, readdir } = await import('fs/promises')
       const { join } = await import('path')
       const { getProjectRoot } = await import('@open-zread/core')
 
-      const root = input.projectRoot || getProjectRoot()
+      const root = projectRoot || getProjectRoot()
 
       interface PathInfo {
         path: string
@@ -258,11 +250,12 @@ export const ValidateBlueprintTool: ToolDefinition = {
           }
         }, null, 2)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err)
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: `验证失败: ${err.message}`,
+        content: `验证失败: ${message}`,
         is_error: true
       }
     }

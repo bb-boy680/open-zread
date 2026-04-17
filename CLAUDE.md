@@ -47,13 +47,30 @@ cli          → blueprint, core, skeleton（Ink 终端 UI）
 
 ### 各包概述
 
-- **@open-zread/types**: 共享 TypeScript 接口（FileManifest、SymbolManifest、WikiPage、AppConfig、RepoMapOptions 等）
+- **@open-zread/types**: 共享 TypeScript 接口，模块化结构：
+  - `manifest.ts` - FileManifest, FileInfo
+  - `symbols.ts` - SymbolManifest, SymbolInfo
+  - `wiki.ts` - WikiPage, WikiOutput, TechStackSummary
+  - `config.ts` - AppConfig
+  - `cache.ts` - CacheManifest
+  - `repo-map.ts` - 三层 Repo Map 类型
 - **@open-zread/core**: 文件 I/O 工具、从 `~/.zread/config.yaml` 加载配置、缓存管理（SymbolCache、last_manifest.json）、存储（WikiStore）、输出生成
 - **@open-zread/skeleton**: 两阶段代码处理 + 三层 Repo Map：
   1. Scanner - 使用 glob/ignore 模式查找源文件
   2. Parser - 使用 web-tree-sitter WASM 解析器提取符号
   3. 三层 Repo Map - 目录树 → 核心签名 → 模块详情（分层递进）
 - **@open-zread/agent**: 完整的 Agent SDK，包含 30+ 工具（文件 I/O、shell、web、agents、tasks、teams）、MCP 服务器集成、技能系统、上下文压缩、重试逻辑、会话持久化、钩子系统。支持 Anthropic 和 OpenAI 提供商。
+  
+  **类型安全工具开发**：
+  - 工具输入使用 `ToolInputParams`（JsonValue 类型）
+  - 使用辅助函数安全提取值（从 `@open-zread/agent` 导入）：
+    - `getRequiredString(input, 'name')` - 必需字符串
+    - `getString(input, 'path')` - 可选字符串
+    - `getNumber(input, 'limit')` - 数字
+    - `getBoolean(input, 'flag')` - 布尔
+    - `getArray<T>(input, 'items')` - 数组
+    - `getObject<T>(input, 'config')` - 对象
+  - catch 错误使用 `unknown` 类型，用 `err instanceof Error ? err.message : String(err)` 获取消息
 - **@open-zread/blueprint**: 单一 Blueprint Agent，使用三层 Repo Map 递进分析项目，生成 wiki.json
 
 ### Repo Map 架构（packages/skeleton/src/repo-map）
@@ -175,9 +192,22 @@ concurrency:
 
 ## 代码风格
 
-ESLint 配置采用 TypeScript 严格模式，以下情况有放宽：
-- `@typescript-eslint/no-explicit-any`: 在 agent 工具、MCP 客户端、providers、blueprint 中允许（动态工具输入/API 类型）
+ESLint 配置采用 TypeScript 严格模式：
+
+**类型检查规则**：
+- `@typescript-eslint/no-explicit-any`: 错误级别 - 禁止使用 `any` 类型
 - `@typescript-eslint/no-unused-vars`: 下划线前缀变量（`_`、`_var`）可忽略
+- catch 语句使用 `unknown` 类型，通过类型守卫访问错误属性
+
+**例外情况**（仅允许 any）：
+- MCP SDK 客户端（动态 API 类型）
+- token 估算函数（接受任意消息格式）
+- 第三方库类型不兼容时（添加 eslint-disable 注释并说明原因）
+
+**类型转换模式**：
+- `input.xxx as T` → 使用辅助函数 `getXxx(input, 'xxx')`
+- `err.message` → `err instanceof Error ? err.message : String(err)`
+- 复杂类型转换使用 `as unknown as T` 双重转换
 
 ## 输出目录结构
 

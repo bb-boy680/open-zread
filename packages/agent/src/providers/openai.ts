@@ -15,6 +15,7 @@ import type {
   NormalizedTool,
   NormalizedResponseBlock,
 } from './types.js'
+import type { ToolInputParams, ToolInputSchemaProperty } from '../types.js'
 
 // --------------------------------------------------------------------------
 // OpenAI-specific types (minimal, just what we need)
@@ -41,8 +42,19 @@ interface OpenAITool {
   function: {
     name: string
     description: string
-    parameters: Record<string, any>
+    parameters: {
+      type: 'object'
+      properties: Record<string, ToolInputSchemaProperty>
+      required?: string[]
+    }
   }
+}
+
+interface OpenAIRequestBody {
+  model: string
+  max_tokens: number
+  messages: OpenAIChatMessage[]
+  tools?: OpenAITool[]
 }
 
 interface OpenAIChatResponse {
@@ -82,7 +94,7 @@ export class OpenAIProvider implements LLMProvider {
     const messages = this.convertMessages(params.system, params.messages)
     const tools = params.tools ? this.convertTools(params.tools) : undefined
 
-    const body: Record<string, any> = {
+    const body: OpenAIRequestBody = {
       model: params.model,
       max_tokens: params.maxTokens,
       messages,
@@ -104,11 +116,11 @@ export class OpenAIProvider implements LLMProvider {
 
     if (!response.ok) {
       const errBody = await response.text().catch(() => '')
-      const err: any = new Error(
+      const apiError = new Error(
         `OpenAI API error: ${response.status} ${response.statusText}: ${errBody}`,
       )
-      err.status = response.status
-      throw err
+      Object.assign(apiError, { status: response.status })
+      throw apiError
     }
 
     const data = (await response.json()) as OpenAIChatResponse
@@ -263,11 +275,12 @@ export class OpenAIProvider implements LLMProvider {
     // Add tool calls
     if (choice.message.tool_calls) {
       for (const tc of choice.message.tool_calls) {
-        let input: any
+        let input: ToolInputParams
         try {
-          input = JSON.parse(tc.function.arguments)
+          input = JSON.parse(tc.function.arguments) as ToolInputParams
         } catch {
-          input = tc.function.arguments
+          // If parsing fails, treat as raw string wrapped in object
+          input = { raw: tc.function.arguments }
         }
 
         content.push({

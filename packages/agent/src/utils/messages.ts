@@ -5,13 +5,14 @@
  * synthetic placeholders, and content processing.
  */
 
-import type { UserMessage, AssistantMessage, TokenUsage } from '../types.js'
+import type { UserMessage, AssistantMessage, TokenUsage, ContentBlockParam } from '../types.js'
+import type { NormalizedMessageParam, NormalizedContentBlock } from '../providers/types.js'
 
 /**
  * Create a user message.
  */
 export function createUserMessage(
-  content: string | any[],
+  content: string | ContentBlockParam[],
   options?: {
     uuid?: string
     isMeta?: boolean
@@ -33,7 +34,7 @@ export function createUserMessage(
  * Create an assistant message.
  */
 export function createAssistantMessage(
-  content: any[],
+  content: NormalizedContentBlock[],
   usage?: TokenUsage,
 ): AssistantMessage {
   return {
@@ -54,9 +55,9 @@ export function createAssistantMessage(
  * and fixes tool result pairing.
  */
 export function normalizeMessagesForAPI(
-  messages: Array<{ role: string; content: any }>,
-): Array<{ role: string; content: any }> {
-  const normalized: Array<{ role: string; content: any }> = []
+  messages: NormalizedMessageParam[],
+): NormalizedMessageParam[] {
+  const normalized: NormalizedMessageParam[] = []
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
@@ -70,10 +71,10 @@ export function normalizeMessagesForAPI(
           // Combine content
           const lastContent = typeof last.content === 'string'
             ? [{ type: 'text' as const, text: last.content }]
-            : last.content as any[]
+            : last.content
           const newContent = typeof msg.content === 'string'
             ? [{ type: 'text' as const, text: msg.content }]
-            : msg.content as any[]
+            : msg.content
           normalized[normalized.length - 1] = {
             role: 'user',
             content: [...lastContent, ...newContent],
@@ -95,17 +96,17 @@ export function normalizeMessagesForAPI(
  * matching tool_use in the previous assistant message.
  */
 function fixToolResultPairing(
-  messages: Array<{ role: string; content: any }>,
-): Array<{ role: string; content: any }> {
-  const result: Array<{ role: string; content: any }> = []
+  messages: NormalizedMessageParam[],
+): NormalizedMessageParam[] {
+  const result: NormalizedMessageParam[] = []
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
 
     if (msg.role === 'user' && Array.isArray(msg.content)) {
       // Check for tool_result blocks
-      const toolResults = (msg.content as any[]).filter(
-        (block: any) => block.type === 'tool_result',
+      const toolResults = msg.content.filter(
+        (block: NormalizedContentBlock) => block.type === 'tool_result',
       )
 
       if (toolResults.length > 0 && result.length > 0) {
@@ -113,13 +114,13 @@ function fixToolResultPairing(
         const prevAssistant = result[result.length - 1]
         if (prevAssistant.role === 'assistant' && Array.isArray(prevAssistant.content)) {
           const toolUseIds = new Set(
-            (prevAssistant.content as any[])
-              .filter((b: any) => b.type === 'tool_use')
-              .map((b: any) => b.id),
+            prevAssistant.content
+              .filter((b: NormalizedContentBlock) => b.type === 'tool_use')
+              .map((b: NormalizedContentBlock) => (b as { type: 'tool_use'; id: string }).id),
           )
 
           // Filter out orphaned tool results
-          const validContent = (msg.content as any[]).filter((block: any) => {
+          const validContent = msg.content.filter((block: NormalizedContentBlock) => {
             if (block.type === 'tool_result') {
               return toolUseIds.has(block.tool_use_id)
             }
@@ -144,14 +145,14 @@ function fixToolResultPairing(
  * Strip images from messages (for compaction).
  */
 export function stripImagesFromMessages(
-  messages: Array<{ role: string; content: any }>,
-): Array<{ role: string; content: any }> {
+  messages: NormalizedMessageParam[],
+): NormalizedMessageParam[] {
   return messages.map((msg) => {
     if (typeof msg.content === 'string') return msg
     if (!Array.isArray(msg.content)) return msg
 
-    const filtered = (msg.content as any[]).filter(
-      (block: any) => block.type !== 'image',
+    const filtered = msg.content.filter(
+      (block: NormalizedContentBlock) => block.type !== 'image',
     )
 
     return {
@@ -165,20 +166,20 @@ export function stripImagesFromMessages(
  * Extract text from message content blocks.
  */
 export function extractTextFromContent(
-  content: any[] | string,
+  content: NormalizedContentBlock[] | string,
 ): string {
   if (typeof content === 'string') return content
 
   return content
-    .filter((b: any) => b.type === 'text')
-    .map((b: any) => b.text)
+    .filter((b: NormalizedContentBlock) => b.type === 'text')
+    .map((b: NormalizedContentBlock) => (b as { type: 'text'; text: string }).text)
     .join('')
 }
 
 /**
  * Create a system message for compact boundary.
  */
-export function createCompactBoundaryMessage(): { role: string; content: string } {
+export function createCompactBoundaryMessage(): NormalizedMessageParam {
   return {
     role: 'user',
     content: '[Previous context has been summarized above. Continuing conversation.]',

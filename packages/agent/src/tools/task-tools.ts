@@ -7,7 +7,7 @@
  * Tasks persist across turns within a session.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolInputParams, ToolResult } from '../types.js'
 
 /**
  * Task status.
@@ -60,6 +60,24 @@ export function clearTasks(): void {
   taskCounter = 0
 }
 
+/**
+ * Helper to extract string from JsonValue.
+ */
+function asString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
+/**
+ * Helper to extract TaskStatus from JsonValue.
+ */
+function asTaskStatus(value: unknown): TaskStatus | undefined {
+  if (typeof value === 'string') {
+    const validStatuses: TaskStatus[] = ['pending', 'in_progress', 'completed', 'failed', 'cancelled']
+    return validStatuses.includes(value as TaskStatus) ? value as TaskStatus : undefined
+  }
+  return undefined
+}
+
 // ============================================================================
 // TaskCreateTool
 // ============================================================================
@@ -81,14 +99,15 @@ export const TaskCreateTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Create a task for tracking progress.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
     const id = `task_${++taskCounter}`
+    const subject = asString(input.subject) ?? ''
     const task: Task = {
       id,
-      subject: input.subject,
-      description: input.description,
-      status: input.status || 'pending',
-      owner: input.owner,
+      subject,
+      description: asString(input.description),
+      status: asTaskStatus(input.status) ?? 'pending',
+      owner: asString(input.owner),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     }
@@ -120,14 +139,17 @@ export const TaskListTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'List tasks.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
     let tasks = getAllTasks()
 
-    if (input.status) {
-      tasks = tasks.filter(t => t.status === input.status)
+    const statusFilter = asString(input.status)
+    const ownerFilter = asString(input.owner)
+
+    if (statusFilter) {
+      tasks = tasks.filter(t => t.status === statusFilter)
     }
-    if (input.owner) {
-      tasks = tasks.filter(t => t.owner === input.owner)
+    if (ownerFilter) {
+      tasks = tasks.filter(t => t.owner === ownerFilter)
     }
 
     if (tasks.length === 0) {
@@ -168,16 +190,26 @@ export const TaskUpdateTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Update a task.' },
-  async call(input: any): Promise<ToolResult> {
-    const task = taskStore.get(input.id)
-    if (!task) {
-      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${input.id}`, is_error: true }
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const taskId = asString(input.id)
+    if (!taskId) {
+      return { type: 'tool_result', tool_use_id: '', content: 'Task ID is required', is_error: true }
     }
 
-    if (input.status) task.status = input.status
-    if (input.description) task.description = input.description
-    if (input.owner) task.owner = input.owner
-    if (input.output) task.output = input.output
+    const task = taskStore.get(taskId)
+    if (!task) {
+      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${taskId}`, is_error: true }
+    }
+
+    const newStatus = asTaskStatus(input.status)
+    const newDescription = asString(input.description)
+    const newOwner = asString(input.owner)
+    const newOutput = asString(input.output)
+
+    if (newStatus) task.status = newStatus
+    if (newDescription) task.description = newDescription
+    if (newOwner) task.owner = newOwner
+    if (newOutput) task.output = newOutput
     task.updatedAt = new Date().toISOString()
 
     return {
@@ -206,10 +238,15 @@ export const TaskGetTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Get task details.' },
-  async call(input: any): Promise<ToolResult> {
-    const task = taskStore.get(input.id)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const taskId = asString(input.id)
+    if (!taskId) {
+      return { type: 'tool_result', tool_use_id: '', content: 'Task ID is required', is_error: true }
+    }
+
+    const task = taskStore.get(taskId)
     if (!task) {
-      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${input.id}`, is_error: true }
+      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${taskId}`, is_error: true }
     }
 
     return {
@@ -239,15 +276,21 @@ export const TaskStopTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Stop a task.' },
-  async call(input: any): Promise<ToolResult> {
-    const task = taskStore.get(input.id)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const taskId = asString(input.id)
+    if (!taskId) {
+      return { type: 'tool_result', tool_use_id: '', content: 'Task ID is required', is_error: true }
+    }
+
+    const task = taskStore.get(taskId)
     if (!task) {
-      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${input.id}`, is_error: true }
+      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${taskId}`, is_error: true }
     }
 
     task.status = 'cancelled'
     task.updatedAt = new Date().toISOString()
-    if (input.reason) task.output = `Stopped: ${input.reason}`
+    const reason = asString(input.reason)
+    if (reason) task.output = `Stopped: ${reason}`
 
     return {
       type: 'tool_result',
@@ -275,10 +318,15 @@ export const TaskOutputTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Get task output.' },
-  async call(input: any): Promise<ToolResult> {
-    const task = taskStore.get(input.id)
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const taskId = asString(input.id)
+    if (!taskId) {
+      return { type: 'tool_result', tool_use_id: '', content: 'Task ID is required', is_error: true }
+    }
+
+    const task = taskStore.get(taskId)
     if (!task) {
-      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${input.id}`, is_error: true }
+      return { type: 'tool_result', tool_use_id: '', content: `Task not found: ${taskId}`, is_error: true }
     }
 
     return {

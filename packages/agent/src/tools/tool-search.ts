@@ -5,7 +5,8 @@
  * Supports keyword search and exact name selection.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
+import { getRequiredString, getNumber } from './types.js'
 
 // Registry of deferred tools (set by the agent)
 let deferredTools: ToolDefinition[] = []
@@ -38,8 +39,9 @@ export const ToolSearchTool: ToolDefinition = {
   isConcurrencySafe: () => true,
   isEnabled: () => true,
   async prompt() { return 'Search for available tools.' },
-  async call(input: any): Promise<ToolResult> {
-    const { query, max_results = 5 } = input
+  async call(input: ToolInputParams): Promise<ToolResult> {
+    const query = getRequiredString(input, 'query')
+    const maxResults = getNumber(input, 'max_results') ?? 5
 
     if (deferredTools.length === 0) {
       return {
@@ -63,7 +65,7 @@ export const ToolSearchTool: ToolDefinition = {
           const searchText = `${t.name} ${t.description}`.toLowerCase()
           return keywords.some((kw: string) => searchText.includes(kw))
         })
-        .slice(0, max_results)
+        .slice(0, maxResults)
     }
 
     if (matches.length === 0) {

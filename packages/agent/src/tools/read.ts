@@ -4,7 +4,7 @@
 
 import { readFile, stat } from 'fs/promises'
 import { resolve } from 'path'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getNumber } from './types.js'
 
 export const FileReadTool = defineTool({
   name: 'Read',
@@ -30,7 +30,7 @@ export const FileReadTool = defineTool({
   isReadOnly: true,
   isConcurrencySafe: true,
   async call(input, context) {
-    const filePath = resolve(context.cwd, input.file_path)
+    const filePath = resolve(context.cwd, getRequiredString(input, 'file_path'))
 
     try {
       const fileStat = await stat(filePath)
@@ -47,8 +47,8 @@ export const FileReadTool = defineTool({
       const content = await readFile(filePath, 'utf-8')
       const lines = content.split('\n')
 
-      const offset = input.offset || 0
-      const limit = input.limit || 2000
+      const offset = getNumber(input, 'offset') ?? 0
+      const limit = getNumber(input, 'limit') ?? 2000
       const selectedLines = lines.slice(offset, offset + limit)
 
       // Format with line numbers (cat -n style)
@@ -63,11 +63,12 @@ export const FileReadTool = defineTool({
       }
 
       return result || '(empty file)'
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
         return { data: `Error: File not found: ${filePath}`, is_error: true }
       }
-      return { data: `Error reading file: ${err.message}`, is_error: true }
+      const message = err instanceof Error ? err.message : String(err)
+      return { data: `Error reading file: ${message}`, is_error: true }
     }
   },
 })

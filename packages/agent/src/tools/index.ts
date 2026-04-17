@@ -237,4 +237,14 @@ export {
 }
 
 // Re-export helpers
-export { defineTool, toApiTool } from './types.js'
+export {
+  defineTool,
+  toApiTool,
+  getString,
+  getRequiredString,
+  getNumber,
+  getBoolean,
+  getArray,
+  getObject,
+  getValue,
+} from './types.js'

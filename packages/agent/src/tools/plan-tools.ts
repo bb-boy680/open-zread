@@ -5,7 +5,7 @@
  * Allows the agent to enter a design/planning phase before execution.
  */
 
-import type { ToolDefinition, ToolResult } from '../types.js'
+import type { ToolDefinition, ToolResult, ToolInputParams } from '../types.js'
 
 // Track plan mode state
 let planModeActive = false
@@ -64,7 +64,7 @@ export const ExitPlanModeTool: ToolDefinition = {
   isConcurrencySafe: () => false,
   isEnabled: () => true,
   async prompt() { return 'Exit plan mode with a completed plan.' },
-  async call(input: any): Promise<ToolResult> {
+  async call(input: ToolInputParams): Promise<ToolResult> {
     if (!planModeActive) {
       return {
         type: 'tool_result',
@@ -75,7 +75,7 @@ export const ExitPlanModeTool: ToolDefinition = {
     }
 
     planModeActive = false
-    currentPlan = input.plan || null
+    currentPlan = typeof input.plan === 'string' ? input.plan : null
 
     const status = input.approved !== false ? 'approved' : 'pending approval'
 

@@ -4,7 +4,7 @@
 
 import { readFile, writeFile } from 'fs/promises'
 import { resolve } from 'path'
-import { defineTool } from './types.js'
+import { defineTool, getRequiredString, getBoolean } from './types.js'
 
 export const FileEditTool = defineTool({
   name: 'Edit',
@@ -34,8 +34,10 @@ export const FileEditTool = defineTool({
   isReadOnly: false,
   isConcurrencySafe: false,
   async call(input, context) {
-    const filePath = resolve(context.cwd, input.file_path)
-    const { old_string, new_string, replace_all } = input
+    const filePath = resolve(context.cwd, getRequiredString(input, 'file_path'))
+    const old_string = getRequiredString(input, 'old_string')
+    const new_string = getRequiredString(input, 'new_string')
+    const replace_all = getBoolean(input, 'replace_all') ?? false
 
     if (old_string === new_string) {
       return { data: 'Error: old_string and new_string are identical', is_error: true }
@@ -64,11 +66,12 @@ export const FileEditTool = defineTool({
 
       await writeFile(filePath, content, 'utf-8')
       return `File edited: ${filePath}`
-    } catch (err: any) {
-      if (err.code === 'ENOENT') {
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err))
+      if ((err as NodeJS.ErrnoException)?.code === 'ENOENT') {
         return { data: `Error: File not found: ${filePath}`, is_error: true }
       }
-      return { data: `Error editing file: ${err.message}`, is_error: true }
+      return { data: `Error editing file: ${error.message}`, is_error: true }
     }
   },
 })

@@ -28,7 +28,6 @@
         "open-zread": "./dist/index.js",
       },
       "dependencies": {
-        "@open-zread/agent": "workspace:*",
         "@open-zread/blueprint": "workspace:*",
         "@open-zread/core": "workspace:*",
         "@open-zread/skeleton": "workspace:*",
