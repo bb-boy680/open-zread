@@ -15,9 +15,9 @@
   },
   "dependencies": {
     "@open-zread/types": "workspace:*",
-    "@open-zread/core": "workspace:*",
-    "@open-zread/skeleton": "workspace:*",
-    "@open-zread/blueprint": "workspace:*",
+    "@open-zread/utils": "workspace:*",
+    "@open-zread/repo-analyzer": "workspace:*",
+    "@open-zread/orchestrator": "workspace:*",
     "ink": "^4.0.0",
     "react": "^18.0.0"
   },

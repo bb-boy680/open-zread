@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { generateBlueprint } from '@open-zread/blueprint';
+import { generateWikiCatalog } from '@open-zread/orchestrator';
 import {
   loadConfig,
   getProjectRoot,
@@ -8,8 +8,8 @@ import {
   loadCachedSymbols,
   saveCachedSymbols,
   needsReprocess,
-} from '@open-zread/core';
-import { scanFiles, parseFiles } from '@open-zread/skeleton';
+} from '@open-zread/utils';
+import { scanFiles, parseFiles } from '@open-zread/repo-analyzer';
 import { Box, Static, render } from 'ink';
 import React from 'react';
 import { Header } from './components/Header';
@@ -77,7 +77,7 @@ async function runPhase1() {
 
   try {
     uiStore.startStep('Loading config...');
-    const config = await loadConfig();
+    await loadConfig(); // 验证配置存在
     uiStore.completeStep();
 
     const projectRoot = getProjectRoot();
@@ -115,8 +115,7 @@ async function runPhase1() {
     }
 
     uiStore.startStep('Running Blueprint Agent...');
-    const language = (config.language === 'zh' || config.language === 'en') ? config.language : 'zh';
-    const result = await generateBlueprint({ projectRoot, language });
+    const result = await generateWikiCatalog();
     uiStore.completeStep();
 
     // Blueprint Agent already saves wiki.json via generate_blueprint tool

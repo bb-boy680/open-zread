@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 测试：
 - `bun test` - 运行所有测试
-- `bun test packages/skeleton/src/repo-map/__tests__/repo-map.test.ts` - 运行 Repo Map 单元测试
+- `bun test packages/repo-analyzer/src/repo-map/__tests__/repo-map.test.ts` - 运行 Repo Map 单元测试
 - `bun test -w` - 监听模式运行测试
 
 ## 包管理器
@@ -31,18 +31,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 这是一个由 Turbo 管理的 monorepo，包含 5 个包 + CLI。数据流程如下：
 
 ```
-CLI (React/Ink 终端 UI) → Scanner → Parser → SymbolCache → Blueprint Agent → wiki.json
+CLI (React/Ink 终端 UI) → Scanner → Parser → SymbolCache → Orchestrator Agent → wiki.json
 ```
 
 ### 包依赖关系
 
 ```
 types        → （无依赖，共享类型定义）
-core         → types（文件 I/O、配置、缓存、存储、输出）
-skeleton     → types, core（文件扫描、解析、Repo Map 生成）
-agent        → （独立 Agent SDK - 支持 Anthropic/OpenAI）
-blueprint    → agent, skeleton, core, types（Wiki 蓝图生成）
-cli          → blueprint, core, skeleton（Ink 终端 UI）
+utils        → types（文件 I/O、配置、缓存、存储、输出）
+repo-analyzer → types, utils（文件扫描、解析、Repo Map 生成）
+agent-sdk    → （独立 Agent SDK - 支持 Anthropic/OpenAI）
+orchestrator → agent-sdk, repo-analyzer, utils, types（Agent 编排层）
+cli          → orchestrator, utils, repo-analyzer（Ink 终端 UI）
 ```
 
 ### 各包概述
@@ -54,16 +54,16 @@ cli          → blueprint, core, skeleton（Ink 终端 UI）
   - `config.ts` - AppConfig
   - `cache.ts` - CacheManifest
   - `repo-map.ts` - 三层 Repo Map 类型
-- **@open-zread/core**: 文件 I/O 工具、从 `~/.zread/config.yaml` 加载配置、缓存管理（SymbolCache、last_manifest.json）、存储（WikiStore）、输出生成
-- **@open-zread/skeleton**: 两阶段代码处理 + 三层 Repo Map：
+- **@open-zread/utils**: 文件 I/O 工具、从 `~/.zread/config.yaml` 加载配置、缓存管理（SymbolCache、last_manifest.json）、存储（WikiStore）、输出生成
+- **@open-zread/repo-analyzer**: 两阶段代码处理 + 三层 Repo Map：
   1. Scanner - 使用 glob/ignore 模式查找源文件
   2. Parser - 使用 web-tree-sitter WASM 解析器提取符号
   3. 三层 Repo Map - 目录树 → 核心签名 → 模块详情（分层递进）
-- **@open-zread/agent**: 完整的 Agent SDK，包含 30+ 工具（文件 I/O、shell、web、agents、tasks、teams）、MCP 服务器集成、技能系统、上下文压缩、重试逻辑、会话持久化、钩子系统。支持 Anthropic 和 OpenAI 提供商。
+- **@open-zread/agent-sdk**: 完整的 Agent SDK，包含 30+ 工具（文件 I/O、shell、web、agents、tasks、teams）、MCP 服务器集成、技能系统、上下文压缩、重试逻辑、会话持久化、钩子系统。支持 Anthropic 和 OpenAI 提供商。
   
   **类型安全工具开发**：
   - 工具输入使用 `ToolInputParams`（JsonValue 类型）
-  - 使用辅助函数安全提取值（从 `@open-zread/agent` 导入）：
+  - 使用辅助函数安全提取值（从 `@open-zread/agent-sdk` 导入）：
     - `getRequiredString(input, 'name')` - 必需字符串
     - `getString(input, 'path')` - 可选字符串
     - `getNumber(input, 'limit')` - 数字
@@ -71,9 +71,9 @@ cli          → blueprint, core, skeleton（Ink 终端 UI）
     - `getArray<T>(input, 'items')` - 数组
     - `getObject<T>(input, 'config')` - 对象
   - catch 错误使用 `unknown` 类型，用 `err instanceof Error ? err.message : String(err)` 获取消息
-- **@open-zread/blueprint**: 单一 Blueprint Agent，使用三层 Repo Map 递进分析项目，生成 wiki.json
+- **@open-zread/orchestrator**: Agent 编排层，使用三层 Repo Map 递进分析项目，生成 wiki.json。后续会扩展更多 Agent（wiki 生成、wiki 更新等）。
 
-### Repo Map 架构（packages/skeleton/src/repo-map）
+### Repo Map 架构（packages/repo-analyzer/src/repo-map）
 
 **三层 Repo Map** - 分层递进的项目上下文生成，解决 AI 漂移问题：
 
@@ -99,13 +99,13 @@ repo-map/
 Project Structure
 ├── packages/
 │   ├── types/
-│   ├── core/
-│   ├── skeleton/
+│   ├── utils/
+│   ├── repo-analyzer/
 
 # Layer 2: 核心签名（Ref >= 5）
 Core Files Signatures (Ref >= 5)
-├── packages/core/src/agent.ts [Ref: 15]
-│   [Export] function createAgent(options): Agent
+├── packages/utils/src/config.ts [Ref: 15]
+│   [Export] function loadConfig(): AppConfig
 ├── packages/types/src/index.ts [Ref: 12]
 │   [Export] interface WikiPage { slug, title, section }
 
@@ -116,22 +116,20 @@ Module Details: packages/auth/src/
 │   function validateEmail(email): boolean
 ```
 
-### Blueprint Agent 架构（packages/blueprint）
+### Orchestrator Agent 架构（packages/orchestrator）
 
-单一 Agent 完成 wiki.json 生成，使用三层 Repo Map 递进分析：
+Agent 编排层完成 wiki.json 生成，使用三层 Repo Map 递进分析：
 
 ```
-blueprint/
+orchestrator/
 ├── agents/
-│   └── blueprint-agent.ts   # Agent 定义（7 个工具，maxTurns=30）
+│   └── create-agent.ts      # Agent 创建方法（7 个工具，maxTurns=30）
 ├── prompts/
-│   └── blueprint-prompt.ts  # 提示词（三层工作流程）
+│   └── generate-catalog.mdx # 提示词（三层工作流程）
 ├── tools/
-│   ├── cache-tools.ts       # GetCachedManifestTool
 │   ├── output-tools.ts      # GenerateBlueprintTool, ValidateBlueprintTool
-│   ├── repo-map-tools.ts    # 三层工具（get_directory_tree, get_core_signatures, get_module_details）
-│   └── index.ts             # 工具导出
-├── orchestrator.ts          # generateBlueprint() 入口
+│   └── repo-map-tools.ts    # 三层工具（get_directory_tree, get_core_signatures, get_module_details）
+├── orchestrator.ts          # generateWikiCatalog() 入口
 └── types.ts                 # 类型定义
 ```
 
@@ -151,7 +149,7 @@ Agent 工具列表（三层 Repo Map）：
 2. Scan files     → FileManifest
 3. Check cache    → 增量处理（哈希比对）
 4. Parse files    → SymbolManifest → SymbolCache
-5. Blueprint Agent → 三层 Repo Map:
+5. Orchestrator Agent → 三层 Repo Map:
    - get_directory_tree → 建立全局框架
    - get_core_signatures → 理解核心 API
    - get_module_details → 深入模块分析（按需）
@@ -219,7 +217,7 @@ ESLint 配置采用 TypeScript 严格模式：
 │   ├── last_manifest.json
 │   └── last_symbols.json
 ├── drafts/
-│   └── wiki.json          # Blueprint Agent 输出
+│   └── wiki.json          # Orchestrator Agent 输出
 └── output/
     └── wiki/              # 最终 Wiki 文档（待实现）
 ```

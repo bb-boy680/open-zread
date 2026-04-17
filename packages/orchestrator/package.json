@@ -1,0 +1,32 @@
+{
+  "name": "@open-zread/orchestrator",
+  "version": "0.1.0",
+  "description": "Wiki blueprint generation using Agent orchestration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "@open-zread/agent-sdk": "workspace:*",
+    "@open-zread/repo-analyzer": "workspace:*",
+    "@open-zread/utils": "workspace:*",
+    "@open-zread/types": "workspace:*",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  }
+}
