@@ -34,3 +34,4 @@ export { generateSnapshotName, createVersionSnapshot } from './storage/versionin
 
 // Output
 export { generateWikiJson } from './output/index.js';
+export { loadWikiBlueprint } from './output/wiki-content.js';

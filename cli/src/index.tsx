@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { generateWikiCatalog } from '@open-zread/orchestrator';
+import { generateWikiCatalog, generateWikiContent } from '@open-zread/orchestrator';
 import {
   loadConfig,
   getProjectRoot,
@@ -8,10 +8,10 @@ import {
   loadCachedSymbols,
   saveCachedSymbols,
   needsReprocess,
+  loadWikiBlueprint,
 } from '@open-zread/utils';
 import { scanFiles, parseFiles } from '@open-zread/repo-analyzer';
 import { Box, Static, render } from 'ink';
-import React from 'react';
 import { Header } from './components/Header';
 import { CurrentStep } from './components/CurrentStep';
 import { ErrorView } from './components/ErrorView';
@@ -138,12 +138,55 @@ async function runPhase1() {
 // ── Wiki command: wiki.json → markdown files (Phase 2) ────────────────────────
 
 async function runWikiCommand() {
-  uiStore.startStep('Loading wiki blueprint...');
+  uiStore.setTotalSteps(4);
   const { waitUntilExit } = render(<App />);
 
   try {
-    uiStore.startStep('Phase 2 not implemented yet...');
-    uiStore.failStep('Wiki content generation will be implemented in Phase 2');
+    // Step 1: Load blueprint
+    uiStore.startStep('Loading wiki blueprint...');
+    const blueprint = await loadWikiBlueprint();
+    uiStore.completeStep();
+
+    // Step 2: Verify symbol cache exists
+    uiStore.startStep('Checking symbol cache...');
+    const symbols = await loadCachedSymbols();
+    if (!symbols || symbols.symbols.length === 0) {
+      uiStore.failStep('符号缓存不存在或为空。请先运行 Phase 1 生成蓝图和缓存。');
+      await waitUntilExit();
+      return;
+    }
+    uiStore.completeStep();
+
+    // Step 3: Generate Wiki content
+    uiStore.startStep(
+      'Generating wiki content...',
+      `${blueprint.pages.length} pages`
+    );
+    const result = await generateWikiContent({
+      onProgress: (state) => {
+        // Update progress display
+        if (state.currentPage) {
+          uiStore.startStep(
+            `Generating: ${state.currentPage.slug}`,
+            `${state.completed}/${state.total} completed`
+          );
+        }
+      },
+    });
+    uiStore.completeStep();
+
+    // Step 4: Report results
+    if (result.failed > 0) {
+      const failedSlugs = result.results
+        .filter(r => !r.success)
+        .map(r => r.slug)
+        .join(', ');
+      uiStore.failStep(`${result.failed} pages failed: ${failedSlugs}`);
+    } else {
+      const wikiDir = `${getProjectRoot()}/.open-zread/wiki/current`;
+      uiStore.succeed(wikiDir);
+    }
+
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     uiStore.failStep(message);
