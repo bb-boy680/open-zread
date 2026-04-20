@@ -12,8 +12,8 @@
 import pLimit from 'p-limit';
 import { loadConfig, loadWikiBlueprint, logger } from '@open-zread/utils';
 import { createAgent } from '../agents/create-agent.js';
-import { FileEditTool, FileReadTool, FileWriteTool, GlobTool, GrepTool } from '@open-zread/agent-sdk';
-import { SearchCodeTool, WritePageTool } from '../tools/page-tools.js';
+import { FileEditTool, FileReadTool, GlobTool, GrepTool } from '@open-zread/agent-sdk';
+import { WritePageTool } from '../tools/page-tools.js';
 import PageAgentPrompt from '../prompts/page-agent.mdx';
 import type { WikiPage } from '@open-zread/types';
 import type { WikiResult, ProgressState, PageResult } from './types.js';
@@ -44,14 +44,26 @@ function buildPagePrompt(page: WikiPage): string {
 
 **标题**: ${page.title}
 **Slug**: ${page.slug}
-**文件**: ${page.file}
+**文件名**: ${page.file}
 **章节**: ${page.section}
 **难度**: ${page.level}
 
 **关联路径**:
 ${associatedFilesList}
 
-请按照三步工作流执行，最后使用 write_page 输出文档。`;
+---
+
+## 输出路径规范（必须严格遵守）
+
+使用 \`write_page\` 工具时，**必须**传入以下参数确保正确的输出路径：
+- \`slug\`: "${page.slug}"
+- \`file\`: "${page.file}"
+- \`section\`: "${page.section}"
+- \`title\`: "${page.title}"
+
+输出文件将写入: \`.open-zread/wiki/${page.section}/${page.file}\`
+
+请按照三步工作流执行，最后使用 write_page 输出文档（务必传入完整的 file 和 section 参数）。`;
 }
 
 /**
@@ -97,13 +109,15 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
 
       try {
         // Use existing createAgent pattern: tools + prompts
+        // Note: Use WritePageTool instead of FileWriteTool to enforce correct output path
+        // GrepTool and GlobTool from agent-sdk handle code search
         const result = await createAgent({
           tools: [
             FileReadTool,
-            FileWriteTool,
             FileEditTool,
             GlobTool,
-            GrepTool
+            GrepTool,
+            WritePageTool
           ],
           prompts: buildPagePrompt(page),
           maxTurns: 15,
