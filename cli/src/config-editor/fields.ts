@@ -30,6 +30,14 @@ export const FIELDS: FieldDef[] = [
     label: 'LLM 提供商',
     type: 'select',
     defaultValue: 'custom',
+    helpText: '(动态加载)',
+  },
+  {
+    key: 'llm.model',
+    label: 'LLM 模型',
+    type: 'text',
+    defaultValue: '',
+    helpText: '(动态加载)',
   },
   {
     key: 'concurrency.max_concurrent',
@@ -76,9 +84,9 @@ export function unflattenConfig(
     doc_language: values['doc_language'] || 'zh',
     llm: {
       provider: values['llm.provider'] || 'custom',
-      model: existingLlm.model ?? 'glm-5',
+      model: values['llm.model'] || (existingLlm.model ?? 'glm-5'),
       api_key: existingLlm.api_key ?? '',
-      base_url: existingLlm.base_url ?? '',
+      base_url: (values['_llm.base_url'] || existingLlm.base_url) ?? '',
     },
     concurrency: {
       max_concurrent: parseInt(values['concurrency.max_concurrent'], 10) || 1,

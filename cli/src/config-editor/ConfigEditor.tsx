@@ -3,11 +3,14 @@ import React, { useEffect, useRef } from 'react';
 import { saveConfig, getConfigPath } from '@open-zread/utils';
 import type { AppConfig } from '@open-zread/types';
 import { FIELDS } from './fields';
-import { PROVIDER_PRESETS } from './providers';
 import { useConfigEditor } from './use-config-editor';
 import { EditPageContent } from './pages/EditPage';
 import { SelectPageContent } from './pages/SelectPage';
+import { SelectProvider } from './pages/SelectProvider';
+import { SelectModel } from './pages/SelectModel';
+import { loadProviders, loadModels } from './registry';
 import type { FieldDef } from './types';
+import type { ProviderInfo, ModelInfo } from '@open-zread/utils';
 
 interface ConfigEditorProps {
   initialConfig: AppConfig;
@@ -48,6 +51,12 @@ function Footer({ page }: { page: string }) {
     case 'select':
       hints = '↑/↓: 导航  |  enter: 选择  |  esc: 返回';
       break;
+    case 'select_provider':
+      hints = '↑/↓: 导航  |  enter: 选择  |  r: 刷新  |  esc: 返回';
+      break;
+    case 'select_model':
+      hints = '↑/↓: 导航  |  enter: 选择  |  esc: 返回';
+      break;
     default:
       hints = '↑/↓: 导航  |  enter: 编辑  |  s: 保存  |  ctrl+c: 退出';
   }
@@ -69,11 +78,14 @@ function getDisplayValue(field: FieldDef, values: Record<string, string>, llmMod
   }
 
   if (field.key === 'llm.provider') {
-    const preset = PROVIDER_PRESETS.find(p => p.value === value);
-    if (preset) {
-      return llmModel ? `${preset.label} · ${llmModel}` : preset.label;
-    }
-    return llmModel ? `${value} · ${llmModel}` : (value || '<未设置>');
+    // 显示 provider + model
+    const providerId = value || 'custom';
+    const model = values['llm.model'] || llmModel;
+    return model ? `${providerId} · ${model}` : (providerId || '<未设置>');
+  }
+
+  if (field.key === 'llm.model') {
+    return value || llmModel || '<未设置>';
   }
 
   if (field.type === 'select' && field.options) {
@@ -185,7 +197,13 @@ export function ConfigEditor({ initialConfig, onExit }: ConfigEditorProps) {
           dispatch({ type: 'MOVE_DOWN' });
         } else if (key.return) {
           const field = FIELDS[state.activeFieldIndex];
-          if (field.type === 'select') {
+          // llm.provider 使用动态 Provider 选择
+          if (field.key === 'llm.provider') {
+            loadProviders().then(providers => {
+              dispatch({ type: 'SET_PROVIDERS', providers });
+              dispatch({ type: 'OPEN_SELECT_PROVIDER', providers });
+            });
+          } else if (field.type === 'select') {
             dispatch({ type: 'OPEN_SELECT', index: state.activeFieldIndex });
           } else {
             dispatch({ type: 'OPEN_EDIT', index: state.activeFieldIndex });
@@ -196,6 +214,8 @@ export function ConfigEditor({ initialConfig, onExit }: ConfigEditorProps) {
         break;
       case 'edit':
       case 'select':
+      case 'select_provider':
+      case 'select_model':
         // Sub-pages handle their own input
         break;
     }
@@ -272,6 +292,30 @@ export function ConfigEditor({ initialConfig, onExit }: ConfigEditorProps) {
           selectedIndex={state.selectIndex}
           onSelect={(idx) => dispatch({ type: 'UPDATE_SELECT_INDEX', index: idx })}
           onConfirm={(value) => dispatch({ type: 'CONFIRM_SELECT', value })}
+          onBack={() => dispatch({ type: 'CLOSE_SUB_PAGE' })}
+        />
+      )}
+
+      {state.page === 'select_provider' && (
+        <SelectProvider
+          currentProvider={state.values['llm.provider']}
+          onSelect={(provider: ProviderInfo) => {
+            loadModels(provider.id).then(models => {
+              dispatch({ type: 'CONFIRM_SELECT_PROVIDER', provider });
+              dispatch({ type: 'OPEN_SELECT_MODEL', provider, models });
+            });
+          }}
+          onBack={() => dispatch({ type: 'CLOSE_SUB_PAGE' })}
+        />
+      )}
+
+      {state.page === 'select_model' && state.selectedProvider && (
+        <SelectModel
+          provider={state.selectedProvider}
+          currentModel={state.values['llm.model'] || ''}
+          onSelect={(model: ModelInfo) => {
+            dispatch({ type: 'CONFIRM_SELECT_MODEL', model });
+          }}
           onBack={() => dispatch({ type: 'CLOSE_SUB_PAGE' })}
         />
       )}

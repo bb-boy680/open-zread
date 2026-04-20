@@ -399,8 +399,14 @@ export interface AgentOptions {
   /** LLM model ID */
   model?: string
   /**
+   * LLM Provider ID (anthropic, openai, deepseek, etc.)
+   * If not set, extracted from model name or defaults to 'anthropic'.
+   */
+  providerId?: string
+  /**
    * API type: 'anthropic-messages' or 'openai-completions'.
    * Falls back to CODEANY_API_TYPE env var. Default: 'anthropic-messages'.
+   * @deprecated Use providerId instead
    */
   apiType?: import('./providers/types.js').ApiType
   /** API key. Falls back to CODEANY_API_KEY env var. */

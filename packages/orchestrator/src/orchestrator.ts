@@ -44,6 +44,7 @@ export async function generateWikiCatalog(): Promise<BlueprintResult> {
     pagesCount: 0,
     coreModules: result.coreModules,
     durationMs: result.durationMs,
+    tokenUsage: result.tokenUsage,
   };
 }
 

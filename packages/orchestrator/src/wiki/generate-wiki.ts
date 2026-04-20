@@ -130,8 +130,10 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
           success: true,
           outputPath: result.outputPath,
           durationMs: Math.round(performance.now() - pageStartTime),
+          tokenUsage: result.tokenUsage,
         };
         progress.results.push(pageResult);
+        options?.onProgress?.(progress);
 
         logger.success(`[${page.slug}] 完成 (${pageResult.durationMs}ms)`);
 
@@ -149,6 +151,7 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
           durationMs: Math.round(performance.now() - pageStartTime),
         };
         progress.results.push(pageResult);
+        options?.onProgress?.(progress);
 
         logger.error(`[${page.slug}] 失败: ${message}`);
 

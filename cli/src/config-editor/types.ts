@@ -2,7 +2,7 @@
  * Config Editor Types
  */
 
-export type EditorPage = 'main' | 'edit' | 'select';
+export type EditorPage = 'main' | 'edit' | 'select' | 'select_provider' | 'select_model';
 
 export type FieldType = 'text' | 'number' | 'select';
 

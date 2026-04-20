@@ -35,3 +35,7 @@ export { generateSnapshotName, createVersionSnapshot } from './storage/versionin
 // Output
 export { generateWikiJson } from './output/index.js';
 export { loadWikiBlueprint } from './output/wiki-content.js';
+
+// Provider Registry
+export * from './provider-registry/types.js';
+export { getProviderRegistry, syncProviders } from './provider-registry/index.js';

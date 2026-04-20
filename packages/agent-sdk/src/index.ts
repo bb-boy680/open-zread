@@ -52,13 +52,12 @@ export type { McpSdkServerConfig } from './sdk-mcp-server.js'
 export { QueryEngine } from './engine.js'
 
 // --------------------------------------------------------------------------
-// LLM Providers (Anthropic + OpenAI)
+// LLM Providers (Vercel AI SDK)
 // --------------------------------------------------------------------------
 
 export {
   createProvider,
-  AnthropicProvider,
-  OpenAIProvider,
+  VercelAIProvider,
 } from './providers/index.js'
 export type {
   ApiType,

@@ -1,7 +1,6 @@
 import { Box, Text, useInput } from 'ink';
 import React, { useRef } from 'react';
 import type { FieldDef, FieldOption } from '../types';
-import { PROVIDER_PRESETS } from '../providers';
 
 interface SelectPageContentProps {
   field: FieldDef;
@@ -21,10 +20,8 @@ export function SelectPageContent({
   const onBackRef = useRef(onBack);
   onBackRef.current = onBack;
 
-  // Build options list
-  const options: FieldOption[] = field.key === 'llm.provider'
-    ? PROVIDER_PRESETS.map(p => ({ label: p.label, value: p.value }))
-    : (field.options ?? []);
+  // Build options list (llm.provider uses dynamic selection, handled by SelectProvider)
+  const options: FieldOption[] = field.options ?? [];
 
   // Keyboard navigation
   useInput((input, key) => {

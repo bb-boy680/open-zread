@@ -1,31 +1,31 @@
 import { Command } from 'commander';
+import { runWiki } from './wiki';
 import { runGenerate } from './commands/generate';
-import { runWiki } from './commands/wiki';
 import { runConfig } from './commands/config';
 
 const program = new Command();
 
 program
   .name('open-zread')
-  .description('Generate wiki documentation from source code')
-  .version('0.1.0');
+  .description('将本地代码库转化为可读文档')
+  .version('0.2.3');
 
-// generate 命令（默认命令）
+// 默认命令
 program
-  .command('generate', { isDefault: true })
-  .description('生成 Wiki 蓝图（Phase 1）')
-  .option('--force', '强制重新解析，忽略缓存')
-  .action(async (opts) => {
-    await runGenerate({ force: opts.force });
-  });
-
-// wiki 命令
-program
-  .command('wiki')
-  .description('生成 Markdown 文档（Phase 2）')
-  .option('--force', '强制重新生成所有页面')
+  .command('start', { isDefault: true })
+  .description('启动 Wiki 文档生成')
+  .option('--force', '强制重新开始')
   .action(async (opts) => {
     await runWiki({ force: opts.force });
+  });
+
+// generate 命令
+program
+  .command('generate')
+  .description('仅生成 Wiki 蓝图')
+  .option('--force', '强制重新解析')
+  .action(async (opts) => {
+    await runGenerate({ force: opts.force });
   });
 
 // config 命令
@@ -36,5 +36,4 @@ program
     await runConfig();
   });
 
-// 解析命令行参数
 program.parse();

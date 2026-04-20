@@ -5,6 +5,7 @@
  */
 
 import type { WikiPage } from '@open-zread/types';
+import type { TokenUsage } from '@open-zread/agent-sdk';
 
 /**
  * Progress State
@@ -42,6 +43,8 @@ export interface PageResult {
   error?: string;
   /** Duration in milliseconds */
   durationMs?: number;
+  /** Token usage (if available) */
+  tokenUsage?: TokenUsage;
 }
 
 /**

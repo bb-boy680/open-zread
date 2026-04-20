@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import type { AppConfig } from '@open-zread/types';
 import { FIELDS, flattenConfig, unflattenConfig } from './fields';
-import { PROVIDER_PRESETS } from './providers';
 import type { EditorPage } from './types';
+import type { ProviderInfo, ModelInfo } from '@open-zread/utils'
 
 interface EditorState {
   page: EditorPage;
@@ -13,6 +13,10 @@ interface EditorState {
   editError: string | null;
   selectIndex: number;
   saveError: string | null;
+  // Provider/Model 选择相关
+  providers: ProviderInfo[];
+  models: ModelInfo[];
+  selectedProvider: ProviderInfo | null;
 }
 
 type EditorAction =
@@ -27,7 +31,13 @@ type EditorAction =
   | { type: 'UPDATE_SELECT_INDEX'; index: number }
   | { type: 'SAVE' }
   | { type: 'SAVE_SUCCESS' }
-  | { type: 'SAVE_ERROR'; message: string };
+  | { type: 'SAVE_ERROR'; message: string }
+  // Provider/Model 选择相关
+  | { type: 'OPEN_SELECT_PROVIDER'; providers: ProviderInfo[] }
+  | { type: 'OPEN_SELECT_MODEL'; provider: ProviderInfo; models: ModelInfo[] }
+  | { type: 'CONFIRM_SELECT_PROVIDER'; provider: ProviderInfo }
+  | { type: 'CONFIRM_SELECT_MODEL'; model: ModelInfo }
+  | { type: 'SET_PROVIDERS'; providers: ProviderInfo[] };
 
 function reducer(state: EditorState, action: EditorAction): EditorState {
   const fieldCount = FIELDS.length;
@@ -98,15 +108,6 @@ function reducer(state: EditorState, action: EditorAction): EditorState {
       if (state.page !== 'select') return state;
       const key = FIELDS[state.activeFieldIndex].key;
       const newValues = { ...state.values, [key]: action.value };
-
-      // Provider auto-fill base_url (stored internally, not shown in UI)
-      if (key === 'llm.provider') {
-        const preset = PROVIDER_PRESETS.find(p => p.value === action.value);
-        if (preset) {
-          newValues['_llm.base_url'] = preset.baseUrl;
-        }
-      }
-
       return { ...state, page: 'main', values: newValues };
     }
 
@@ -126,6 +127,53 @@ function reducer(state: EditorState, action: EditorAction): EditorState {
 
     case 'SAVE_ERROR':
       return { ...state, saveError: action.message };
+
+    // Provider/Model 选择相关
+    case 'OPEN_SELECT_PROVIDER':
+      return {
+        ...state,
+        page: 'select_provider',
+        providers: action.providers,
+        selectIndex: 0,
+      };
+
+    case 'OPEN_SELECT_MODEL':
+      return {
+        ...state,
+        page: 'select_model',
+        selectedProvider: action.provider,
+        models: action.models,
+        selectIndex: 0,
+      };
+
+    case 'CONFIRM_SELECT_PROVIDER':
+      return {
+        ...state,
+        page: 'select_model', // 选择 Provider 后跳转到 Model 选择
+        selectedProvider: action.provider,
+        values: {
+          ...state.values,
+          'llm.provider': action.provider.id,
+          '_llm.base_url': action.provider.base_url || '',
+        },
+        selectIndex: 0,
+      };
+
+    case 'CONFIRM_SELECT_MODEL':
+      return {
+        ...state,
+        page: 'main',
+        values: {
+          ...state.values,
+          'llm.provider': state.selectedProvider?.id || state.values['llm.provider'],
+          'llm.model': action.model.id,
+          '_llm.base_url': state.selectedProvider?.base_url || state.values['_llm.base_url'] || '',
+        },
+        selectedProvider: null,
+      };
+
+    case 'SET_PROVIDERS':
+      return { ...state, providers: action.providers };
 
     default:
       return state;
@@ -155,6 +203,9 @@ export function useConfigEditor(initialConfig: AppConfig) {
     editError: null,
     selectIndex: 0,
     saveError: null,
+    providers: [],
+    models: [],
+    selectedProvider: null,
   });
 
   const isDirty = useMemo(() => {
@@ -175,10 +226,15 @@ export function useConfigEditor(initialConfig: AppConfig) {
 
   const buildConfig = useCallback((): AppConfig => {
     const raw = unflattenConfig(state.values, initialConfig as unknown as Record<string, unknown>);
-    // Inject auto-filled base_url from provider preset
-    const preset = PROVIDER_PRESETS.find(p => p.value === state.values['llm.provider']);
-    if (preset) {
-      (raw.llm as Record<string, unknown>).base_url = preset.baseUrl;
+    // Inject auto-filled base_url from provider selection
+    const baseUrl = state.values['_llm.base_url'];
+    if (baseUrl) {
+      (raw.llm as Record<string, unknown>).base_url = baseUrl;
+    }
+    // Inject model if set
+    const model = state.values['llm.model'];
+    if (model) {
+      (raw.llm as Record<string, unknown>).model = model;
     }
     return raw as unknown as AppConfig;
   }, [state.values, initialConfig]);

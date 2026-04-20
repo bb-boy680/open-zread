@@ -1,34 +1,34 @@
 /**
  * LLM Provider Factory
  *
- * Creates the appropriate provider based on API type configuration.
+ * Creates the appropriate provider based on provider ID.
  */
 
-export type { ApiType, LLMProvider, CreateMessageParams, CreateMessageResponse, NormalizedMessageParam, NormalizedContentBlock, NormalizedTool, NormalizedResponseBlock } from './types.js'
+export type {
+  ApiType,
+  LLMProvider,
+  CreateMessageParams,
+  CreateMessageResponse,
+  NormalizedMessageParam,
+  NormalizedContentBlock,
+  NormalizedTool,
+  NormalizedResponseBlock
+} from './types.js'
 
-export { AnthropicProvider } from './anthropic.js'
-export { OpenAIProvider } from './openai.js'
+export { VercelAIProvider } from './vercel.js'
 
-import type { ApiType, LLMProvider } from './types.js'
-import { AnthropicProvider } from './anthropic.js'
-import { OpenAIProvider } from './openai.js'
+import type { LLMProvider } from './types.js'
+import { VercelAIProvider } from './vercel.js'
 
 /**
- * Create an LLM provider based on the API type.
+ * Create an LLM provider based on the provider ID.
  *
- * @param apiType - 'anthropic-messages' or 'openai-completions'
+ * @param providerId - Provider ID (anthropic, openai, deepseek, etc.)
  * @param opts - API credentials
  */
 export function createProvider(
-  apiType: ApiType,
-  opts: { apiKey?: string; baseURL?: string },
+  providerId: string,
+  opts: { apiKey: string; baseURL?: string },
 ): LLMProvider {
-  switch (apiType) {
-    case 'anthropic-messages':
-      return new AnthropicProvider(opts)
-    case 'openai-completions':
-      return new OpenAIProvider(opts)
-    default:
-      throw new Error(`Unsupported API type: ${apiType}. Use 'anthropic-messages' or 'openai-completions'.`)
-  }
+  return new VercelAIProvider({ providerId, ...opts })
 }

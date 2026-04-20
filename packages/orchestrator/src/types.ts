@@ -3,6 +3,7 @@
  */
 
 import type { FileManifest, SymbolManifest } from '@open-zread/types';
+import type { TokenUsage } from '@open-zread/agent-sdk';
 
 /**
  * Tech stack summary (parsed from Repo Map or package.json)
@@ -63,6 +64,7 @@ export interface BlueprintResult {
   techStackSummary?: TechStackSummary;
   coreModules?: CoreModules;
   durationMs: number;
+  tokenUsage?: TokenUsage;
 }
 
 /**

@@ -50,7 +50,7 @@ export class Agent {
   private cfg: AgentOptions
   private toolPool: ToolDefinition[]
   private modelId: string
-  private apiType: ApiType
+  private providerId: string
   private apiCredentials: { key?: string; baseUrl?: string }
   private provider: LLMProvider
   private mcpLinks: MCPConnection[] = []
@@ -71,12 +71,12 @@ export class Agent {
     this.modelId = this.cfg.model ?? this.readEnv('CODEANY_MODEL') ?? 'claude-sonnet-4-6'
     this.sid = this.cfg.sessionId ?? crypto.randomUUID()
 
-    // Resolve API type
-    this.apiType = this.resolveApiType()
+    // Resolve provider ID
+    this.providerId = this.cfg.providerId ?? this.extractProviderId()
 
     // Create LLM provider
-    this.provider = createProvider(this.apiType, {
-      apiKey: this.apiCredentials.key,
+    this.provider = createProvider(this.providerId, {
+      apiKey: this.apiCredentials.key ?? '',
       baseURL: this.apiCredentials.baseUrl,
     })
 
@@ -116,38 +116,33 @@ export class Agent {
   }
 
   /**
-   * Resolve API type from options, env, or model name heuristic.
+   * Extract provider ID from model name or apiType (for backwards compatibility).
    */
-  private resolveApiType(): ApiType {
-    // Explicit option
-    if (this.cfg.apiType) return this.cfg.apiType
+  private extractProviderId(): string {
+    // Explicit providerId option
+    if (this.cfg.providerId) return this.cfg.providerId
 
-    // Env var
-    const envType =
-      this.cfg.env?.CODEANY_API_TYPE ??
-      this.readEnv('CODEANY_API_TYPE')
-    if (envType === 'openai-completions' || envType === 'anthropic-messages') {
-      return envType
+    // From model string (e.g., "anthropic/claude-sonnet-4-6")
+    if (this.modelId.includes('/')) {
+      return this.modelId.split('/')[0]
     }
 
-    // Heuristic from model name
-    const model = this.modelId.toLowerCase()
-    if (
-      model.includes('gpt-') ||
-      model.includes('o1') ||
-      model.includes('o3') ||
-      model.includes('o4') ||
-      model.includes('deepseek') ||
-      model.includes('qwen') ||
-      model.includes('yi-') ||
-      model.includes('glm') ||
-      model.includes('mistral') ||
-      model.includes('gemma')
-    ) {
-      return 'openai-completions'
+    // Backwards compatibility: infer from apiType
+    if (this.cfg.apiType === 'openai-completions') {
+      return 'openai'
     }
 
-    return 'anthropic-messages'
+    // Infer from model name
+    const modelLower = this.modelId.toLowerCase()
+    if (modelLower.includes('claude')) return 'anthropic'
+    if (modelLower.includes('gpt') || modelLower.includes('o1') || modelLower.includes('o3')) return 'openai'
+    if (modelLower.includes('deepseek')) return 'deepseek'
+    if (modelLower.includes('glm')) return 'zhipu'
+    if (modelLower.includes('qwen')) return 'qwen'
+    if (modelLower.includes('moonshot')) return 'moonshot'
+
+    // Default
+    return 'anthropic'
   }
 
   /** Pick API key and base URL from options or CODEANY_* env vars. */
@@ -286,12 +281,12 @@ export class Agent {
       }
     }
 
-    // Recreate provider if overrides change credentials or apiType
+    // Recreate provider if overrides change credentials or providerId
     let provider = this.provider
-    if (overrides?.apiType || overrides?.apiKey || overrides?.baseURL) {
-      const resolvedApiType = overrides.apiType ?? this.apiType
-      provider = createProvider(resolvedApiType, {
-        apiKey: overrides.apiKey ?? this.apiCredentials.key,
+    if (overrides?.providerId || overrides?.apiKey || overrides?.baseURL) {
+      const resolvedProviderId = overrides.providerId ?? this.providerId
+      provider = createProvider(resolvedProviderId, {
+        apiKey: overrides.apiKey ?? this.apiCredentials.key ?? '',
         baseURL: overrides.baseURL ?? this.apiCredentials.baseUrl,
       })
     }
@@ -449,10 +444,20 @@ export class Agent {
   }
 
   /**
-   * Get the current API type.
+   * Get the current provider ID.
+   */
+  getProviderId(): string {
+    return this.providerId
+  }
+
+  /**
+   * Get the current API type (for backwards compatibility).
+   * @deprecated Use getProviderId() instead
    */
   getApiType(): ApiType {
-    return this.apiType
+    // Map providerId to apiType for backwards compatibility
+    if (this.providerId === 'anthropic') return 'anthropic-messages'
+    return 'openai-completions'
   }
 
   /**

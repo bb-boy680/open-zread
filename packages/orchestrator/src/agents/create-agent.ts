@@ -7,7 +7,7 @@
  * - 处理执行过程中的日志和结果解析
  */
 
-import { createAgent as CreateAgentSdk, getAllBaseTools, type ToolDefinition, type SDKMessage } from '@open-zread/agent-sdk';
+import { createAgent as CreateAgentSdk, getAllBaseTools, type ToolDefinition, type SDKMessage, type TokenUsage } from '@open-zread/agent-sdk';
 import { loadConfig, logger } from '@open-zread/utils';
 import { isAssistantMessage, isToolResultMessage, isResultMessage, LANGUAGE_NOTES } from './uitls.js';
 import type { CoreModules } from '../types.js';
@@ -34,6 +34,8 @@ export interface AgentResult {
   coreModules: CoreModules | undefined;
   /** 执行耗时（毫秒） */
   durationMs: number;
+  /** Token 使用统计 */
+  tokenUsage?: TokenUsage;
 }
 
 /**
@@ -80,6 +82,7 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
 
   let outputPath = '';
   let coreModules: CoreModules | undefined;
+  let tokenUsage: TokenUsage | undefined;
 
   // Execute agent
   try {
@@ -130,6 +133,10 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
           if (msg.result?.includes('Blueprint generated')) {
             outputPath = msg.result.match(/Blueprint generated: (.+)/)?.[1] || '';
           }
+          // 提取 Token 使用统计
+          if (msg.usage) {
+            tokenUsage = msg.usage;
+          }
         } else {
           logger.error(`蓝图生成失败: ${msg.subtype}`);
           if (msg.errors) {
@@ -152,5 +159,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
     outputPath,
     coreModules,
     durationMs,
+    tokenUsage,
   };
 }
