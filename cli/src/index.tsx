@@ -20,6 +20,7 @@ import { StepHistoryItem } from './components/StepHistory';
 import { SuccessView } from './components/SuccessView';
 import { useProgress } from './hooks/use-progress';
 import { uiStore } from './state';
+import { ConfigEditorWrapper } from './config-editor/ConfigEditorWrapper';
 
 // ── App shell ───────────────────────────────────────────────────────────────
 
@@ -195,12 +196,21 @@ async function runWikiCommand() {
   await waitUntilExit();
 }
 
+// ── Config command: interactive TUI editor ────────────────────────────────────
+
+async function runConfigCommand() {
+  const { waitUntilExit } = render(<ConfigEditorWrapper />);
+  await waitUntilExit();
+}
+
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 async function main() {
   const args = process.argv.slice(2);
 
-  if (args[0] === 'wiki') {
+  if (args[0] === 'config') {
+    await runConfigCommand();
+  } else if (args[0] === 'wiki') {
     await runWikiCommand();
   } else {
     await runPhase1();

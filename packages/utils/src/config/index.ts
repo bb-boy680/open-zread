@@ -1,10 +1,14 @@
-import { readFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
-import { parse } from 'yaml';
+import { parse, stringify } from 'yaml';
 import type { AppConfig } from '@open-zread/types';
 
 const CONFIG_PATH = join(homedir(), '.zread', 'config.yaml');
+
+export function getConfigPath(): string {
+  return CONFIG_PATH;
+}
 
 export async function loadConfig(): Promise<AppConfig> {
   try {
@@ -54,6 +58,12 @@ export function validateConfig(raw: unknown): AppConfig {
       max_retries: concurrency.max_retries as number,
     },
   };
+}
+
+export async function saveConfig(config: AppConfig): Promise<void> {
+  validateConfig(config);
+  const yamlContent = stringify(config);
+  await writeFile(CONFIG_PATH, yamlContent, 'utf-8');
 }
 
 export function getDefaultLanguage(config: AppConfig): string {

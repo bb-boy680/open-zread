@@ -16,7 +16,7 @@ export {
 export { logger, getLogFile } from './logger.js';
 
 // Config
-export { loadConfig, validateConfig, getDefaultLanguage } from './config/index.js';
+export { loadConfig, saveConfig, validateConfig, getDefaultLanguage, getConfigPath } from './config/index.js';
 
 // Cache
 export {
