@@ -5,6 +5,14 @@
  */
 
 /**
+ * Wiki 难度级别
+ * - Beginner: 初学者，适合入门章节
+ * - Intermediate: 中级，需要一定基础
+ * - Advanced: 高级，适合深度技术章节
+ */
+export type WikiLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+
+/**
  * WikiPage - Wiki page definition
  */
 export interface WikiPage {
@@ -12,8 +20,7 @@ export interface WikiPage {
   title: string;
   file: string;
   section: string;
-  level: string;
-  type?: 'overview' | 'architecture' | 'code' | 'spec' | 'reference';
+  level: WikiLevel;
   /**
    * 关联的源文件或目录路径
    * - 文件路径: "packages/web-integration/src/index.ts"
