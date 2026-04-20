@@ -323,6 +323,7 @@ export class QueryEngine {
           usage: this.totalUsage,
           num_turns: this.turnCount,
           cost: this.totalCost,
+          errors: [err instanceof Error ? err.message : String(err)],
         }
         return
       }

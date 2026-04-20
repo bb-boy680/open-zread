@@ -127,12 +127,7 @@ export class Agent {
       return this.modelId.split('/')[0]
     }
 
-    // Backwards compatibility: infer from apiType
-    if (this.cfg.apiType === 'openai-completions') {
-      return 'openai'
-    }
-
-    // Infer from model name
+    // Infer from model name (priority over apiType for custom providers)
     const modelLower = this.modelId.toLowerCase()
     if (modelLower.includes('claude')) return 'anthropic'
     if (modelLower.includes('gpt') || modelLower.includes('o1') || modelLower.includes('o3')) return 'openai'
@@ -140,6 +135,12 @@ export class Agent {
     if (modelLower.includes('glm')) return 'zhipu'
     if (modelLower.includes('qwen')) return 'qwen'
     if (modelLower.includes('moonshot')) return 'moonshot'
+
+    // Backwards compatibility: infer from apiType (fallback when model name doesn't match)
+    if (this.cfg.apiType === 'openai-completions') {
+      // Use 'openai-compatible' instead of 'openai' to respect user's baseURL
+      return 'openai-compatible'
+    }
 
     // Default
     return 'anthropic'

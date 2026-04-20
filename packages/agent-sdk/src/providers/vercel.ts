@@ -39,7 +39,7 @@ export class VercelAIProvider implements LLMProvider {
       messages,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Vercel AI SDK ToolSet type compatibility
       tools: tools as any,
-      maxTokens: params.maxTokens,
+      maxOutputTokens: params.maxTokens,
     })
 
     // 等待流完成，收集完整响应
@@ -47,13 +47,13 @@ export class VercelAIProvider implements LLMProvider {
     const usage = await stream.usage
 
     // 提取 tool calls
-    const toolCalls: Array<{ toolCallId: string; toolName: string; args: unknown }> = []
+    const toolCalls: Array<{ toolCallId: string; toolName: string; input: unknown }> = []
     for await (const part of stream.fullStream) {
       if (part.type === 'tool-call') {
         toolCalls.push({
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          args: part.args,
+          input: part.input,
         })
       }
     }
@@ -70,7 +70,7 @@ export class VercelAIProvider implements LLMProvider {
         type: 'tool_use',
         id: tc.toolCallId,
         name: tc.toolName,
-        input: tc.args as ToolInputParams,
+        input: tc.input as ToolInputParams,
       })
     }
 
@@ -81,12 +81,15 @@ export class VercelAIProvider implements LLMProvider {
     const finishReason = await stream.finishReason
     const stopReason = this.mapFinishReason(finishReason)
 
+    // AI SDK 6 usage 结构
+    const usageData = usage as { promptTokens?: number; completionTokens?: number } | undefined
+
     return {
       content,
       stopReason,
       usage: {
-        input_tokens: usage?.promptTokens || 0,
-        output_tokens: usage?.completionTokens || 0,
+        input_tokens: usageData?.promptTokens || 0,
+        output_tokens: usageData?.completionTokens || 0,
       },
     }
   }
@@ -103,6 +106,9 @@ export class VercelAIProvider implements LLMProvider {
     const provider = createOpenAICompatible({
       name: this.providerId,
       baseURL,
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+      },
     })
     // Return a model instance
     return provider(modelId)
