@@ -32,6 +32,7 @@
         "@open-zread/repo-analyzer": "workspace:*",
         "@open-zread/types": "workspace:*",
         "@open-zread/utils": "workspace:*",
+        "commander": "^14.0.3",
         "ink": "^4.0.0",
         "ink-select-input": "^6.0.0",
         "ink-text-input": "^6.0.0",
@@ -375,7 +376,7 @@
 
     "color-name": ["color-name@1.1.4", "https://registry.npmmirror.com/color-name/-/color-name-1.1.4.tgz", {}, "sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA=="],
 
-    "commander": ["commander@4.1.1", "https://registry.npmmirror.com/commander/-/commander-4.1.1.tgz", {}, "sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA=="],
+    "commander": ["commander@14.0.3", "https://registry.npmmirror.com/commander/-/commander-14.0.3.tgz", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
 
     "confbox": ["confbox@0.1.8", "https://registry.npmmirror.com/confbox/-/confbox-0.1.8.tgz", {}, "sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w=="],
 
@@ -463,7 +464,7 @@
 
     "fdir": ["fdir@6.5.0", "https://registry.npmmirror.com/fdir/-/fdir-6.5.0.tgz", { "optionalDependencies": { "picomatch": "4.0.4" } }, "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg=="],
 
-    "figures": ["figures@6.1.0", "", { "dependencies": { "is-unicode-supported": "^2.0.0" } }, "sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg=="],
+    "figures": ["figures@6.1.0", "https://registry.npmmirror.com/figures/-/figures-6.1.0.tgz", { "dependencies": { "is-unicode-supported": "^2.0.0" } }, "sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg=="],
 
     "file-entry-cache": ["file-entry-cache@8.0.0", "https://registry.npmmirror.com/file-entry-cache/-/file-entry-cache-8.0.0.tgz", { "dependencies": { "flat-cache": "^4.0.0" } }, "sha512-XXTUwCvisa5oacNGRP9SfNtYBNAMi+RPwBFmblZEF7N7swHYQS6/Zfk7SRwx4D5j3CH211YNRco1DEMNVfZCnQ=="],
 
@@ -521,9 +522,9 @@
 
     "ink": ["ink@4.4.1", "https://registry.npmmirror.com/ink/-/ink-4.4.1.tgz", { "dependencies": { "@alcalzone/ansi-tokenize": "0.1.3", "ansi-escapes": "6.2.1", "auto-bind": "5.0.1", "chalk": "5.6.2", "cli-boxes": "3.0.0", "cli-cursor": "4.0.0", "cli-truncate": "3.1.0", "code-excerpt": "4.0.0", "indent-string": "5.0.0", "is-ci": "3.0.1", "is-lower-case": "2.0.2", "is-upper-case": "2.0.2", "lodash": "4.18.1", "patch-console": "2.0.0", "react-reconciler": "0.29.2", "scheduler": "0.23.2", "signal-exit": "3.0.7", "slice-ansi": "6.0.0", "stack-utils": "2.0.6", "string-width": "5.1.2", "type-fest": "0.12.0", "widest-line": "4.0.1", "wrap-ansi": "8.1.0", "ws": "8.20.0", "yoga-wasm-web": "0.3.3" }, "optionalDependencies": { "@types/react": "18.3.28", "react-devtools-core": "4.28.5" }, "peerDependencies": { "react": "18.3.1" } }, "sha512-rXckvqPBB0Krifk5rn/5LvQGmyXwCUpBfmTwbkQNBY9JY8RSl3b8OftBNEYxg4+SWUhEKcPifgope28uL9inlA=="],
 
-    "ink-select-input": ["ink-select-input@6.2.0", "", { "dependencies": { "figures": "^6.1.0", "to-rotated": "^1.0.0" }, "peerDependencies": { "ink": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-304fZXxkpYxJ9si5lxRCaX01GNlmPBgOZumXXRnPYbHW/iI31cgQynqk2tRypGLOF1cMIwPUzL2LSm6q4I5rQQ=="],
+    "ink-select-input": ["ink-select-input@6.2.0", "https://registry.npmmirror.com/ink-select-input/-/ink-select-input-6.2.0.tgz", { "dependencies": { "figures": "^6.1.0", "to-rotated": "^1.0.0" }, "peerDependencies": { "ink": ">=5.0.0", "react": ">=18.0.0" } }, "sha512-304fZXxkpYxJ9si5lxRCaX01GNlmPBgOZumXXRnPYbHW/iI31cgQynqk2tRypGLOF1cMIwPUzL2LSm6q4I5rQQ=="],
 
-    "ink-text-input": ["ink-text-input@6.0.0", "", { "dependencies": { "chalk": "^5.3.0", "type-fest": "^4.18.2" }, "peerDependencies": { "ink": ">=5", "react": ">=18" } }, "sha512-Fw64n7Yha5deb1rHY137zHTAbSTNelUKuB5Kkk2HACXEtwIHBCf9OH2tP/LQ9fRYTl1F0dZgbW0zPnZk6FA9Lw=="],
+    "ink-text-input": ["ink-text-input@6.0.0", "https://registry.npmmirror.com/ink-text-input/-/ink-text-input-6.0.0.tgz", { "dependencies": { "chalk": "^5.3.0", "type-fest": "^4.18.2" }, "peerDependencies": { "ink": ">=5", "react": ">=18" } }, "sha512-Fw64n7Yha5deb1rHY137zHTAbSTNelUKuB5Kkk2HACXEtwIHBCf9OH2tP/LQ9fRYTl1F0dZgbW0zPnZk6FA9Lw=="],
 
     "ip-address": ["ip-address@10.1.0", "https://registry.npmmirror.com/ip-address/-/ip-address-10.1.0.tgz", {}, "sha512-XXADHxXmvT9+CRxhXg56LJovE+bmWnEWB78LB83VZTprKTmaC5QfruXocxzTZ2Kl0DNwKuBdlIhjL8LeY8Sf8Q=="],
 
@@ -541,7 +542,7 @@
 
     "is-promise": ["is-promise@4.0.0", "https://registry.npmmirror.com/is-promise/-/is-promise-4.0.0.tgz", {}, "sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ=="],
 
-    "is-unicode-supported": ["is-unicode-supported@2.1.0", "", {}, "sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ=="],
+    "is-unicode-supported": ["is-unicode-supported@2.1.0", "https://registry.npmmirror.com/is-unicode-supported/-/is-unicode-supported-2.1.0.tgz", {}, "sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ=="],
 
     "is-upper-case": ["is-upper-case@2.0.2", "https://registry.npmmirror.com/is-upper-case/-/is-upper-case-2.0.2.tgz", { "dependencies": { "tslib": "2.8.1" } }, "sha512-44pxmxAvnnAOwBg4tHPnkfvgjPwbc5QIsSstNU+YcJ1ovxVzCWpSGosPJOZh/a1tdl81fbgnLc9LLv+x2ywbPQ=="],
 
@@ -739,7 +740,7 @@
 
     "tinyglobby": ["tinyglobby@0.2.16", "https://registry.npmmirror.com/tinyglobby/-/tinyglobby-0.2.16.tgz", { "dependencies": { "fdir": "6.5.0", "picomatch": "4.0.4" } }, "sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg=="],
 
-    "to-rotated": ["to-rotated@1.0.0", "", {}, "sha512-KsEID8AfgUy+pxVRLsWp0VzCa69wxzUDZnzGbyIST/bcgcrMvTYoFBX/QORH4YApoD89EDuUovx4BTdpOn319Q=="],
+    "to-rotated": ["to-rotated@1.0.0", "https://registry.npmmirror.com/to-rotated/-/to-rotated-1.0.0.tgz", {}, "sha512-KsEID8AfgUy+pxVRLsWp0VzCa69wxzUDZnzGbyIST/bcgcrMvTYoFBX/QORH4YApoD89EDuUovx4BTdpOn319Q=="],
 
     "toidentifier": ["toidentifier@1.0.1", "https://registry.npmmirror.com/toidentifier/-/toidentifier-1.0.1.tgz", {}, "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA=="],
 
@@ -843,7 +844,7 @@
 
     "ink/ws": ["ws@8.20.0", "https://registry.npmmirror.com/ws/-/ws-8.20.0.tgz", {}, "sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA=="],
 
-    "ink-text-input/type-fest": ["type-fest@4.41.0", "", {}, "sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA=="],
+    "ink-text-input/type-fest": ["type-fest@4.41.0", "https://registry.npmmirror.com/type-fest/-/type-fest-4.41.0.tgz", {}, "sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA=="],
 
     "p-locate/p-limit": ["p-limit@3.1.0", "https://registry.npmmirror.com/p-limit/-/p-limit-3.1.0.tgz", { "dependencies": { "yocto-queue": "^0.1.0" } }, "sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ=="],
 
@@ -856,6 +857,8 @@
     "string-width-cjs/strip-ansi": ["strip-ansi@6.0.1", "https://registry.npmmirror.com/strip-ansi/-/strip-ansi-6.0.1.tgz", { "dependencies": { "ansi-regex": "5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
 
     "strip-ansi-cjs/ansi-regex": ["ansi-regex@5.0.1", "https://registry.npmmirror.com/ansi-regex/-/ansi-regex-5.0.1.tgz", {}, "sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ=="],
+
+    "sucrase/commander": ["commander@4.1.1", "https://registry.npmmirror.com/commander/-/commander-4.1.1.tgz", {}, "sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA=="],
 
     "tsup/typescript": ["typescript@5.9.3", "https://registry.npmmirror.com/typescript/-/typescript-5.9.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 

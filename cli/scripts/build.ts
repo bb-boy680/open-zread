@@ -1,4 +1,4 @@
-import { cp } from "fs/promises";
+import { cp, writeFile, readFile } from "fs/promises";
 import { existsSync, readdirSync, statSync } from "fs";
 import { execSync } from "child_process";
 import { join, sep } from "path";
@@ -11,6 +11,11 @@ console.log("Bundling...");
 execSync("bun build src/index.tsx --target bun --outfile dist/index.js", {
   stdio: "inherit",
 });
+
+// Add shebang to output
+console.log("Adding shebang...");
+const content = await readFile("dist/index.js", "utf-8");
+await writeFile("dist/index.js", `#!/usr/bin/env bun\n${content}`);
 
 // Recursively find a file by name in a directory
 function findFileRecursively(dir: string, target: string): string | null {
