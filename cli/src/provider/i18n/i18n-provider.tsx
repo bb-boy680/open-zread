@@ -2,12 +2,12 @@
  * I18n Provider - 异步加载配置并提供翻译
  */
 
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { Text } from 'ink';
-import { I18nContext } from './I18nContext';
-import { getTranslation, normalizeLanguageCode } from './translations';
+import { I18nContext } from './i18n-context';
+import { getTranslation, normalizeLanguageCode } from '../../i18n/translations';
 import { loadConfig } from '@open-zread/utils';
-import type { LanguageCode, TranslationKeys } from './types';
+import type { LanguageCode, TranslationKeys } from '../../i18n/types';
 
 interface I18nProviderProps {
   children: ReactNode;
@@ -51,13 +51,22 @@ export function I18nProvider({ children, fallbackLanguage = 'zh-CN' }: I18nProvi
     loadI18n();
   }, [fallbackLanguage]);
 
+  // 热更新语言
+  const setLanguage = useCallback((language: LanguageCode) => {
+    setState((prev) => ({
+      ...prev,
+      language,
+      translations: getTranslation(language),
+    }));
+  }, []);
+
   // 加载中显示简单提示
   if (state.isLoading || !state.translations) {
     return <Text dimColor>Loading...</Text>;
   }
 
   return (
-    <I18nContext.Provider value={{ t: state.translations, language: state.language }}>
+    <I18nContext.Provider value={{ t: state.translations, language: state.language, setLanguage }}>
       {children}
     </I18nContext.Provider>
   );

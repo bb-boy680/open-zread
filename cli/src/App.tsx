@@ -5,6 +5,7 @@
 import { render } from 'ink';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { I18nProvider } from './i18n';
+import { ConfigProvider } from './provider';
 import Layout from './layout/layout';
 
 // Config 模块页面
@@ -29,21 +30,20 @@ export function App({ initialEntries }: AppOptions) {
         <Routes>
           {/* 统一 Layout，处理 ESC 返回 */}
           <Route element={<Layout />}>
-
-          {/* ========== Config 模块路由（二级） ========== */}
-          <Route path="/config" element={<ConfigHomePage />} />
-          <Route path="/config/language" element={<ConfigLanguagePage />} />
-          <Route path="/config/doc_language" element={<ConfigDocLanguagePage />} />
-          <Route path="/config/provider" element={<ConfigProviderPage />} />
-          <Route path="/config/concurrency" element={<ConfigConcurrencyPage />} />
-          <Route path="/config/retry" element={<ConfigRetryPage />} />
-
-          {/* ========== Wiki 模块路由 ========== */}
-          {/* <Route path="/wiki" element={<WikiHomePage />} /> */}
-
-        </Route>
-      </Routes>
-    </MemoryRouter>
+            {/* ========== Config 模块路由 ========== */}
+            <Route element={<ConfigProvider />}>
+              <Route path="/config" element={<ConfigHomePage />} />
+              <Route path="/config/language" element={<ConfigLanguagePage />} />
+              <Route path="/config/doc_language" element={<ConfigDocLanguagePage />} />
+              <Route path="/config/provider" element={<ConfigProviderPage />} />
+              <Route path="/config/concurrency" element={<ConfigConcurrencyPage />} />
+              <Route path="/config/retry" element={<ConfigRetryPage />} />
+            </Route>
+            {/* ========== Wiki 模块路由 ========== */}
+            {/* <Route path="/wiki" element={<WikiHomePage />} /> */}
+          </Route>
+        </Routes>
+      </MemoryRouter>
     </I18nProvider>
   );
 }

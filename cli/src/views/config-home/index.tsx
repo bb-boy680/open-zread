@@ -4,54 +4,56 @@
  * Layout: 选择列表，每项显示标题+值，左侧 │ 标记选中项
  */
 
-import { Box, Text } from "ink";
+import { useState } from "react";
+import { Box, Text, useInput } from "ink";
 import { useNavigate } from "react-router";
 import SelectInput from "ink-select-input";
 import Divider from "../../components/Divider";
 import { useI18n } from "../../i18n";
+import { useConfig } from "../../provider";
 
 // SelectInput Item 类型
 type SelectItem = { label: string; value: string };
 
 interface ConfigItem {
   key: string;
-  labelKey: string; // 翻译键
-  value: string;
+  labelKey: string;
+  getValue: (config: ReturnType<typeof useConfig>['config'], t: (key: string) => string) => string;
   default?: string;
   route: string;
 }
 
-// 静态配置项（使用翻译键）
+// 配置项定义（动态获取值，使用翻译函数）
 const configItems: ConfigItem[] = [
   {
     key: "language",
     labelKey: "config.selectLanguage",
-    value: "zh",
+    getValue: (config, t) => config.language === 'zh' ? t('language.zh') : t('language.en'),
     route: "/config/language",
   },
   {
     key: "doc_language",
     labelKey: "config.docLanguage",
-    value: "zh",
+    getValue: (config, t) => config.doc_language === 'zh' ? t('language.zh') : t('language.en'),
     route: "/config/doc_language",
   },
   {
     key: "llm.provider",
     labelKey: "config.llmProvider",
-    value: "OpenAI · anthropic",
+    getValue: (config, _t) => `${config.llm.provider} · ${config.llm.model}`,
     route: "/config/provider",
   },
   {
-    key: "concurrency",
+    key: "concurrency.max_concurrent",
     labelKey: "config.maxConcurrency",
-    value: "1",
+    getValue: (config, _t) => String(config.concurrency.max_concurrent),
     default: "1",
     route: "/config/concurrency",
   },
   {
-    key: "retry",
+    key: "concurrency.max_retries",
     labelKey: "config.maxRetries",
-    value: "1",
+    getValue: (config, _t) => String(config.concurrency.max_retries),
     default: "0",
     route: "/config/retry",
   },
@@ -61,14 +63,18 @@ const configItems: ConfigItem[] = [
 function ConfigItemComponent({
   isSelected,
   label,
+  config,
 }: {
   isSelected: boolean;
   label: string;
+  config: ReturnType<typeof useConfig>['config'];
 }) {
   const { t } = useI18n();
   const configItem = configItems.find((i) => t(i.labelKey) === label);
 
   if (!configItem) return null;
+
+  const value = configItem.getValue(config, t);
 
   return (
     <Box flexDirection="column">
@@ -90,7 +96,7 @@ function ConfigItemComponent({
         <Text color={isSelected ? "cyan" : "gray"}>
           {isSelected ? "│ " : "  "}
         </Text>
-        <Text color={isSelected ? "cyan" : "white"}>{configItem.value}</Text>
+        <Text color={isSelected ? "cyan" : "white"}>{value}</Text>
       </Box>
 
       {/* 空行分隔 */}
@@ -99,9 +105,23 @@ function ConfigItemComponent({
   );
 }
 
-export default function HomePage() {
+export default function ConfigHomePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { config, save, hasChanges } = useConfig();
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+
+  // 监听 s 键保存
+  useInput((input, key) => {
+    if (input === 's' && hasChanges && saveStatus === 'idle') {
+      setSaveStatus('saving');
+      save().then((success) => {
+        setSaveStatus(success ? 'saved' : 'failed');
+        // 2秒后恢复 idle
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      });
+    }
+  });
 
   // 动态生成 selectItems
   const selectItems: SelectItem[] = configItems.map((item) => ({
@@ -127,6 +147,28 @@ export default function HomePage() {
       {/* 上分割线 */}
       <Divider />
 
+      {/* ========== 保存状态提示 ========== */}
+      {saveStatus === 'saving' && (
+        <Box marginTop={1}>
+          <Text color="yellow">正在保存...</Text>
+        </Box>
+      )}
+      {saveStatus === 'saved' && (
+        <Box marginTop={1}>
+          <Text color="green">{t('config.saved')}</Text>
+        </Box>
+      )}
+      {saveStatus === 'failed' && (
+        <Box marginTop={1}>
+          <Text color="red">{t('config.saveFailed')}</Text>
+        </Box>
+      )}
+      {hasChanges && saveStatus === 'idle' && (
+        <Box marginTop={1}>
+          <Text color="yellow">{t('config.hasUnsavedChanges')} · {t('config.pressS')}</Text>
+        </Box>
+      )}
+
       {/* ========== 配置项选择列表 ========== */}
       <Box marginTop={1}>
         <SelectInput
@@ -137,6 +179,7 @@ export default function HomePage() {
             <ConfigItemComponent
               isSelected={isSelected ?? false}
               label={label}
+              config={config}
             />
           )}
         />

@@ -16,24 +16,48 @@ export interface TranslationKeys {
     maxRetries: string;
     default: string;
     footer: string;
+    saved: string;
+    saveFailed: string;
+    hasUnsavedChanges: string;
+    pressS: string;
+    current: string;
+    range: string;
+    invalidRange: string;
   };
   language: {
     select: string;
+    zh: string;
+    en: string;
+    current: string;
+    footer: string;
   };
   docLanguage: {
     select: string;
+    zh: string;
+    en: string;
+    current: string;
+    footer: string;
   };
   provider: {
     select: string;
   };
   concurrency: {
     set: string;
+    range: string;
+    invalid: string;
+    current: string;
+    footer: string;
   };
   retry: {
     set: string;
+    range: string;
+    invalid: string;
+    current: string;
+    footer: string;
   };
   common: {
     escBack: string;
+    saveAndBack: string;
   };
   divider: {
     prefix: string;

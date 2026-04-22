@@ -3,8 +3,8 @@
  */
 
 import { useContext } from 'react';
-import { I18nContext } from './I18nContext';
-import type { InterpolationParams, TranslateFn } from './types';
+import { I18nContext } from '../provider/i18n/i18n-context';
+import type { InterpolationParams, TranslateFn, LanguageCode } from './types';
 
 /** 获取嵌套对象的值 */
 function getNestedValue(obj: Record<string, unknown>, path: string): string | undefined {
@@ -33,18 +33,18 @@ function interpolate(template: string, params: InterpolationParams): string {
  * i18n Hook
  *
  * 用法:
- *   const { t, language } = useI18n();
+ *   const { t, language, setLanguage } = useI18n();
  *   const title = t('config.title');
  *   const defaultText = t('config.default', { default: '1' });
  */
-export function useI18n(): { t: TranslateFn; language: string } {
+export function useI18n(): { t: TranslateFn; language: string; setLanguage: (language: LanguageCode) => void } {
   const context = useContext(I18nContext);
 
   if (!context) {
     throw new Error('useI18n must be used within an I18nProvider');
   }
 
-  const { t: translations, language } = context;
+  const { t: translations, language, setLanguage } = context;
 
   const t: TranslateFn = (key: string, params?: InterpolationParams) => {
     const template = getNestedValue(
@@ -64,5 +64,5 @@ export function useI18n(): { t: TranslateFn; language: string } {
     return template;
   };
 
-  return { t, language };
+  return { t, language, setLanguage };
 }
