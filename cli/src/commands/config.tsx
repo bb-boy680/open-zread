@@ -1,11 +1,9 @@
 /**
- * Config Command - Interactive Config Editor
+ * Config Command - 调用 App 启动配置编辑器
  */
 
-import { render } from 'ink';
-import { ConfigEditorWrapper } from '../config-editor/ConfigEditorWrapper';
+import { App } from '../App';
 
 export async function runConfig() {
-  const { waitUntilExit } = render(<ConfigEditorWrapper />);
-  await waitUntilExit();
+  App({ initialEntries: ['/config'] });
 }
