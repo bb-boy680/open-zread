@@ -5,6 +5,12 @@
 import type { TranslationKeys } from '../types';
 
 export const zhCN: TranslationKeys = {
+  layout: {
+    model: '模型',
+    directory: '目录',
+    intro: '将本地代码库转化为可读的 Wiki 文档。',
+    github: '开源项目: {url}',
+  },
   config: {
     title: 'Zread — 编辑配置',
     selectLanguage: '界面语言',
@@ -74,7 +80,7 @@ export const zhCN: TranslationKeys = {
     apikey: '输入 API Key',
     invalidUrl: 'URL 格式无效，请输入有效的 http/https URL',
     footer: 'enter 下一步 | esc 返回上一步',
-    step: '步骤 {current}/3',
+    step: '步骤 {current}/{total}',
   },
   concurrency: {
     set: '设置最大并发数',
@@ -97,5 +103,18 @@ export const zhCN: TranslationKeys = {
   divider: {
     prefix: '── ',
     middle: ' ─',
+  },
+  wiki: {
+    title: 'Zread — Wiki 文档生成',
+    generate: '生成文档',
+    continue: '继续生成 ({generated}/{total})',
+    force: '强制重新生成',
+    config: '配置',
+    exit: '退出',
+    footer: 'ESC 返回 | ↑↓ 选择 | Enter 确认',
+    statusNoCatalog: '当前项目尚无文档目录。',
+    statusHasCatalog: '当前项目已有文档目录。',
+    statusInProgress: '文档生成中 ({generated}/{total} 已完成)。',
+    statusComplete: '文档已全部生成 ({total} 篇)。',
   },
 };

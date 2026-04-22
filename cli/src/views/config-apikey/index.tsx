@@ -15,7 +15,6 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { getProviderRegistry } from '@open-zread/utils';
 import { useConfig, useEscHandler } from '../../provider';
 import { useI18n } from '../../i18n';
-import Divider from '../../components/Divider';
 
 export default function ConfigApiKeyPage() {
   const { providerId, modelId } = useParams<{ providerId: string; modelId: string }>();
@@ -32,7 +31,6 @@ export default function ConfigApiKeyPage() {
   const [baseUrl, setBaseUrl] = useState('');
   const [isEditingApiKey, setIsEditingApiKey] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [providerName, setProviderName] = useState<string>('');
   const [providerBaseUrl, setProviderBaseUrl] = useState<string>('');
 
   // 加载 Provider 信息
@@ -46,7 +44,6 @@ export default function ConfigApiKeyPage() {
       .then(registry => {
         const provider = registry.getProvider(providerId);
         if (provider) {
-          setProviderName(provider.name);
           setProviderBaseUrl(provider.base_url || '');
           // 如果 provider 有预置 base_url，自动填充
           if (provider.base_url) {
@@ -95,7 +92,7 @@ export default function ConfigApiKeyPage() {
   }, [handleSave]);
 
   // 监听按键（只在 Base URL 编辑模式处理 ESC）
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (!isEditingApiKey && key.escape) {
       // Base URL 编辑模式：ESC 返回 API Key 编辑
       setIsEditingApiKey(true);
@@ -121,15 +118,7 @@ export default function ConfigApiKeyPage() {
 
   return (
     <Box flexDirection="column">
-      {/* ========== Header ========== */}
-      <Box>
-        <Text bold>{t('apikey.input')}</Text>
-        <Text dimColor> · {providerName || providerId}</Text>
-        <Text dimColor> · {modelId || customModelName || '(自定义模型)'}</Text>
-      </Box>
-      <Divider />
-
-      {/* ========== API Key 输入 ========== */}
+      {/* API Key 输入 */}
       <Box marginTop={1}>
         <Text color={isEditingApiKey ? 'cyan' : 'gray'}>API Key: </Text>
         {isEditingApiKey ? (
@@ -145,14 +134,14 @@ export default function ConfigApiKeyPage() {
         )}
       </Box>
 
-      {/* ========== 错误提示 ========== */}
+      {/* 错误提示 */}
       {error && (
         <Box marginTop={1}>
           <Text color="red">{error}</Text>
         </Box>
       )}
 
-      {/* ========== Base URL 输入（非编辑 API Key 时显示） ========== */}
+      {/* Base URL 输入（非编辑 API Key 时显示） */}
       {!isEditingApiKey && (
         <Box marginTop={1}>
           <Text color="cyan">Base URL: </Text>
@@ -166,7 +155,7 @@ export default function ConfigApiKeyPage() {
         </Box>
       )}
 
-      {/* ========== Footer ========== */}
+      {/* Footer */}
       <Box marginTop={1}>
         {isEditingApiKey ? (
           <Text dimColor>

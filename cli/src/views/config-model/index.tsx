@@ -15,7 +15,6 @@ import { getProviderRegistry } from '@open-zread/utils';
 import type { ModelInfo, ProviderInfo } from '@open-zread/utils';
 import { useI18n } from '../../i18n';
 import { useConfig } from '../../provider';
-import Divider from '../../components/Divider';
 
 export default function ConfigModelPage() {
   const { providerId } = useParams<{ providerId: string }>();
@@ -96,10 +95,8 @@ export default function ConfigModelPage() {
   // 加载中状态
   if (loading) {
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">{t('model.loading')}</Text>
-        </Box>
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold color="cyan">{t('model.loading')}</Text>
       </Box>
     );
   }
@@ -107,11 +104,9 @@ export default function ConfigModelPage() {
   // 错误状态
   if (error) {
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="red">{error}</Text>
-        </Box>
-        <Box>
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold color="red">{error}</Text>
+        <Box marginTop={1}>
           <Text dimColor>{t('common.escBack')}</Text>
         </Box>
       </Box>
@@ -120,21 +115,14 @@ export default function ConfigModelPage() {
 
   return (
     <Box flexDirection="column">
-      {/* ========== Header ========== */}
-      <Box>
-        <Text bold>{t('model.select')}</Text>
-        <Text dimColor> · {provider?.name || providerId}</Text>
-      </Box>
-      <Divider />
-
-      {/* ========== 无预置模型提示 ========== */}
+      {/* 无预置模型提示 */}
       {models.length === 0 && (
         <Box marginTop={1}>
           <Text dimColor>{t('model.noModels')}</Text>
         </Box>
       )}
 
-      {/* ========== Model 列表 ========== */}
+      {/* Model 列表 */}
       <Box marginTop={1} flexDirection="column">
         {displayItems.map((model, index) => (
           <Box key={model.id} marginBottom={0}>
@@ -169,7 +157,7 @@ export default function ConfigModelPage() {
         ))}
       </Box>
 
-      {/* ========== Footer ========== */}
+      {/* Footer */}
       <Box marginTop={1}>
         <Text dimColor>{t('model.footer')}</Text>
       </Box>

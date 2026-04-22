@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { useNavigate } from "react-router";
 import SelectInput from "ink-select-input";
-import Divider from "../../components/Divider";
 import { useI18n } from "../../i18n";
 import { useConfig } from "../../provider";
 
@@ -61,13 +60,6 @@ export default function ConfigLanguagePage() {
 
   return (
     <Box flexDirection="column">
-      {/* Header */}
-      <Box>
-        <Text bold>{t('config.title')}</Text>
-        <Text dimColor> · {t('language.select')}</Text>
-      </Box>
-      <Divider />
-
       {/* 当前值 */}
       <Box marginTop={1}>
         <Text dimColor>{t('language.current')}: </Text>

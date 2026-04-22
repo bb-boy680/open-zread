@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import TextInput from "ink-text-input";
 import { useNavigate } from "react-router";
-import Divider from "../../components/Divider";
 import { useI18n } from "../../i18n";
 import { useConfig } from "../../provider";
 
@@ -73,13 +72,6 @@ export default function ConfigRetryPage() {
 
   return (
     <Box flexDirection="column">
-      {/* Header */}
-      <Box>
-        <Text bold>{t('config.title')}</Text>
-        <Text dimColor> · {t('retry.set')}</Text>
-      </Box>
-      <Divider />
-
       {/* 当前值输入 */}
       <Box marginTop={1}>
         <Text dimColor>{t('retry.current')}: </Text>

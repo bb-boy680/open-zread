@@ -138,14 +138,9 @@ export default function ConfigHomePage() {
 
   return (
     <Box flexDirection="column">
-      {/* ========== Header ========== */}
-      <Box>
-        <Text bold>{t('config.title')}</Text>
-        <Text dimColor> · ~/.zread/config.yaml</Text>
-      </Box>
 
       {/* 上分割线 */}
-      <Divider />
+      <Divider title={t('config.title') + ' · ~/.zread/config.yaml'} />
 
       {/* ========== 保存状态提示 ========== */}
       {saveStatus === 'saving' && (

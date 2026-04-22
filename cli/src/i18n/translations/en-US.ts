@@ -5,6 +5,12 @@
 import type { TranslationKeys } from '../types';
 
 export const enUS: TranslationKeys = {
+  layout: {
+    model: 'Model',
+    directory: 'Directory',
+    intro: 'Transform your local codebase into readable Wiki docs.',
+    github: 'Open source: {url}',
+  },
   config: {
     title: 'Zread — Edit Configuration',
     selectLanguage: 'UI Language',
@@ -74,7 +80,7 @@ export const enUS: TranslationKeys = {
     apikey: 'Enter API Key',
     invalidUrl: 'Invalid URL format, please enter valid http/https URL',
     footer: 'enter Next | esc Previous step',
-    step: 'Step {current}/3',
+    step: 'Step {current}/{total}',
   },
   concurrency: {
     set: 'Set Max Concurrency',
@@ -97,5 +103,18 @@ export const enUS: TranslationKeys = {
   divider: {
     prefix: '── ',
     middle: ' ─',
+  },
+  wiki: {
+    title: 'Zread — Wiki Documentation',
+    generate: 'Generate Documentation',
+    continue: 'Continue ({generated}/{total})',
+    force: 'Force Regenerate',
+    config: 'Configuration',
+    exit: 'Exit',
+    footer: 'ESC Back | ↑↓ Select | Enter Confirm',
+    statusNoCatalog: 'No documentation catalog yet.',
+    statusHasCatalog: 'Documentation catalog exists.',
+    statusInProgress: 'Generating ({generated}/{total} completed).',
+    statusComplete: 'All docs generated ({total} pages).',
   },
 };

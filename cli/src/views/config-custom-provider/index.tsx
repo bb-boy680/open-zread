@@ -15,7 +15,6 @@ import { useParams, useNavigate } from 'react-router';
 import { getProviderRegistry } from '@open-zread/utils';
 import { useConfig, useEscHandler } from '../../provider';
 import { useI18n } from '../../i18n';
-import Divider from '../../components/Divider';
 
 type Step = 'baseUrl' | 'modelName' | 'apiKey';
 
@@ -29,7 +28,6 @@ export default function ConfigCustomProviderPage() {
   // 是否是完全自定义 Provider（需要 Base URL 步骤）
   const isFullCustom = providerId === 'custom' || !providerId;
 
-  const [providerName, setProviderName] = useState<string>('');
   const [providerBaseUrl, setProviderBaseUrl] = useState<string>('');
   const [step, setStep] = useState<Step>(isFullCustom ? 'baseUrl' : 'modelName');
   const [baseUrl, setBaseUrl] = useState('');
@@ -41,6 +39,12 @@ export default function ConfigCustomProviderPage() {
     apiKey: '',
   });
 
+  // 计算步骤编号
+  const stepNumber = isFullCustom
+    ? (step === 'baseUrl' ? 1 : step === 'modelName' ? 2 : 3)
+    : (step === 'modelName' ? 1 : 2);
+  const totalSteps = isFullCustom ? 3 : 2;
+
   // 加载已有 Provider 信息
   useEffect(() => {
     if (!isFullCustom && providerId) {
@@ -48,7 +52,6 @@ export default function ConfigCustomProviderPage() {
         .then(registry => {
           const p = registry.getProvider(providerId);
           if (p) {
-            setProviderName(p.name);
             setProviderBaseUrl(p.base_url || '');
             if (p.base_url) {
               setBaseUrl(p.base_url);
@@ -146,33 +149,20 @@ export default function ConfigCustomProviderPage() {
   }, [apiKey, errors, t, providerId, modelName, baseUrl, providerBaseUrl, setField, navigate, releaseEsc]);
 
   // 键盘处理（只处理 esc）
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (key.escape) {
       handleBack();
     }
   });
 
-  // 计算步骤编号
-  const stepNumber = isFullCustom
-    ? (step === 'baseUrl' ? 1 : step === 'modelName' ? 2 : 3)
-    : (step === 'modelName' ? 1 : 2);
-  const totalSteps = isFullCustom ? 3 : 2;
-
-  // 页面标题
-  const pageTitle = isFullCustom
-    ? t('customProvider.title')
-    : `${providerName || providerId} — 自定义模型`;
-
   return (
     <Box flexDirection="column">
-      {/* ========== Header ========== */}
-      <Box>
-        <Text bold>{pageTitle}</Text>
-        <Text dimColor> · 步骤 {stepNumber}/{totalSteps}</Text>
+      {/* 步骤显示 */}
+      <Box marginTop={1}>
+        <Text dimColor>{t('customProvider.step', { current: stepNumber, total: totalSteps })}</Text>
       </Box>
-      <Divider />
 
-      {/* ========== 步骤: Base URL（仅完全自定义） ========== */}
+      {/* 步骤: Base URL（仅完全自定义） */}
       {isFullCustom && (
         <>
           <Box marginTop={1}>
@@ -209,7 +199,7 @@ export default function ConfigCustomProviderPage() {
         </>
       )}
 
-      {/* ========== 步骤: Model Name ========== */}
+      {/* 步骤: Model Name */}
       <Box marginTop={1}>
         <Text color={step === 'modelName' ? 'cyan' : 'gray'}>
           {step === 'modelName' ? '> ' : '  '}
@@ -242,7 +232,7 @@ export default function ConfigCustomProviderPage() {
         </Box>
       )}
 
-      {/* ========== 步骤: API Key ========== */}
+      {/* 步骤: API Key */}
       <Box marginTop={1}>
         <Text color={step === 'apiKey' ? 'cyan' : 'gray'}>
           {step === 'apiKey' ? '> ' : '  '}
@@ -275,14 +265,14 @@ export default function ConfigCustomProviderPage() {
         </Box>
       )}
 
-      {/* ========== 已有 Provider 的 Base URL 提示 ========== */}
+      {/* 已有 Provider 的 Base URL 提示 */}
       {!isFullCustom && providerBaseUrl && step === 'modelName' && (
         <Box marginTop={1}>
           <Text dimColor>Base URL: {providerBaseUrl}</Text>
         </Box>
       )}
 
-      {/* ========== Footer ========== */}
+      {/* Footer */}
       <Box marginTop={1}>
         <Text dimColor>{t('customProvider.footer')}</Text>
       </Box>

@@ -18,7 +18,6 @@ import { getProviderRegistry } from '@open-zread/utils';
 import type { ProviderInfo } from '@open-zread/utils';
 import { useConfig, useEscHandler } from '../../provider';
 import { useI18n } from '../../i18n';
-import Divider from '../../components/Divider';
 
 // 自定义 Provider 选项（固定放在第一位）
 const CUSTOM_PROVIDER_OPTION: ProviderInfo = {
@@ -148,10 +147,8 @@ export default function ConfigProviderPage() {
   // 加载中状态
   if (loading) {
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="cyan">{t('provider.loading')}</Text>
-        </Box>
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold color="cyan">{t('provider.loading')}</Text>
       </Box>
     );
   }
@@ -159,11 +156,9 @@ export default function ConfigProviderPage() {
   // 错误状态
   if (error) {
     return (
-      <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold color="red">{t('provider.error')}: {error}</Text>
-        </Box>
-        <Box>
+      <Box flexDirection="column" marginTop={1}>
+        <Text bold color="red">{t('provider.error')}: {error}</Text>
+        <Box marginTop={1}>
           <Text dimColor>{t('common.escBack')} | r {t('provider.refresh')}</Text>
         </Box>
       </Box>
@@ -174,10 +169,6 @@ export default function ConfigProviderPage() {
   if (isSearchMode) {
     return (
       <Box flexDirection="column">
-        <Box marginBottom={1}>
-          <Text bold>{t('provider.search')}</Text>
-        </Box>
-        <Divider />
         <Box marginTop={1}>
           <Text color="cyan">搜索: </Text>
           <TextInput
@@ -198,14 +189,7 @@ export default function ConfigProviderPage() {
 
   return (
     <Box flexDirection="column">
-      {/* ========== Header ========== */}
-      <Box>
-        <Text bold>{t('provider.select')}</Text>
-        <Text dimColor> · {t('provider.current')}: {config.llm.provider}</Text>
-      </Box>
-      <Divider />
-
-      {/* ========== Provider 列表 ========== */}
+      {/* Provider 列表 */}
       <Box marginTop={1} flexDirection="column">
         {displayProviders.length === 0 ? (
           <Text dimColor>没有 Provider</Text>
@@ -234,7 +218,7 @@ export default function ConfigProviderPage() {
         )}
       </Box>
 
-      {/* ========== Footer ========== */}
+      {/* Footer */}
       <Box marginTop={1}>
         <Text dimColor>{t('provider.footer')}</Text>
       </Box>

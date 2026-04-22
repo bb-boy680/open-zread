@@ -5,8 +5,9 @@
 import { render } from 'ink';
 import { MemoryRouter, Routes, Route } from 'react-router';
 import { I18nProvider } from './i18n';
-import { ConfigProvider, EscHandlerProvider } from './provider';
+import { ConfigProvider, EscHandlerProvider, WikiProvider } from './provider';
 import Layout from './layout/layout';
+import ConfigLayout from './layout/config-layout';
 
 // Config 模块页面
 import ConfigHomePage from './views/config-home';
@@ -19,8 +20,8 @@ import ConfigCustomProviderPage from './views/config-custom-provider';
 import ConfigConcurrencyPage from './views/config-concurrency';
 import ConfigRetryPage from './views/config-retry';
 
-// Wiki 模块页面（待实现）
-// import WikiHomePage from './views/wiki-home';
+// Wiki 模块页面
+import WikiHomePage from './views/wiki-home';
 
 interface AppOptions {
   initialEntries: string[];
@@ -31,27 +32,32 @@ export function App({ initialEntries }: AppOptions) {
     <I18nProvider>
       <MemoryRouter initialEntries={initialEntries}>
         <EscHandlerProvider>
-          <Routes>
-            {/* 统一 Layout，处理 ESC 返回 */}
-            <Route element={<Layout />}>
-              {/* ========== Config 模块路由 ========== */}
-              <Route element={<ConfigProvider />}>
+          <ConfigProvider>
+            <Routes>
+              {/* 统一 Layout，处理 ESC 返回 */}
+              <Route element={<Layout />}>
+                {/* ========== Config 模块路由 ========== */}
                 <Route path="/config" element={<ConfigHomePage />} />
-                <Route path="/config/language" element={<ConfigLanguagePage />} />
-                <Route path="/config/doc_language" element={<ConfigDocLanguagePage />} />
-                <Route path="/config/provider" element={<ConfigProviderPage />} />
-                {/* 注意：具体路径要在参数化路径之前，否则 'custom' 会被当作 providerId */}
-                <Route path="/config/provider/custom" element={<ConfigCustomProviderPage />} />
-                <Route path="/config/provider/:providerId" element={<ConfigModelPage />} />
-                <Route path="/config/provider/:providerId/model/:modelId" element={<ConfigApiKeyPage />} />
-                <Route path="/config/provider/:providerId/custom" element={<ConfigCustomProviderPage />} />
-                <Route path="/config/concurrency" element={<ConfigConcurrencyPage />} />
-                <Route path="/config/retry" element={<ConfigRetryPage />} />
+                {/* 子页面使用 ConfigLayout，统一 header */}
+                <Route element={<ConfigLayout />}>
+                  <Route path="/config/language" element={<ConfigLanguagePage />} />
+                  <Route path="/config/doc_language" element={<ConfigDocLanguagePage />} />
+                  <Route path="/config/provider" element={<ConfigProviderPage />} />
+                  {/* 注意：具体路径要在参数化路径之前，否则 'custom' 会被当作 providerId */}
+                  <Route path="/config/provider/custom" element={<ConfigCustomProviderPage />} />
+                  <Route path="/config/provider/:providerId" element={<ConfigModelPage />} />
+                  <Route path="/config/provider/:providerId/model/:modelId" element={<ConfigApiKeyPage />} />
+                  <Route path="/config/provider/:providerId/custom" element={<ConfigCustomProviderPage />} />
+                  <Route path="/config/concurrency" element={<ConfigConcurrencyPage />} />
+                  <Route path="/config/retry" element={<ConfigRetryPage />} />
+                </Route>
+                {/* ========== Wiki 模块路由 ========== */}
+                <Route element={<WikiProvider />}>
+                  <Route path="/wiki" element={<WikiHomePage />} />
+                </Route>
               </Route>
-              {/* ========== Wiki 模块路由 ========== */}
-              {/* <Route path="/wiki" element={<WikiHomePage />} /> */}
-            </Route>
-          </Routes>
+            </Routes>
+          </ConfigProvider>
         </EscHandlerProvider>
       </MemoryRouter>
     </I18nProvider>

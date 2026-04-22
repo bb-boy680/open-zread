@@ -7,6 +7,12 @@ export type LanguageCode = 'zh-CN' | 'en-US';
 
 /** 翻译字典结构 */
 export interface TranslationKeys {
+  layout: {
+    model: string;
+    directory: string;
+    intro: string;
+    github: string;
+  };
   config: {
     title: string;
     selectLanguage: string;
@@ -99,6 +105,19 @@ export interface TranslationKeys {
   divider: {
     prefix: string;
     middle: string;
+  };
+  wiki: {
+    title: string;
+    generate: string;
+    continue: string;
+    force: string;
+    config: string;
+    exit: string;
+    footer: string;
+    statusNoCatalog: string;
+    statusHasCatalog: string;
+    statusInProgress: string;
+    statusComplete: string;
   };
 }
 
