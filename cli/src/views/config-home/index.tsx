@@ -8,59 +8,54 @@ import { Box, Text } from "ink";
 import { useNavigate } from "react-router";
 import SelectInput from "ink-select-input";
 import Divider from "../../components/Divider";
+import { useI18n } from "../../i18n";
 
 // SelectInput Item 类型
 type SelectItem = { label: string; value: string };
 
 interface ConfigItem {
   key: string;
-  label: string;
+  labelKey: string; // 翻译键
   value: string;
   default?: string;
-  route: string; // 选中时跳转的路由
+  route: string;
 }
 
-// 静态配置项（后续从 ~/.zread/config.yaml 加载）
+// 静态配置项（使用翻译键）
 const configItems: ConfigItem[] = [
   {
     key: "language",
-    label: "请选择界面语言：",
+    labelKey: "config.selectLanguage",
     value: "zh",
     route: "/config/language",
   },
   {
     key: "doc_language",
-    label: "文档生成语言",
+    labelKey: "config.docLanguage",
     value: "zh",
     route: "/config/doc_language",
   },
   {
     key: "llm.provider",
-    label: "LLM 提供商",
+    labelKey: "config.llmProvider",
     value: "OpenAI · anthropic",
     route: "/config/provider",
   },
   {
     key: "concurrency",
-    label: "最大并发数",
+    labelKey: "config.maxConcurrency",
     value: "1",
     default: "1",
     route: "/config/concurrency",
   },
   {
     key: "retry",
-    label: "最大重试次数",
+    labelKey: "config.maxRetries",
     value: "1",
     default: "0",
     route: "/config/retry",
   },
 ];
-
-// 转换为 SelectInput 格式
-const selectItems: SelectItem[] = configItems.map((item) => ({
-  label: item.label,
-  value: item.key,
-}));
 
 // 自定义选项组件 - 两行布局（标题+值）
 function ConfigItemComponent({
@@ -70,7 +65,8 @@ function ConfigItemComponent({
   isSelected: boolean;
   label: string;
 }) {
-  const configItem = configItems.find((i) => i.label === label);
+  const { t } = useI18n();
+  const configItem = configItems.find((i) => t(i.labelKey) === label);
 
   if (!configItem) return null;
 
@@ -82,9 +78,9 @@ function ConfigItemComponent({
           {isSelected ? "│ " : "  "}
         </Text>
         <Text bold={isSelected} color={isSelected ? "white" : "gray"}>
-          {configItem.label}
+          {t(configItem.labelKey)}
           {configItem.default && (
-            <Text dimColor> (默认: {configItem.default})</Text>
+            <Text dimColor> {t('config.default', { default: configItem.default })}</Text>
           )}
         </Text>
       </Box>
@@ -104,7 +100,14 @@ function ConfigItemComponent({
 }
 
 export default function HomePage() {
+  const { t } = useI18n();
   const navigate = useNavigate();
+
+  // 动态生成 selectItems
+  const selectItems: SelectItem[] = configItems.map((item) => ({
+    label: t(item.labelKey),
+    value: item.key,
+  }));
 
   const handleSelect = (item: SelectItem) => {
     const configItem = configItems.find((i) => i.key === item.value);
@@ -117,8 +120,8 @@ export default function HomePage() {
     <Box flexDirection="column">
       {/* ========== Header ========== */}
       <Box>
-        <Text bold>Zread — 编辑配置</Text>
-        <Text dimColor> · C:\Users\HONOR\.zread\config.yaml</Text>
+        <Text bold>{t('config.title')}</Text>
+        <Text dimColor> · ~/.zread/config.yaml</Text>
       </Box>
 
       {/* 上分割线 */}
@@ -141,7 +144,7 @@ export default function HomePage() {
 
       {/* ========== Footer ========== */}
       <Box marginTop={1}>
-        <Text dimColor>ESC 退出 | ↑↓ 选择 | Enter 确认</Text>
+        <Text dimColor>{t('config.footer')}</Text>
       </Box>
     </Box>
   );

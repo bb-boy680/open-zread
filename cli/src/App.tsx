@@ -4,6 +4,7 @@
 
 import { render } from 'ink';
 import { MemoryRouter, Routes, Route } from 'react-router';
+import { I18nProvider } from './i18n';
 import Layout from './layout/layout';
 
 // Config 模块页面
@@ -23,10 +24,11 @@ interface AppOptions {
 
 export function App({ initialEntries }: AppOptions) {
   render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <Routes>
-        {/* 统一 Layout，处理 ESC 返回 */}
-        <Route element={<Layout />}>
+    <I18nProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        <Routes>
+          {/* 统一 Layout，处理 ESC 返回 */}
+          <Route element={<Layout />}>
 
           {/* ========== Config 模块路由（二级） ========== */}
           <Route path="/config" element={<ConfigHomePage />} />
@@ -42,5 +44,6 @@ export function App({ initialEntries }: AppOptions) {
         </Route>
       </Routes>
     </MemoryRouter>
+    </I18nProvider>
   );
 }

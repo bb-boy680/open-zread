@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "open-zread": "./dist/index.js"
+    "open-zread": "./bin/open-zread.js"
   },
   "main": "./dist/index.js",
   "scripts": {

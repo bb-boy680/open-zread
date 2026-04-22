@@ -3,12 +3,15 @@
  */
 
 import { Box, Text } from "ink";
+import { useI18n } from "../../i18n";
 
 export default function ConfigProviderPage() {
+  const { t } = useI18n();
+
   return (
     <Box flexDirection="column">
-      <Text bold>选择 LLM 提供商</Text>
-      <Text dimColor>ESC 返回</Text>
+      <Text bold>{t('provider.select')}</Text>
+      <Text dimColor>{t('common.escBack')}</Text>
     </Box>
   );
 }

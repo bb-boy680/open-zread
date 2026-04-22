@@ -3,12 +3,15 @@
  */
 
 import { Box, Text } from "ink";
+import { useI18n } from "../../i18n";
 
 export default function ConfigLanguagePage() {
+  const { t } = useI18n();
+
   return (
     <Box flexDirection="column">
-      <Text bold>选择界面语言</Text>
-      <Text dimColor>ESC 返回</Text>
+      <Text bold>{t('language.select')}</Text>
+      <Text dimColor>{t('common.escBack')}</Text>
     </Box>
   );
 }
