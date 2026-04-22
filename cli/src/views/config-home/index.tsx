@@ -111,13 +111,13 @@ export default function ConfigHomePage() {
   const { config, save, hasChanges } = useConfig();
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
-  // 监听 s 键保存
-  useInput((input, key) => {
+  // ESC 退出程序由 Layout 统一处理
+  // 这里只监听 s 键保存
+  useInput((input) => {
     if (input === 's' && hasChanges && saveStatus === 'idle') {
       setSaveStatus('saving');
       save().then((success) => {
         setSaveStatus(success ? 'saved' : 'failed');
-        // 2秒后恢复 idle
         setTimeout(() => setSaveStatus('idle'), 2000);
       });
     }

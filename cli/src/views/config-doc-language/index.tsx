@@ -24,8 +24,9 @@ export default function ConfigDocLanguagePage() {
   const [selectedValue, setSelectedValue] = useState(config.doc_language);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
-  // 监听 s 键保存并返回
-  useInput((input, key) => {
+  // ESC 返回由 Layout 统一处理
+  // 这里只监听 s 键保存
+  useInput((input) => {
     if (input === 's' && saveStatus === 'idle') {
       setField('doc_language', selectedValue);
       setSaveStatus('saving');

@@ -40,6 +40,43 @@ export interface TranslationKeys {
   };
   provider: {
     select: string;
+    search: string;
+    custom: string;
+    refresh: string;
+    loading: string;
+    current: string;
+    footer: string;
+    error: string;
+  };
+  model: {
+    select: string;
+    custom: string;
+    loading: string;
+    tokens: string;
+    supports: string;
+    footer: string;
+    noModels: string;
+    customInput: string;
+  };
+  apikey: {
+    input: string;
+    placeholder: string;
+    hidden: string;
+    required: string;
+    footer: string;
+    saved: string;
+    saving: string;
+  };
+  customProvider: {
+    title: string;
+    baseUrl: string;
+    baseUrlPlaceholder: string;
+    modelName: string;
+    modelNamePlaceholder: string;
+    apikey: string;
+    invalidUrl: string;
+    footer: string;
+    step: string;
   };
   concurrency: {
     set: string;

@@ -26,7 +26,8 @@
     "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
-    "react-devtools-core": "^4.28.5"
+    "react-devtools-core": "^4.28.5",
+    "use-immer": "^0.11.0"
   },
   "workspaces": [
     "cli",

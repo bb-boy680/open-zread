@@ -42,7 +42,8 @@ export default function ConfigConcurrencyPage() {
     validate(value);
   };
 
-  // 监听按键
+  // ESC 返回由 Layout 统一处理
+  // 这里只监听 Enter/s 键
   useInput((input, key) => {
     // Enter 键确认修改并返回（不保存）
     if (key.return && saveStatus === 'idle') {
