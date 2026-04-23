@@ -49,7 +49,8 @@ export default function ConfigConcurrencyPage() {
       if (validate(inputValue)) {
         const num = parseInt(inputValue, 10);
         setField('concurrency.max_concurrent', num);
-        navigate('/config');
+        // 使用 -1 返回上一级，避免路由栈堆积
+        navigate(-1);
       }
     }
     // s 键保存并返回
@@ -61,7 +62,7 @@ export default function ConfigConcurrencyPage() {
         save().then((success) => {
           setSaveStatus(success ? 'saved' : 'failed');
           if (success) {
-            setTimeout(() => navigate('/config'), 500);
+            setTimeout(() => navigate(-1), 500);
           } else {
             setTimeout(() => setSaveStatus('idle'), 2000);
           }

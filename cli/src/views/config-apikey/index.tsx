@@ -71,9 +71,9 @@ export default function ConfigApiKeyPage() {
       setField('llm.base_url', finalBaseUrl);
     }
 
-    // 直接返回首页
+    // 直接返回上一级（使用 -1 避免路由栈堆积）
     releaseEsc();
-    navigate('/config');
+    navigate(-1);
   }, [apiKey, baseUrl, providerBaseUrl, providerId, modelId, customModelName, setField, navigate, releaseEsc, t]);
 
   // API Key 提交处理

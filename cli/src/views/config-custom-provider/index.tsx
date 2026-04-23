@@ -143,9 +143,9 @@ export default function ConfigCustomProviderPage() {
       setField('llm.base_url', finalBaseUrl);
     }
 
-    // 直接返回首页
+    // 直接返回上一级（使用 -1 避免路由栈堆积）
     releaseEsc();
-    navigate('/config');
+    navigate(-1);
   }, [apiKey, errors, t, providerId, modelName, baseUrl, providerBaseUrl, setField, navigate, releaseEsc]);
 
   // 键盘处理（只处理 esc）

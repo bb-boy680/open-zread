@@ -32,7 +32,7 @@ export default function ConfigDocLanguagePage() {
       save().then((success) => {
         setSaveStatus(success ? 'saved' : 'failed');
         if (success) {
-          setTimeout(() => navigate('/config'), 500);
+          setTimeout(() => navigate(-1), 500);
         } else {
           setTimeout(() => setSaveStatus('idle'), 2000);
         }
@@ -43,8 +43,8 @@ export default function ConfigDocLanguagePage() {
   const handleSelect = (item: SelectItem) => {
     setSelectedValue(item.value);
     setField('doc_language', item.value);
-    // Enter 确认后返回上一级
-    navigate('/config');
+    // Enter 确认后返回上一级（使用 -1 避免路由栈堆积）
+    navigate(-1);
   };
 
   // 根据当前语言显示对应的选项标签
