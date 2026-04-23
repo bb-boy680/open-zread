@@ -6,7 +6,9 @@ import type { TranslationKeys } from '../types';
 
 export const enUS: TranslationKeys = {
   layout: {
+    provider: 'Provider',
     model: 'Model',
+    baseUrl: 'Base URL',
     directory: 'Directory',
     intro: 'Transform your local codebase into readable Wiki docs.',
     github: 'Open source: {url}',
@@ -116,5 +118,17 @@ export const enUS: TranslationKeys = {
     statusHasCatalog: 'Documentation catalog exists.',
     statusInProgress: 'Generating ({generated}/{total} completed).',
     statusComplete: 'All docs generated ({total} pages).',
+  },
+  wikiGenerate: {
+    catalogTitle: 'Catalog',
+    articlesTitle: 'Articles {current}/{total}',
+    completed: 'Completed',
+    loading: 'Loading',
+    waiting: 'Waiting',
+    failed: 'Failed',
+    navigate: 'Navigate',
+    retry: 'Retry failed',
+    exit: 'Exit',
+    noCatalog: 'Waiting for catalog generation...',
   },
 };

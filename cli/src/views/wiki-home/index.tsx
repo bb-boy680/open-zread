@@ -89,13 +89,13 @@ export default function WikiHomePage() {
   const handleSelect = (item: SelectItem) => {
     switch (item.value) {
       case 'generate':
-        // TODO: 跳转到生成页面
+        navigate('/wiki/generate');
         break;
       case 'continue':
-        // TODO: 跳转到继续生成页面
+        navigate('/wiki/generate');
         break;
       case 'force':
-        // TODO: 跳转到强制重新生成页面
+        navigate('/wiki/generate');
         break;
       case 'config':
         navigate('/config');

@@ -8,7 +8,9 @@ export type LanguageCode = 'zh-CN' | 'en-US';
 /** 翻译字典结构 */
 export interface TranslationKeys {
   layout: {
+    provider: string;
     model: string;
+    baseUrl: string;
     directory: string;
     intro: string;
     github: string;
@@ -118,6 +120,18 @@ export interface TranslationKeys {
     statusHasCatalog: string;
     statusInProgress: string;
     statusComplete: string;
+  };
+  wikiGenerate: {
+    catalogTitle: string;
+    articlesTitle: string;
+    completed: string;
+    loading: string;
+    waiting: string;
+    failed: string;
+    navigate: string;
+    retry: string;
+    exit: string;
+    noCatalog: string;
   };
 }
 

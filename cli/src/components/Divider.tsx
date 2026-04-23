@@ -9,44 +9,11 @@
  */
 
 import { Box, Text, useStdout } from "ink";
+import { getDisplayWidth, truncateByDisplayWidth } from "../utils";
 
 interface DividerProps {
   /** 标题文本（可选） */
   title?: string;
-}
-
-/**
- * 计算字符串的终端显示宽度
- * 中文字符占2格，ASCII字符占1格
- */
-function getDisplayWidth(str: string): number {
-  let width = 0;
-  for (const char of str) {
-    // 中文字符范围
-    if (/[一-鿿]/.test(char)) {
-      width += 2;
-    } else {
-      width += 1;
-    }
-  }
-  return width;
-}
-
-/**
- * 按显示宽度截断字符串
- */
-function truncateByDisplayWidth(str: string, maxWidth: number): string {
-  let result = '';
-  let width = 0;
-  for (const char of str) {
-    const charWidth = /[一-鿿]/.test(char) ? 2 : 1;
-    if (width + charWidth > maxWidth) {
-      break;
-    }
-    result += char;
-    width += charWidth;
-  }
-  return result;
 }
 
 export default function Divider({ title }: DividerProps) {

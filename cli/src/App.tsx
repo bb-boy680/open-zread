@@ -22,6 +22,7 @@ import ConfigRetryPage from './views/config-retry';
 
 // Wiki 模块页面
 import WikiHomePage from './views/wiki-home';
+import WikiGeneratePage from './views/wiki-generate';
 
 interface AppOptions {
   initialEntries: string[];
@@ -54,6 +55,7 @@ export function App({ initialEntries }: AppOptions) {
                 {/* ========== Wiki 模块路由 ========== */}
                 <Route element={<WikiProvider />}>
                   <Route path="/wiki" element={<WikiHomePage />} />
+                  <Route path="/wiki/generate" element={<WikiGeneratePage />} />
                 </Route>
               </Route>
             </Routes>

@@ -35,7 +35,9 @@ export default function Layout() {
 
   // 项目信息
   const currentDir = getShortPath(process.cwd());
-  const modelName = config.llm.model || '未设置';
+  const llmProvider = config.llm.provider || '未设置';
+  const llmModel = config.llm.model || '未设置';
+  const llmBaseUrl = config.llm.base_url || 'default';
 
   useInput((_input, key) => {
     if (key.escape && !isChildHandling) {
@@ -75,10 +77,22 @@ export default function Layout() {
         {/* 空行 */}
         <Text> </Text>
 
-        {/* 模型 */}
+        {/* Provider & Model */}
+        <Box>
+          <Text dimColor>{t('layout.provider')}: </Text>
+          <Text color="cyan">{llmProvider}</Text>
+        </Box>
+
+        {/* Model */}
         <Box>
           <Text dimColor>{t('layout.model')}: </Text>
-          <Text>{modelName}</Text>
+          <Text>{llmModel}</Text>
+        </Box>
+
+        {/* Base URL */}
+        <Box>
+          <Text dimColor>{t('layout.baseUrl')}: </Text>
+          <Text dimColor>{llmBaseUrl}</Text>
         </Box>
 
         {/* 目录 */}

@@ -6,7 +6,9 @@ import type { TranslationKeys } from '../types';
 
 export const zhCN: TranslationKeys = {
   layout: {
+    provider: '提供商',
     model: '模型',
+    baseUrl: 'Base URL',
     directory: '目录',
     intro: '将本地代码库转化为可读的 Wiki 文档。',
     github: '开源项目: {url}',
@@ -116,5 +118,17 @@ export const zhCN: TranslationKeys = {
     statusHasCatalog: '当前项目已有文档目录。',
     statusInProgress: '文档生成中 ({generated}/{total} 已完成)。',
     statusComplete: '文档已全部生成 ({total} 篇)。',
+  },
+  wikiGenerate: {
+    catalogTitle: '目录',
+    articlesTitle: '文章 {current}/{total}',
+    completed: '完成',
+    loading: '请求中',
+    waiting: '等待',
+    failed: '失败',
+    navigate: '导航',
+    retry: '重试失败任务',
+    exit: '退出',
+    noCatalog: '等待目录生成...',
   },
 };
