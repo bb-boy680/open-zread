@@ -5,12 +5,13 @@
  * - 加载 config 配置（model, apiKey, baseURL, apiType）
  * - 创建 Agent 并执行提示词
  * - 处理执行过程中的日志和结果解析
+ * - 支持进度回调（通过钩子机制）
  */
 
 import { createAgent as CreateAgentSdk, getAllBaseTools, type ToolDefinition, type SDKMessage, type TokenUsage } from '@open-zread/agent-sdk';
 import { loadConfig, logger } from '@open-zread/utils';
-import { isAssistantMessage, isToolResultMessage, isResultMessage, LANGUAGE_NOTES } from './uitls.js';
-import type { CoreModules } from '../types.js';
+import { isAssistantMessage, isToolResultMessage, isResultMessage, isPartialMessage, LANGUAGE_NOTES } from './uitls.js';
+import type { CoreModules, CatalogEvent } from '../types.js';
 
 /**
  * 创建 Blueprint Agent 的选项
@@ -22,6 +23,8 @@ export interface CreateBlueprintAgentOptions {
   prompts: string;
   /** 最大轮次 */
   maxTurns?: number;
+  /** 进度回调（可选） */
+  onEvent?: (event: CatalogEvent) => void;
 }
 
 /**
@@ -42,6 +45,7 @@ export interface AgentResult {
  * 创建并执行 Blueprint Agent
  *
  * 自动加载配置、创建 Agent、执行提示词并返回结果。
+ * 支持通过 onEvent 回调实时传递进度事件。
  *
  * @param options - 创建选项
  * @returns 执行结果
@@ -65,7 +69,38 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
   const baseTools = getAllBaseTools();
   const allTools = [...baseTools, ...options.tools];
 
+  // Token 累积统计
+  let totalUsage: TokenUsage = { input_tokens: 0, output_tokens: 0 };
+
   logger.info(`模型: ${model}, API: ${apiType}`);
+
+  // 构建钩子配置（如果有 onEvent 回调）
+  const hooks = options.onEvent ? {
+    PreToolUse: [{
+      hooks: [
+        async (input: Record<string, unknown>) => {
+          options.onEvent!({
+            type: 'tool_start',
+            toolName: input.toolName as string,
+            toolInput: JSON.stringify(input.toolInput || {}).slice(0, 100),
+            usage: totalUsage,
+          });
+        },
+      ],
+    }],
+    PostToolUse: [{
+      hooks: [
+        async (input: Record<string, unknown>) => {
+          options.onEvent!({
+            type: 'tool_result',
+            toolName: input.toolName as string,
+            output: String(input.toolOutput || '').slice(0, 200),
+            usage: totalUsage,
+          });
+        },
+      ],
+    }],
+  } : undefined;
 
   // 创建 Agent
   const agent = CreateAgentSdk({
@@ -78,16 +113,25 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
     systemPrompt: LANGUAGE_NOTES[language],
     maxTurns: options?.maxTurns ?? 30,
     permissionMode: 'bypassPermissions',
+    hooks,
+    includePartialMessages: true,
   });
 
   let outputPath = '';
   let coreModules: CoreModules | undefined;
-  let tokenUsage: TokenUsage | undefined;
 
   // Execute agent
   try {
+    // 发送开始事件
+    options.onEvent?.({ type: 'requesting' });
+
     for await (const event of agent.query(options.prompts)) {
       const msg = event as SDKMessage;
+
+      // Partial 流式输出
+      if (isPartialMessage(msg)) {
+        options.onEvent?.({ type: 'responding', usage: totalUsage });
+      }
 
       // Log progress
       if (isAssistantMessage(msg)) {
@@ -135,10 +179,24 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
           }
           // 提取 Token 使用统计
           if (msg.usage) {
-            tokenUsage = msg.usage;
+            totalUsage = msg.usage;
           }
+          // 发送完成事件
+          options.onEvent?.({
+            type: 'complete',
+            outputPath,
+            usage: totalUsage,
+            durationMs: Math.round(performance.now() - startTime),
+          });
         } else {
           logger.error(`蓝图生成失败: ${msg.subtype}`);
+          const errors = msg.errors?.join('\n') || msg.subtype;
+          // 发送错误事件
+          options.onEvent?.({
+            type: 'error',
+            error: errors,
+            durationMs: Math.round(performance.now() - startTime),
+          });
           if (msg.errors) {
             for (const err of msg.errors) {
               logger.error(err);
@@ -150,6 +208,12 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     logger.error(`Agent 执行错误: ${message}`);
+    // 发送错误事件
+    options.onEvent?.({
+      type: 'error',
+      error: message,
+      durationMs: Math.round(performance.now() - startTime),
+    });
     throw err;
   }
 
@@ -159,6 +223,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
     outputPath,
     coreModules,
     durationMs,
-    tokenUsage,
+    tokenUsage: totalUsage,
   };
 }

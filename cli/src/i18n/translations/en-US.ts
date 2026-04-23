@@ -122,13 +122,14 @@ export const enUS: TranslationKeys = {
   wikiGenerate: {
     catalogTitle: 'Catalog',
     articlesTitle: 'Articles {current}/{total}',
-    completed: 'Completed',
-    loading: 'Loading',
     waiting: 'Waiting',
+    requesting: 'Requesting',
+    responding: 'Responding',
+    tool: 'Tool: {name}',
+    completed: 'Completed',
     failed: 'Failed',
     navigate: 'Navigate',
-    retry: 'Retry failed',
+    retry: 'Retry',
     exit: 'Exit',
-    noCatalog: 'Waiting for catalog generation...',
   },
 };

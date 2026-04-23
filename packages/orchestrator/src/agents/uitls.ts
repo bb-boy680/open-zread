@@ -4,7 +4,12 @@
  * 类型守卫和常量配置。
  */
 
-import type { SDKMessage, SDKAssistantMessage, SDKToolResultMessage, SDKResultMessage } from '@open-zread/agent-sdk';
+import type { SDKMessage, SDKAssistantMessage, SDKToolResultMessage, SDKResultMessage, SDKPartialMessage } from '@open-zread/agent-sdk';
+
+/** Type guard for partial message (streaming) */
+export function isPartialMessage(msg: SDKMessage): msg is SDKPartialMessage {
+  return msg.type === 'partial_message';
+}
 
 /** Type guard for SDKAssistantMessage */
 export function isAssistantMessage(msg: SDKMessage): msg is SDKAssistantMessage {

@@ -124,14 +124,15 @@ export interface TranslationKeys {
   wikiGenerate: {
     catalogTitle: string;
     articlesTitle: string;
-    completed: string;
-    loading: string;
     waiting: string;
+    requesting: string;
+    responding: string;
+    tool: string;
+    completed: string;
     failed: string;
     navigate: string;
     retry: string;
     exit: string;
-    noCatalog: string;
   };
 }
 

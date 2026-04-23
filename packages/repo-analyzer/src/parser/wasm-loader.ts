@@ -66,24 +66,30 @@ function loadWasmFromCache(parserName: string): Uint8Array | null {
 }
 
 function getTreeSitterDir(): string {
-  try {
-    const scriptDir = dirname(fileURLToPath(import.meta.url));
-    if (existsSync(join(scriptDir, 'tree-sitter.wasm'))) {
-      return scriptDir;
-    }
-  } catch {
-    const __filename = fileURLToPath(import.meta.url);
-    let current = dirname(__filename);
-    for (let i = 0; i < 10; i++) {
-      const candidate = join(current, 'node_modules', 'web-tree-sitter');
-      if (existsSync(join(candidate, 'tree-sitter.wasm'))) return candidate;
-      const parent = dirname(current);
-      if (parent === current) break;
-      current = parent;
-    }
-  }
   const __filename = fileURLToPath(import.meta.url);
-  return join(dirname(__filename), '..', '..', '..', '..', 'node_modules', '.pnpm', 'web-tree-sitter@0.20.8', 'node_modules', 'web-tree-sitter');
+  let current = dirname(__filename);
+
+  // 向上查找 node_modules 目录
+  for (let i = 0; i < 10; i++) {
+    // bun 格式: node_modules/.bun/web-tree-sitter@0.20.8/node_modules/web-tree-sitter
+    const bunCandidate = join(current, 'node_modules', '.bun', 'web-tree-sitter@0.20.8', 'node_modules', 'web-tree-sitter');
+    if (existsSync(join(bunCandidate, 'tree-sitter.wasm'))) return bunCandidate;
+
+    // pnpm 格式: node_modules/.pnpm/web-tree-sitter@0.20.8/node_modules/web-tree-sitter
+    const pnpmCandidate = join(current, 'node_modules', '.pnpm', 'web-tree-sitter@0.20.8', 'node_modules', 'web-tree-sitter');
+    if (existsSync(join(pnpmCandidate, 'tree-sitter.wasm'))) return pnpmCandidate;
+
+    // npm/yarn 格式: node_modules/web-tree-sitter
+    const npmCandidate = join(current, 'node_modules', 'web-tree-sitter');
+    if (existsSync(join(npmCandidate, 'tree-sitter.wasm'))) return npmCandidate;
+
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+
+  // 默认返回 bun 格式路径
+  return join(dirname(__filename), '..', '..', '..', '..', 'node_modules', '.bun', 'web-tree-sitter@0.20.8', 'node_modules', 'web-tree-sitter');
 }
 
 async function initParser(): Promise<void> {

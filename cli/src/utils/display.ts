@@ -45,3 +45,15 @@ export function formatBytes(bytes: number): string {
   }
   return String(bytes);
 }
+
+/**
+ * 格式化耗时
+ * 1234 -> 1.2s
+ * 56789 -> 56.8s
+ */
+export function formatDuration(ms: number): string {
+  if (ms >= 1000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  }
+  return `${ms}ms`;
+}

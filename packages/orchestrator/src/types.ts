@@ -76,3 +76,29 @@ export interface BlueprintOptions {
   language?: 'zh' | 'en';
   debug?: boolean;
 }
+
+/**
+ * Catalog generation event (for streaming progress)
+ *
+ * 完整流程：scanning → parsing → generating (Agent)
+ */
+export interface CatalogEvent {
+  type: 'scanning' | 'parsing' | 'requesting' | 'responding' | 'tool_start' | 'tool_result' | 'complete' | 'error';
+  /** scanning/parsing 阶段的进度信息 */
+  progress?: {
+    current: number;
+    total: number;
+  };
+  /** tool 阶段的工具信息 */
+  toolName?: string;
+  toolInput?: string;
+  output?: string;
+  /** Token 使用统计 */
+  usage?: TokenUsage;
+  /** 错误信息 */
+  error?: string;
+  /** 输出路径（complete 时） */
+  outputPath?: string;
+  /** 耗时 */
+  durationMs?: number;
+}

@@ -122,13 +122,14 @@ export const zhCN: TranslationKeys = {
   wikiGenerate: {
     catalogTitle: '目录',
     articlesTitle: '文章 {current}/{total}',
-    completed: '完成',
-    loading: '请求中',
     waiting: '等待',
+    requesting: '请求中',
+    responding: '响应中',
+    tool: '工具: {name}',
+    completed: '完成',
     failed: '失败',
     navigate: '导航',
-    retry: '重试失败任务',
+    retry: '重试',
     exit: '退出',
-    noCatalog: '等待目录生成...',
   },
 };
