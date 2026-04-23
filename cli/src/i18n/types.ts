@@ -127,7 +127,4 @@ export interface InterpolationParams {
 }
 
 /** 翻译函数类型 */
-export type TranslateFn = {
-  (key: string): string;
-  (key: string, params: InterpolationParams): string;
-};
+export type TranslateFn = (key: string, params?: InterpolationParams) => string;

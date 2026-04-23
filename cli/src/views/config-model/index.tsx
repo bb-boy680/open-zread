@@ -22,7 +22,7 @@ export default function ConfigModelPage() {
   const navigate = useNavigate();
   const { config } = useConfig();
 
-  const [provider, setProvider] = useState<ProviderInfo | null>(null);
+  const [_provider, setProvider] = useState<ProviderInfo | null>(null);
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loading, setLoading] = useState(true);

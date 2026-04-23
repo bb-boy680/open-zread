@@ -10,7 +10,7 @@
  */
 
 import pLimit from 'p-limit';
-import { loadConfig, loadWikiBlueprint, logger } from '@open-zread/utils';
+import { loadWikiBlueprint, logger } from '@open-zread/utils';
 import { createAgent } from '../agents/create-agent.js';
 import { FileEditTool, FileReadTool, GlobTool, GrepTool } from '@open-zread/agent-sdk';
 import { WritePageTool } from '../tools/page-tools.js';
@@ -74,8 +74,6 @@ ${associatedFilesList}
 export async function generateWikiContent(options?: GenerateWikiOptions): Promise<WikiResult> {
   const startTime = performance.now();
 
-  // 1. Load config
-  const config = await loadConfig();
   const maxConcurrent = 1;
 
   // 2. Load blueprint

@@ -8,7 +8,7 @@
 import type { ToolDefinition, ToolContext, ToolResult, AgentDefinition, ToolInputParams, SDKToolResultMessage } from '../types.js'
 import { QueryEngine } from '../engine.js'
 import { getAllBaseTools, filterTools } from './index.js'
-import { createProvider, type ApiType } from '../providers/index.js'
+import { createProvider } from '../providers/index.js'
 import { getString, getRequiredString } from './types.js'
 
 // Store for registered agent definitions

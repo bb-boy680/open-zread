@@ -28,7 +28,6 @@ function getCachePath(): string {
 async function isCacheValid(): Promise<boolean> {
   try {
     const cachePath = getCachePath();
-    const stat = await fs.stat(cachePath);
     const content = await fs.readFile(cachePath, 'utf-8');
     const data = JSON.parse(content) as ProviderRegistryData;
     // 检查 synced_at 字段是否在 TTL 内

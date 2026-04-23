@@ -85,11 +85,7 @@ export default function ConfigProviderPage() {
         p.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : providers;
 
-  // 搜索时的显示列表
-  const searchDisplayProviders = searchQuery
-    ? filteredProviders
-    : displayProviders;
-
+  
   // 搜索确认处理
   const handleSearchSubmit = useCallback(() => {
     setIsSearchMode(false);
