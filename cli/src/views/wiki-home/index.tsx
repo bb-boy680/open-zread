@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import { useNavigate } from 'react-router';
 import SelectInput from 'ink-select-input';
 import { useI18n } from '../../i18n';
@@ -70,6 +70,7 @@ function buildSelectItems(
 export default function WikiHomePage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { exit } = useApp();
   const { wikiCatalog } = useWiki();
   const [progress, setProgress] = useState<{ total: number; generated: number } | null>(null);
 
@@ -89,19 +90,19 @@ export default function WikiHomePage() {
   const handleSelect = (item: SelectItem) => {
     switch (item.value) {
       case 'generate':
-        navigate('/wiki/generate');
+        navigate('/wiki/generate?mode=generate');
         break;
       case 'continue':
-        navigate('/wiki/generate');
+        navigate('/wiki/generate?mode=continue');
         break;
       case 'force':
-        navigate('/wiki/generate');
+        navigate('/wiki/generate?mode=force');
         break;
       case 'config':
         navigate('/config');
         break;
       case 'exit':
-        navigate('/');
+        exit();  // 正确退出应用
         break;
     }
   };

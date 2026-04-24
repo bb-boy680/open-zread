@@ -7,6 +7,7 @@
  * - TypeScript uses p-limit for concurrency control
  * - Each Wiki page gets an independent Agent via createAgent
  * - Error isolation: single page failure doesn't affect others
+ * - 支持细粒度事件回调（onEvent）和批量进度回调（onProgress）
  */
 
 import pLimit from 'p-limit';
@@ -16,19 +17,7 @@ import { FileEditTool, FileReadTool, GlobTool, GrepTool } from '@open-zread/agen
 import { WritePageTool } from '../tools/page-tools.js';
 import PageAgentPrompt from '../prompts/page-agent.mdx';
 import type { WikiPage } from '@open-zread/types';
-import type { WikiResult, ProgressState, PageResult } from './types.js';
-
-/**
- * Generate Wiki Content Options
- */
-export interface GenerateWikiOptions {
-  /** Blueprint file path (default: .open-zread/drafts/wiki.json) */
-  blueprintPath?: string;
-  /** Custom concurrency limit (overrides config) */
-  maxConcurrent?: number;
-  /** Progress callback for CLI display */
-  onProgress?: (state: ProgressState) => void;
-}
+import type { WikiResult, ProgressState, PageResult, GenerateWikiOptions, ArticleEventPayload } from './types.js';
 
 /**
  * Build page-specific prompt
@@ -70,13 +59,17 @@ ${associatedFilesList}
  * Generate Wiki Content
  *
  * Parallel Wiki page generation with p-limit concurrency control.
+ * 支持细粒度事件回调（onEvent）和批量进度回调（onProgress）。
+ *
+ * 注意：并发数由调用方传递，内部不读取配置。
  */
 export async function generateWikiContent(options?: GenerateWikiOptions): Promise<WikiResult> {
   const startTime = performance.now();
 
-  const maxConcurrent = 1;
+  // 并发数由调用方传递（默认 1）
+  const maxConcurrent = options?.maxConcurrent ?? 1;
 
-  // 2. Load blueprint
+  // Load blueprint
   const blueprint = await loadWikiBlueprint(options?.blueprintPath);
   const pages = blueprint.pages;
 
@@ -100,15 +93,16 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
     limit(async () => {
       const pageStartTime = performance.now();
 
+      // 发射 page_start 事件
+      options?.onEvent?.({ type: 'page_start', slug: page.slug });
+
       // Update progress
       progress.currentPage = page;
       progress.pending--;
       options?.onProgress?.(progress);
 
       try {
-        // Use existing createAgent pattern: tools + prompts
-        // Note: Use WritePageTool instead of FileWriteTool to enforce correct output path
-        // GrepTool and GlobTool from agent-sdk handle code search
+        // 使用 createAgent，通过 onEvent 回调发射细粒度事件
         const result = await createAgent({
           tools: [
             FileReadTool,
@@ -119,6 +113,40 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
           ],
           prompts: buildPagePrompt(page),
           maxTurns: 15,
+          // 通过 onEvent 将 CatalogEvent 转换为 ArticleEventPayload
+          onEvent: (catalogEvent) => {
+            // 将 CatalogEvent 转换为 ArticleEventPayload
+            let articleEventType: ArticleEventPayload['type'];
+
+            switch (catalogEvent.type) {
+              case 'requesting':
+                articleEventType = 'requesting';
+                break;
+              case 'responding':
+                articleEventType = 'responding';
+                break;
+              case 'tool_start':
+                // write_page 工具调用时发射 writing 事件
+                if (catalogEvent.toolName === 'write_page') {
+                  articleEventType = 'writing';
+                } else {
+                  articleEventType = 'requesting';
+                }
+                break;
+              case 'tool_result':
+                articleEventType = 'responding';
+                break;
+              default:
+                // 其他事件类型不发射
+                return;
+            }
+
+            options?.onEvent?.({
+              type: articleEventType,
+              slug: page.slug,
+              usage: catalogEvent.usage,
+            });
+          },
         });
 
         // Success
@@ -126,12 +154,21 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
         const pageResult: PageResult = {
           slug: page.slug,
           success: true,
-          outputPath: result.outputPath,
+          outputPath: `.open-zread/wiki/${page.section}/${page.file}`,
           durationMs: Math.round(performance.now() - pageStartTime),
           tokenUsage: result.tokenUsage,
         };
         progress.results.push(pageResult);
         options?.onProgress?.(progress);
+
+        // 发射 page_complete 事件
+        options?.onEvent?.({
+          type: 'page_complete',
+          slug: page.slug,
+          outputPath: pageResult.outputPath,
+          durationMs: pageResult.durationMs,
+          usage: result.tokenUsage,
+        });
 
         logger.success(`[${page.slug}] 完成 (${pageResult.durationMs}ms)`);
 
@@ -150,6 +187,14 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
         };
         progress.results.push(pageResult);
         options?.onProgress?.(progress);
+
+        // 发射 page_error 事件
+        options?.onEvent?.({
+          type: 'page_error',
+          slug: page.slug,
+          error: message,
+          durationMs: pageResult.durationMs,
+        });
 
         logger.error(`[${page.slug}] 失败: ${message}`);
 

@@ -31,7 +31,8 @@ export async function buildRepoMap(
   // Merge options with defaults - no truncation by default
   const opts: RepoMapOptions = {
     tokenBudget: options?.tokenBudget || Infinity,
-    includeAll: options?.includeAll ?? true,
+    // When tokenBudget is set, disable includeAll by default
+    includeAll: options?.includeAll ?? (options?.tokenBudget === undefined),
     maxSignatureLength: options?.maxSignatureLength || Infinity,
   };
 

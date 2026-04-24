@@ -104,6 +104,8 @@ export interface SDKAssistantMessage {
     content: ContentBlock[]
   }
   parent_tool_use_id?: string | null
+  /** Token usage from this API response */
+  usage?: TokenUsage
 }
 
 export interface SDKToolResultMessage {

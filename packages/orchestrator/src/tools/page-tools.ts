@@ -25,7 +25,7 @@ import { ensureDir, writeTextFile } from '@open-zread/utils';
 export const WritePageTool = defineTool({
   name: 'write_page',
   description: `将 Wiki 页面内容写入指定文件路径。按照章节组织目录结构。
-输出路径: .open-zread/wiki/{section}/{file}`,
+输出路径: .open-zread/wiki/{file}`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -35,7 +35,7 @@ export const WritePageTool = defineTool({
       },
       file: {
         type: 'string',
-        description: '文件名或相对路径（如 "1-project-overview.md" 或 "入门指南/1-project-overview.md"）',
+        description: '文件名或相对路径，如 "1-project-overview.md"',
       },
       section: {
         type: 'string',

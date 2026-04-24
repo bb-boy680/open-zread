@@ -26,6 +26,9 @@
     "typescript-eslint": "^8.58.1"
   },
   "dependencies": {
+    "fullscreen-ink": "^0.1.0",
+    "ink-scroll-list": "^0.4.1",
+    "ink-scroll-view": "^0.3.6",
     "react-devtools-core": "^4.28.5",
     "use-immer": "^0.11.0"
   },

@@ -7,6 +7,8 @@
 import type { WikiPage } from '@open-zread/types';
 import type { TokenUsage } from '@open-zread/agent-sdk';
 
+// ==================== 进度状态（批量回调） ====================
+
 /**
  * Progress State
  *
@@ -65,6 +67,38 @@ export interface WikiResult {
   results: PageResult[];
 }
 
+// ==================== 细粒度事件（实时回调） ====================
+
+/**
+ * 文章生成事件类型
+ */
+export type ArticleEventType =
+  | 'page_start' // 开始处理某页
+  | 'requesting' // Agent 请求中
+  | 'responding' // Agent 响应中（流式）
+  | 'writing' // 写入文件
+  | 'page_complete' // 页面完成
+  | 'page_error'; // 页面失败
+
+/**
+ * 文章事件 payload
+ */
+export interface ArticleEventPayload {
+  type: ArticleEventType;
+  /** 页面 slug */
+  slug: string;
+  /** Token 使用统计 */
+  usage?: TokenUsage;
+  /** 错误信息 */
+  error?: string;
+  /** 输出路径 */
+  outputPath?: string;
+  /** 耗时 */
+  durationMs?: number;
+}
+
+// ==================== 生成选项 ====================
+
 /**
  * Generate Wiki Content Options
  */
@@ -73,6 +107,8 @@ export interface GenerateWikiOptions {
   blueprintPath?: string;
   /** Custom concurrency limit (overrides config) */
   maxConcurrent?: number;
-  /** Progress callback for CLI display */
+  /** 细粒度事件回调（实时） */
+  onEvent?: (event: ArticleEventPayload) => void;
+  /** Progress callback for CLI display (batch) */
   onProgress?: (state: ProgressState) => void;
 }

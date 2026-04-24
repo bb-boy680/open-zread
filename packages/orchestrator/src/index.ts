@@ -9,7 +9,10 @@ export { generateWikiCatalog } from './orchestrator.js'
 
 // Phase 2: Wiki Content Generation
 export { generateWikiContent } from './wiki/generate-wiki.js'
-export type { WikiResult, ProgressState, PageResult, GenerateWikiOptions } from './wiki/types.js'
+export type { WikiResult, ProgressState, PageResult, GenerateWikiOptions, ArticleEventPayload } from './wiki/types.js'
 
 // Types
 export * from './types.js'
+
+// Re-export TokenUsage from agent-sdk
+export type { TokenUsage } from '@open-zread/agent-sdk'

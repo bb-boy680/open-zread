@@ -122,19 +122,24 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
 
   // Execute agent
   try {
-    // 发送开始事件
-    options.onEvent?.({ type: 'requesting' });
+    // 发送开始事件（传递累计 usage）
+    options.onEvent?.({ type: 'requesting', usage: totalUsage });
 
     for await (const event of agent.query(options.prompts)) {
       const msg = event as SDKMessage;
 
-      // Partial 流式输出
+      // Partial 流式输出（传递累计 usage）
       if (isPartialMessage(msg)) {
         options.onEvent?.({ type: 'responding', usage: totalUsage });
       }
 
       // Log progress
       if (isAssistantMessage(msg)) {
+        // 从 assistant 消息更新累计 Token
+        if (msg.usage) {
+          totalUsage = msg.usage;
+        }
+
         for (const block of msg.message?.content || []) {
           if (block.type === 'tool_use') {
             const toolName = block.name;
@@ -172,14 +177,15 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
       }
 
       if (isResultMessage(msg)) {
+        // 更新累计 Token（每次 API 响应后）
+        if (msg.usage) {
+          totalUsage = msg.usage;
+        }
+
         if (msg.subtype === 'success') {
           logger.success('蓝图生成完成');
           if (msg.result?.includes('Blueprint generated')) {
             outputPath = msg.result.match(/Blueprint generated: (.+)/)?.[1] || '';
-          }
-          // 提取 Token 使用统计
-          if (msg.usage) {
-            totalUsage = msg.usage;
           }
           // 发送完成事件
           options.onEvent?.({

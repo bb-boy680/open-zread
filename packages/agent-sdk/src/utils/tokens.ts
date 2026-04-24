@@ -92,8 +92,17 @@ export function getContextWindowSize(model: string): number {
   // DeepSeek models
   if (model.includes('deepseek')) return 128_000
 
+  // GLM models (阿里云通义千问/GLM)
+  if (model.includes('glm')) return 128_000  // GLM-4/GLM-5 约 128k context
+  if (model.includes('qwen')) return 128_000  // 通义千问
+  if (model.includes('tongyi')) return 128_000
+
+  // Other Chinese models
+  if (model.includes('yi')) return 32_000    // 零一万物
+  if (model.includes('baichuan')) return 32_000  // 百川
+
   // Default
-  return 200_000
+  return 128_000  // 更保守的默认值，避免超出小上下文模型的限制
 }
 
 /**

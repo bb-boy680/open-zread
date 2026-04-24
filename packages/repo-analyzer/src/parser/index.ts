@@ -10,8 +10,8 @@ const SCM_QUERIES: Record<string, string> = {
   typescript: `
     (import_statement) @import
     (export_statement) @export
-    (function_declaration name: (identifier) @fn_name) @fn
-    (arrow_function) @arrow_fn
+    ; 只提取顶层函数声明（不含嵌套箭头函数）
+    (program (function_declaration name: (identifier) @fn_name) @fn)
     (class_declaration name: (type_identifier) @class_name) @class
     (interface_declaration name: (type_identifier) @iface_name) @iface
     (method_definition name: (property_identifier) @method_name) @method
@@ -19,8 +19,8 @@ const SCM_QUERIES: Record<string, string> = {
   javascript: `
     (import_statement) @import
     (export_statement) @export
-    (function_declaration name: (identifier) @fn_name) @fn
-    (arrow_function) @arrow_fn
+    ; 只提取顶层函数声明
+    (program (function_declaration name: (identifier) @fn_name) @fn)
     (class_declaration name: (identifier) @class_name) @class
     (method_definition name: (property_identifier) @method_name) @method
   `,
@@ -50,9 +50,11 @@ function extractFunctionSignature(node: Parser.SyntaxNode): string {
 
   if (bodyNode) {
     // Build signature from all children except body
+    // Use id comparison since childForFieldName returns new object
+    const bodyId = bodyNode.id;
     const parts: string[] = [];
     for (const child of node.children) {
-      if (child === bodyNode) continue;
+      if (child.id === bodyId) continue;
       parts.push(child.text);
     }
     return parts.join(' ').trim();
@@ -91,9 +93,11 @@ function extractExportFromNode(node: Parser.SyntaxNode): string {
   // Use same logic as function signature - exclude body
   const bodyNode = decl.childForFieldName('body');
   if (bodyNode) {
+    // Use id comparison since childForFieldName returns new object
+    const bodyId = bodyNode.id;
     const parts: string[] = ['export'];
     for (const child of decl.children) {
-      if (child === bodyNode) continue;
+      if (child.id === bodyId) continue;
       parts.push(child.text);
     }
     return parts.join(' ').trim();
@@ -132,7 +136,8 @@ function extractWithQuery(
           imports.push(node.text);
         } else if (name === 'export') {
           exports.push(extractExportFromNode(node));
-        } else if (name === 'fn' || name === 'arrow_fn' || name === 'method') {
+        } else if (name === 'fn' || name === 'method') {
+          // 只提取有名字的顶层函数和方法
           const fnNameNode = node.childForFieldName('name');
           const fnName = fnNameNode?.text || 'anonymous';
           functions.push({

@@ -4,7 +4,7 @@
  * 仅负责加载 wiki.json，不包含业务逻辑
  */
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import type { WikiOutput } from '@open-zread/types';
 import { getDraftsDir, joinPath } from '@open-zread/utils';
@@ -52,8 +52,14 @@ export function WikiProvider({ children }: WikiProviderProps) {
     await loadCatalog();
   }, [loadCatalog]);
 
+  // 缓存 Context value，避免每次渲染创建新对象
+  const value = useMemo(
+    () => ({ wikiCatalog, reload }),
+    [wikiCatalog, reload]
+  );
+
   return (
-    <WikiContext.Provider value={{ wikiCatalog, reload }}>
+    <WikiContext.Provider value={value}>
       {children ?? <Outlet />}
     </WikiContext.Provider>
   );

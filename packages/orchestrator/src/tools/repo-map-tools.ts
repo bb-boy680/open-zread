@@ -47,11 +47,7 @@ export const GetDirectoryTreeTool: ToolDefinition = {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: JSON.stringify({
-          directoryTree: output.content,
-          directories: output.directories,
-          directoryCount: output.directories.length,
-        }, null, 2),
+        content: output.content
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
@@ -180,12 +176,7 @@ export const GetModuleDetailsTool: ToolDefinition = {
       return {
         type: 'tool_result',
         tool_use_id: '',
-        content: JSON.stringify({
-          moduleDetails: output.content,
-          modulePath: output.modulePath,
-          fileCount: output.fileCount,
-          tokenCount: output.tokenCount,
-        }, null, 2),
+        content: output.content
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)

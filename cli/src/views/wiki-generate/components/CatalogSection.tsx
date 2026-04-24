@@ -8,25 +8,29 @@
  * - ⠴ 目录 [响应中] ↑↑ ↓↓
  * - ✓ 目录 [完成] ↑↑ ↓↓ 1.2s
  * - ✗ 目录 [失败] error
+ *
+ * 架构：
+ * - 纯渲染组件，只接收 props
+ * - 使用共享组件：Divider、StatusRow、StatusIcon
  */
 
 import { Box, Text } from "ink";
-import Divider from "../../../../components/Divider";
-import StatusRow from "../../../../components/StatusRow";
-import StatusIcon from "../../../../components/StatusIcon";
-import { useI18n } from "../../../../i18n";
-import { formatBytes, formatDuration } from "../../../../utils";
-import { theme } from "../../../../theme";
-import type { CatalogProgress } from "../../types";
+import Divider from "../../../components/Divider";
+import StatusRow from "../../../components/StatusRow";
+import StatusIcon from "../../../components/StatusIcon";
+import { useI18n } from "../../../i18n";
+import { formatBytes, formatDuration } from "../../../utils";
+import { theme } from "../../../theme";
+import type { CatalogState } from "../types";
 
 interface CatalogSectionProps {
-  progress: CatalogProgress;
+  state: CatalogState;
 }
 
-export default function CatalogSection({ progress }: CatalogSectionProps) {
+export default function CatalogSection({ state }: CatalogSectionProps) {
   const { t } = useI18n();
 
-  const { status, phase, currentTool, upBytes, downBytes, durationMs, error } = progress;
+  const { status, phase, currentTool, usage, durationMs, error } = state;
 
   // 构建状态文字
   let statusText: string;
@@ -35,7 +39,7 @@ export default function CatalogSection({ progress }: CatalogSectionProps) {
     const toolDisplay = currentTool.replace(/_/g, " ").replace(/^get /, "");
     statusText = t("wikiGenerate.tool", { name: toolDisplay });
   } else if (status === "loading") {
-    // requesting/responding/扫描/解析 → 统一显示请求中
+    // requesting/responding/scanning/解析 → 统一显示请求中
     statusText = t("wikiGenerate.requesting");
   } else if (status === "failed" && error) {
     statusText = error;
@@ -46,17 +50,27 @@ export default function CatalogSection({ progress }: CatalogSectionProps) {
   // 右栏：状态 + Token
   let rightText = `[${statusText}]`;
 
-  // loading 状态显示 Token（仅工具调用和响应中）
-  if (status === "loading" && (phase === "tool" || phase === "responding")) {
-    if (upBytes !== undefined) rightText += ` ↑${formatBytes(upBytes)}`;
-    if (downBytes !== undefined) rightText += ` ↓${formatBytes(downBytes)}`;
+  // loading 状态显示 Token（累计显示）
+  if (status === "loading" && usage) {
+    if (usage.input_tokens > 0) {
+      rightText += ` ↑${formatBytes(usage.input_tokens)}`;
+    }
+    if (usage.output_tokens > 0) {
+      rightText += ` ↓${formatBytes(usage.output_tokens)}`;
+    }
   }
 
   // completed 状态显示耗时和 Token
   if (status === "completed") {
     if (durationMs !== undefined) rightText += ` ${formatDuration(durationMs)}`;
-    if (upBytes !== undefined) rightText += ` ↑${formatBytes(upBytes)}`;
-    if (downBytes !== undefined) rightText += ` ↓${formatBytes(downBytes)}`;
+    if (usage) {
+      if (usage.input_tokens > 0) {
+        rightText += ` ↑${formatBytes(usage.input_tokens)}`;
+      }
+      if (usage.output_tokens > 0) {
+        rightText += ` ↓${formatBytes(usage.output_tokens)}`;
+      }
+    }
   }
 
   const rightColor =

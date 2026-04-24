@@ -361,6 +361,7 @@ export class QueryEngine {
             return { type: 'tool_use', id: block.id, name: block.name, input: block.input }
           }) as ContentBlock[],
         },
+        usage: { ...this.totalUsage },
       }
 
       // Handle max_output_tokens recovery

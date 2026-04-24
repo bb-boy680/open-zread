@@ -17,7 +17,9 @@ export function countReferences(symbols: SymbolManifest): Record<string, number>
   // Key: filename without extension, Value: full file path
   const fileIndex = new Map<string, string>();
   for (const symbol of symbols.symbols) {
-    const fileName = symbol.file.split('/').pop()?.replace(/\.[^.]+$/, '') || '';
+    // Handle both / and \ path separators
+    const normalizedPath = symbol.file.replace(/\\/g, '/');
+    const fileName = normalizedPath.split('/').pop()?.replace(/\.[^.]+$/, '') || '';
     fileIndex.set(fileName, symbol.file);
   }
 

@@ -1,4 +1,4 @@
-import { streamText } from 'ai'
+import { generateText, stepCountIs } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { openai } from '@ai-sdk/openai'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
@@ -33,63 +33,47 @@ export class VercelAIProvider implements LLMProvider {
     const messages = this.convertMessages(params.system, params.messages)
     const tools = params.tools ? this.convertTools(params.tools) : undefined
 
-    // 使用 streamText 获取完整响应
-    const stream = await streamText({
+    // 使用 generateText 获取完整响应
+    const result = await generateText({
       model,
       messages,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Vercel AI SDK ToolSet type compatibility
       tools: tools as any,
-      maxOutputTokens: params.maxTokens,
+      stopWhen: stepCountIs(10), // 支持多步工具调用
     })
-
-    // 等待流完成，收集完整响应
-    const result = await stream.text
-    const usage = await stream.usage
-
-    // 提取 tool calls
-    const toolCalls: Array<{ toolCallId: string; toolName: string; input: unknown }> = []
-    for await (const part of stream.fullStream) {
-      if (part.type === 'tool-call') {
-        toolCalls.push({
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          input: part.input,
-        })
-      }
-    }
 
     // 构建响应
     const content: NormalizedResponseBlock[] = []
 
-    if (result) {
-      content.push({ type: 'text', text: result })
+    if (result.text) {
+      content.push({ type: 'text', text: result.text })
     }
 
-    for (const tc of toolCalls) {
-      content.push({
-        type: 'tool_use',
-        id: tc.toolCallId,
-        name: tc.toolName,
-        input: tc.input as ToolInputParams,
-      })
+    // 从 steps 中提取 tool calls
+    for (const step of result.steps) {
+      for (const toolCall of step.toolCalls ?? []) {
+        content.push({
+          type: 'tool_use',
+          id: toolCall.toolCallId,
+          name: toolCall.toolName,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- toolCall.input type varies
+          input: (toolCall as any).input as ToolInputParams,
+        })
+      }
     }
 
     if (content.length === 0) {
       content.push({ type: 'text', text: '' })
     }
 
-    const finishReason = await stream.finishReason
-    const stopReason = this.mapFinishReason(finishReason)
-
-    // AI SDK 6 usage 结构
-    const usageData = usage as { promptTokens?: number; completionTokens?: number } | undefined
+    const stopReason = this.mapFinishReason(result.finishReason)
 
     return {
       content,
       stopReason,
       usage: {
-        input_tokens: usageData?.promptTokens || 0,
-        output_tokens: usageData?.completionTokens || 0,
+        input_tokens: result.usage?.inputTokens ?? 0,
+        output_tokens: result.usage?.outputTokens ?? 0,
       },
     }
   }
