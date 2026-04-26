@@ -20,6 +20,11 @@ export interface WikiPage {
   title: string;
   file: string;
   section: string;
+  /**
+   * 二级模块聚合，用于在同一 section 下进一步分组相关章节
+   * 例如："平台接入指南"、"核心引擎架构"
+   */
+  group?: string;
   level: WikiLevel;
   /**
    * 关联的源文件或目录路径

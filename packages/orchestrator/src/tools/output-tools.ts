@@ -28,6 +28,7 @@ export const GenerateBlueprintTool: ToolDefinition = {
             title: { type: 'string', description: '页面标题（如 项目概览）' },
             file: { type: 'string', description: '文件名（如 1-project-overview.md）' },
             section: { type: 'string', description: '所属章节（如 入门指南）' },
+            group: { type: 'string', description: '二级模块聚合（可选，如 平台接入指南）' },
             level: { type: 'string', description: '难度等级（Beginner/Intermediate/Advanced）' },
             associatedFiles: {
               type: 'array',
@@ -96,10 +97,12 @@ export const GenerateBlueprintTool: ToolDefinition = {
       const outputPath = await generateWikiJson(pages, config, techStackSummary)
 
       // Build result summary
+      const groups = [...new Set(pages.map(p => p.group).filter(Boolean))]
       const summary = {
         outputPath,
         pagesCount: pages.length,
         sections: [...new Set(pages.map(p => p.section))],
+        groups: groups.length > 0 ? groups : undefined,
         levels: {
           beginner: pages.filter(p => p.level === 'Beginner').length,
           intermediate: pages.filter(p => p.level === 'Intermediate').length,

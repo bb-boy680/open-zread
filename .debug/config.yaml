@@ -1,0 +1,7 @@
+# Frontend project directory matching patterns (support glob)
+frontend: []
+
+# Backend project directory matching patterns (support glob)
+backend:
+  - "cli/**/*"  # Ink terminal UI, Node.js environment
+  - "packages/**/*"  # Monorepo packages, Node.js environment
