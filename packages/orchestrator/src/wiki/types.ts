@@ -76,7 +76,8 @@ export type ArticleEventType =
   | 'page_start' // 开始处理某页
   | 'requesting' // Agent 请求中
   | 'responding' // Agent 响应中（流式）
-  | 'writing' // 写入文件
+  | 'tool_start' // 工具调用开始
+  | 'tool_result' // 工具调用结果
   | 'page_complete' // 页面完成
   | 'page_error'; // 页面失败
 
@@ -89,6 +90,8 @@ export interface ArticleEventPayload {
   slug: string;
   /** Token 使用统计 */
   usage?: TokenUsage;
+  /** 工具名称（tool_start 时） */
+  toolName?: string;
   /** 错误信息 */
   error?: string;
   /** 输出路径 */
@@ -105,6 +108,8 @@ export interface ArticleEventPayload {
 export interface GenerateWikiOptions {
   /** Blueprint file path (default: .open-zread/drafts/wiki.json) */
   blueprintPath?: string;
+  /** 待生成的页面列表（如果传入，则不从 blueprint 加载，只生成这些页面） */
+  pages?: WikiPage[];
   /** Custom concurrency limit (overrides config) */
   maxConcurrent?: number;
   /** 细粒度事件回调（实时） */

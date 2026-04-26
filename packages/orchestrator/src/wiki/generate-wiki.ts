@@ -69,9 +69,14 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
   // 并发数由调用方传递（默认 1）
   const maxConcurrent = options?.maxConcurrent ?? 1;
 
-  // Load blueprint
-  const blueprint = await loadWikiBlueprint(options?.blueprintPath);
-  const pages = blueprint.pages;
+  // Load blueprint or use provided pages
+  let pages: WikiPage[];
+  if (options?.pages && options.pages.length > 0) {
+    pages = options.pages;
+  } else {
+    const blueprint = await loadWikiBlueprint(options?.blueprintPath);
+    pages = blueprint.pages;
+  }
 
   logger.info(`开始生成 Wiki 内容：${pages.length} 个页面，并发数 ${maxConcurrent}`);
 
@@ -117,6 +122,7 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
           onEvent: (catalogEvent) => {
             // 将 CatalogEvent 转换为 ArticleEventPayload
             let articleEventType: ArticleEventPayload['type'];
+            let toolName: string | undefined;
 
             switch (catalogEvent.type) {
               case 'requesting':
@@ -126,15 +132,11 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
                 articleEventType = 'responding';
                 break;
               case 'tool_start':
-                // write_page 工具调用时发射 writing 事件
-                if (catalogEvent.toolName === 'write_page') {
-                  articleEventType = 'writing';
-                } else {
-                  articleEventType = 'requesting';
-                }
+                articleEventType = 'tool_start';
+                toolName = catalogEvent.toolName;
                 break;
               case 'tool_result':
-                articleEventType = 'responding';
+                articleEventType = 'tool_result';
                 break;
               default:
                 // 其他事件类型不发射
@@ -145,6 +147,7 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
               type: articleEventType,
               slug: page.slug,
               usage: catalogEvent.usage,
+              toolName,
             });
           },
         });

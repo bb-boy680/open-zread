@@ -10,6 +10,7 @@ export {
   getOutputDir,
   getDraftsDir,
   getCacheDir,
+  getWikiDir,
 } from './file-io.js';
 
 // Logger

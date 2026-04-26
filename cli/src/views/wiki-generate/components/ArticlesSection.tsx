@@ -80,10 +80,23 @@ const ArticlesSection = memo(function ArticlesSection({
       if (!page) return null;
 
       const status = statusMap[label]?.status || "waiting";
+      const phase = statusMap[label]?.phase;
+      const currentTool = statusMap[label]?.currentTool;
       const pageState = statusMap[label];
-      const statusText = t(`wikiGenerate.${status}`);
 
-      // 右栏
+      // 状态文字：根据 phase 显示详细状态
+      let statusText: string;
+      if (status === "loading" && phase === "tool" && currentTool) {
+        // 工具调用
+        const toolDisplay = currentTool.replace(/_/g, " ").replace(/^get /, "");
+        statusText = t("wikiGenerate.tool", { name: toolDisplay });
+      } else if (status === "loading" && phase) {
+        statusText = t(`wikiGenerate.${phase}`);
+      } else {
+        statusText = t(`wikiGenerate.${status}`);
+      }
+
+      // 右栏：状态 + Token
       let rightText = `[${statusText}]`;
       if (status === "loading" && pageState?.usage) {
         if (pageState.usage.input_tokens > 0) {

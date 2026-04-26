@@ -148,11 +148,21 @@ export function articleEventToState(
       };
       break;
 
-    case 'writing':
+    case 'tool_start':
       newPageStatus = {
         ...currentStatus,
         status: 'loading',
-        phase: 'writing',
+        phase: 'tool',
+        currentTool: event.toolName,
+        usage: event.usage, // 直接使用，不累加
+      };
+      break;
+
+    case 'tool_result':
+      newPageStatus = {
+        ...currentStatus,
+        status: 'loading',
+        phase: 'responding',
         usage: event.usage, // 直接使用，不累加
       };
       break;

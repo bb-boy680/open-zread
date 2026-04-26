@@ -43,3 +43,7 @@ export function getDraftsDir(): string {
 export function getCacheDir(): string {
   return join(getOutputDir(), 'cache');
 }
+
+export function getWikiDir(): string {
+  return join(getOutputDir(), 'wiki');
+}

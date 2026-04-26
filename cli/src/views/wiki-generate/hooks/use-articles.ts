@@ -11,7 +11,7 @@
 
 import { useCallback, useRef, useEffect, useState } from "react";
 import { useImmer } from "use-immer";
-import { loadConfig } from "@open-zread/utils";
+import { loadConfig, getWikiDir, joinPath } from "@open-zread/utils";
 import { generateWikiContent, type ArticleEventPayload } from "@open-zread/orchestrator";
 import { articleEventToState } from "../mapper";
 import { createInitialArticlesState } from "../state";
@@ -50,18 +50,68 @@ export function useArticlesGenerate({
   onComplete,
 }: UseArticlesGenerateOptions): UseArticlesGenerateReturn {
   // 初始化状态
-  const initialState = createInitialArticlesState(pages);
-  const [state, updateState] = useImmer<ArticlesState>(initialState);
+  const [state, updateState] = useImmer<ArticlesState>(() =>
+    createInitialArticlesState(pages)
+  );
   const isGenerating = useRef(false);
+  const isReady = useRef(false); // 检测完成后才允许自动触发
+
+  // 当 pages 变化时，检测已存在文档并初始化状态
+  useEffect(() => {
+    if (pages.length === 0) return;
+
+    // 重置 ready 状态，等待检测完成
+    isReady.current = false;
+
+    const wikiDir = getWikiDir();
+
+    async function initializeWithExistingPages() {
+      // 先检测已存在的文档
+      const existingSlugs: string[] = [];
+      for (const page of pages) {
+        const filePath = joinPath(wikiDir, page.section, page.file);
+        try {
+          const file = Bun.file(filePath);
+          const exists = await file.exists();
+          if (exists) {
+            existingSlugs.push(page.slug);
+          }
+        } catch {
+          // 文件检查失败，视为不存在
+        }
+      }
+
+      // 一次性更新状态：初始化 + 标记已完成
+      updateState((draft) => {
+        const newState = createInitialArticlesState(pages);
+        Object.assign(draft, newState);
+
+        // 标记已存在的文档为 completed
+        for (const slug of existingSlugs) {
+          draft.pages[slug] = { status: "completed" };
+        }
+        draft.completedCount = existingSlugs.length;
+        draft.pendingCount = pages.length - existingSlugs.length;
+      });
+
+      // 检测完成，允许自动触发
+      isReady.current = true;
+    }
+
+    initializeWithExistingPages();
+  }, [pages, updateState]);
 
   // 从配置获取并发数
   const [maxConcurrent, setMaxConcurrent] = useState(1);
+  const [configLoaded, setConfigLoaded] = useState(false);
   useEffect(() => {
     loadConfig().then((config) => {
       setMaxConcurrent(config.concurrency.max_concurrent);
+      setConfigLoaded(true);
     }).catch(() => {
       // 配置加载失败时使用默认值
       setMaxConcurrent(1);
+      setConfigLoaded(true);
     });
   }, []);
 
@@ -84,15 +134,26 @@ export function useArticlesGenerate({
   );
 
   /**
-   * 开始生成（所有文章）
+   * 开始生成（只生成未完成的文章）
    */
   const start = useCallback(async () => {
     if (isGenerating.current || pages.length === 0) return;
     isGenerating.current = true;
 
+    // 计算待生成的页面列表（只生成 waiting 状态的）
+    const pendingPages = pages.filter(
+      (page) => state.pages[page.slug]?.status === "waiting"
+    );
+
+    if (pendingPages.length === 0) {
+      isGenerating.current = false;
+      return;
+    }
+
     try {
-      // 调用 generateWikiContent，传递并发数
+      // 调用 generateWikiContent，只传入待生成的页面
       await generateWikiContent({
+        pages: pendingPages,
         maxConcurrent,
         onEvent: handleEvent,
       });
@@ -111,10 +172,10 @@ export function useArticlesGenerate({
     } finally {
       isGenerating.current = false;
     }
-  }, [pages, maxConcurrent, state.currentPageSlug, handleEvent, onComplete]);
+  }, [pages, state.pages, maxConcurrent, state.currentPageSlug, handleEvent, onComplete]);
 
   /**
- * 重试所有失败文章
+   * 重试所有失败文章
    */
   const retryFailed = useCallback(() => {
     updateState((draft) => {
@@ -151,13 +212,13 @@ export function useArticlesGenerate({
   /**
    * 自动触发
    *
-   * 当目录完成且有待处理文章时，自动开始生成。
+   * 当目录完成、检测完成、配置加载完成且有待处理文章时，自动开始生成。
    */
   useEffect(() => {
-    if (canStart && state.pendingCount > 0 && !isGenerating.current) {
+    if (canStart && isReady.current && configLoaded && state.pendingCount > 0 && !isGenerating.current) {
       start();
     }
-  }, [canStart, state.pendingCount, start]);
+  }, [canStart, configLoaded, state.pendingCount, start]);
 
   return {
     state,

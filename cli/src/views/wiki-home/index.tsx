@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router';
 import SelectInput from 'ink-select-input';
 import { useI18n } from '../../i18n';
 import { useWiki } from '../../provider';
+import { getWikiDir, joinPath } from '@open-zread/utils';
 import type { WikiPage, WikiOutput } from '@open-zread/types';
 
 // SelectInput Item 类型
@@ -17,10 +18,11 @@ type SelectItem = { label: string; value: string };
 
 // 进度检查函数
 async function checkProgress(pages: WikiPage[]): Promise<{ total: number; generated: number }> {
-  const outputDir = '.open-zread/output/wiki';
+  const wikiDir = getWikiDir();
 
   const checks = pages.map(async (page) => {
-    const filePath = `${outputDir}/${page.file}`;
+    // wiki 目录按 section 分组，文件路径：wikiDir/section/file.md
+    const filePath = joinPath(wikiDir, page.section, page.file);
     const file = Bun.file(filePath);
     const exists = await file.exists();
     return exists;

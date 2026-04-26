@@ -20,7 +20,17 @@ export type Status = 'waiting' | 'loading' | 'completed' | 'failed';
 export type CatalogPhase = 'scanning' | 'requesting' | 'responding' | 'tool';
 
 /** 文章生成阶段 */
-export type ArticlePhase = 'requesting' | 'responding' | 'writing';
+export type ArticlePhase = 'requesting' | 'responding' | 'tool';
+
+/** 文章事件类型 */
+export type ArticleEventType =
+  | 'page_start'
+  | 'requesting'
+  | 'responding'
+  | 'tool_start'
+  | 'tool_result'
+  | 'page_complete'
+  | 'page_error';
 
 // ==================== 导出外部类型 ====================
 
@@ -49,6 +59,8 @@ export interface CatalogState {
 export interface PageStatus {
   status: Status;
   phase?: ArticlePhase;
+  /** 当前工具名（tool 阶段） */
+  currentTool?: string;
   /** Token 使用统计 */
   usage?: TokenUsage;
   /** 耗时（毫秒） */

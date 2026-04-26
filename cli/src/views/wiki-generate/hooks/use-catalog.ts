@@ -52,6 +52,19 @@ export function useCatalogGenerate({
   const isGenerating = useRef(false);
 
   /**
+   * 已有目录时直接标记完成
+   *
+   * 当 wiki.json 已存在且不强制重新生成时，目录状态直接设为 completed。
+   */
+  useEffect(() => {
+    if (hasWikiCatalog && !forceRegenerate && state.status === "waiting") {
+      updateState((draft) => {
+        draft.status = "completed";
+      });
+    }
+  }, [hasWikiCatalog, forceRegenerate, state.status, updateState]);
+
+  /**
    * Agent 事件回调
    *
    * 将原始 CatalogEvent 转换为标准 CatalogEventPayload，
