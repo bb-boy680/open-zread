@@ -4,12 +4,13 @@
  * 架构设计：
  * - 状态管理：useImmer
  * - 事件处理：mapper 纯函数
- * - 副作用控制：useRef 防止并发
+ * - 初始化：由外部显式调用 initialize()
+ * - 生成启动：由外部显式调用 start()
  *
- * 流程：加载 wiki.json → 并行生成各页面
+ * 流程：外部调用 initialize() → 外部调用 start() → 并行生成各页面
  */
 
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { useImmer } from "use-immer";
 import { loadConfig, getWikiDir, joinPath } from "@open-zread/utils";
 import { generateWikiContent, type ArticleEventPayload } from "@open-zread/orchestrator";
@@ -22,9 +23,7 @@ import type { ArticlesState, WikiPage } from "../types";
 interface UseArticlesGenerateOptions {
   /** 文章列表（来自 wiki.json） */
   pages: WikiPage[];
-  /** 是否可以开始（目录完成后） */
-  canStart: boolean;
-  /** 完成回调 */
+  /** 完成回调（只通知完成，不触发 reload） */
   onComplete?: () => void;
 }
 
@@ -33,7 +32,9 @@ interface UseArticlesGenerateReturn {
   state: ArticlesState;
   /** 操作方法 */
   actions: {
-    /** 开始生成（所有文章） */
+    /** 初始化：检测已存在文档并设置状态（由组合层显式调用） */
+    initialize: () => Promise<void>;
+    /** 开始生成（由组合层显式调用） */
     start: () => Promise<void>;
     /** 重试所有失败文章 */
     retryFailed: () => void;
@@ -46,60 +47,14 @@ interface UseArticlesGenerateReturn {
 
 export function useArticlesGenerate({
   pages,
-  canStart,
   onComplete,
 }: UseArticlesGenerateOptions): UseArticlesGenerateReturn {
-  // 初始化状态
+  // 初始化状态（空状态，等待 initialize() 调用）
   const [state, updateState] = useImmer<ArticlesState>(() =>
-    createInitialArticlesState(pages)
+    createInitialArticlesState([])
   );
   const isGenerating = useRef(false);
-  const isReady = useRef(false); // 检测完成后才允许自动触发
-
-  // 当 pages 变化时，检测已存在文档并初始化状态
-  useEffect(() => {
-    if (pages.length === 0) return;
-
-    // 重置 ready 状态，等待检测完成
-    isReady.current = false;
-
-    const wikiDir = getWikiDir();
-
-    async function initializeWithExistingPages() {
-      // 先检测已存在的文档
-      const existingSlugs: string[] = [];
-      for (const page of pages) {
-        const filePath = joinPath(wikiDir, page.section, page.file);
-        try {
-          const file = Bun.file(filePath);
-          const exists = await file.exists();
-          if (exists) {
-            existingSlugs.push(page.slug);
-          }
-        } catch {
-          // 文件检查失败，视为不存在
-        }
-      }
-
-      // 一次性更新状态：初始化 + 标记已完成
-      updateState((draft) => {
-        const newState = createInitialArticlesState(pages);
-        Object.assign(draft, newState);
-
-        // 标记已存在的文档为 completed
-        for (const slug of existingSlugs) {
-          draft.pages[slug] = { status: "completed" };
-        }
-        draft.completedCount = existingSlugs.length;
-        draft.pendingCount = pages.length - existingSlugs.length;
-      });
-
-      // 检测完成，允许自动触发
-      isReady.current = true;
-    }
-
-    initializeWithExistingPages();
-  }, [pages, updateState]);
+  const isInitialized = useRef(false);
 
   // 从配置获取并发数
   const [maxConcurrent, setMaxConcurrent] = useState(1);
@@ -109,16 +64,51 @@ export function useArticlesGenerate({
       setMaxConcurrent(config.concurrency.max_concurrent);
       setConfigLoaded(true);
     }).catch(() => {
-      // 配置加载失败时使用默认值
       setMaxConcurrent(1);
       setConfigLoaded(true);
     });
   }, []);
 
   /**
-   * 事件回调
+   * 初始化：检测已存在文档并设置状态
    *
-   * 将 ArticleEventPayload 转换为状态更新（使用 mapper 纯函数）。
+   * 由组合层在 pages 确定后显式调用，不使用 useEffect 自动触发。
+   */
+  const initialize = useCallback(async () => {
+    if (pages.length === 0 || isInitialized.current) return;
+    isInitialized.current = true;
+
+    const wikiDir = getWikiDir();
+    const existingSlugs: string[] = [];
+
+    for (const page of pages) {
+      const filePath = joinPath(wikiDir, page.section, page.file);
+      try {
+        const file = Bun.file(filePath);
+        const exists = await file.exists();
+        if (exists) {
+          existingSlugs.push(page.slug);
+        }
+      } catch {
+        // 文件检查失败，视为不存在
+      }
+    }
+
+    // 一次性更新状态
+    updateState((draft) => {
+      const newState = createInitialArticlesState(pages);
+      Object.assign(draft, newState);
+
+      for (const slug of existingSlugs) {
+        draft.pages[slug] = { status: "completed" };
+      }
+      draft.completedCount = existingSlugs.length;
+      draft.pendingCount = pages.length - existingSlugs.length;
+    });
+  }, [pages, updateState]);
+
+  /**
+   * 事件回调
    */
   const handleEvent = useCallback(
     (event: ArticleEventPayload) => {
@@ -134,13 +124,28 @@ export function useArticlesGenerate({
   );
 
   /**
-   * 开始生成（只生成未完成的文章）
+   * 开始生成（只生成 waiting 状态的文章）
+   *
+   * 由组合层在 initialize() 完成后显式调用。
    */
   const start = useCallback(async () => {
     if (isGenerating.current || pages.length === 0) return;
+
+    // 等待 config 加载完成
+    if (!configLoaded) {
+      // 配置未加载，稍等一下
+      await new Promise((resolve) => {
+        const check = () => {
+          if (configLoaded) resolve(undefined);
+          else setTimeout(check, 50);
+        };
+        check();
+      });
+    }
+
     isGenerating.current = true;
 
-    // 计算待生成的页面列表（只生成 waiting 状态的）
+    // 计算待生成的页面列表
     const pendingPages = pages.filter(
       (page) => state.pages[page.slug]?.status === "waiting"
     );
@@ -151,17 +156,14 @@ export function useArticlesGenerate({
     }
 
     try {
-      // 调用 generateWikiContent，只传入待生成的页面
       await generateWikiContent({
         pages: pendingPages,
         maxConcurrent,
         onEvent: handleEvent,
       });
-
       onComplete?.();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      // 整体失败时更新状态
       if (state.currentPageSlug) {
         handleEvent({
           type: "page_error",
@@ -172,7 +174,7 @@ export function useArticlesGenerate({
     } finally {
       isGenerating.current = false;
     }
-  }, [pages, state.pages, maxConcurrent, state.currentPageSlug, handleEvent, onComplete]);
+  }, [pages, state.pages, state.currentPageSlug, maxConcurrent, configLoaded, handleEvent, onComplete]);
 
   /**
    * 重试所有失败文章
@@ -181,9 +183,7 @@ export function useArticlesGenerate({
     updateState((draft) => {
       for (const [slug, status] of Object.entries(draft.pages)) {
         if (status.status === "failed") {
-          draft.pages[slug] = {
-            status: "waiting",
-          };
+          draft.pages[slug] = { status: "waiting" };
           draft.failedCount--;
           draft.pendingCount++;
         }
@@ -198,9 +198,7 @@ export function useArticlesGenerate({
     (slug: string) => {
       updateState((draft) => {
         if (draft.pages[slug]?.status === "failed") {
-          draft.pages[slug] = {
-            status: "waiting",
-          };
+          draft.pages[slug] = { status: "waiting" };
           draft.failedCount--;
           draft.pendingCount++;
         }
@@ -209,19 +207,8 @@ export function useArticlesGenerate({
     [updateState]
   );
 
-  /**
-   * 自动触发
-   *
-   * 当目录完成、检测完成、配置加载完成且有待处理文章时，自动开始生成。
-   */
-  useEffect(() => {
-    if (canStart && isReady.current && configLoaded && state.pendingCount > 0 && !isGenerating.current) {
-      start();
-    }
-  }, [canStart, configLoaded, state.pendingCount, start]);
-
   return {
     state,
-    actions: { start, retryFailed, retryPage },
+    actions: { initialize, start, retryFailed, retryPage },
   };
 }

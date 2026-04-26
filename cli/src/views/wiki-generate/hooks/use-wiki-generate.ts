@@ -3,12 +3,12 @@
  *
  * 聚合层设计：
  * - 组合 useCatalogGenerate 和 useArticlesGenerate
- * - 提供统一的声明式接口
- * - 计算派生状态（简化组件逻辑）
- * - 支持强制重新生成模式
+ * - 集中流程控制，使用 flowState 状态管理
+ * - 显式调用 initialize 和 start，不依赖 useEffect 自动触发
+ * - 目录完成后一次性执行：reload → initialize → start
  */
 
-import { useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useWiki } from "../../../provider";
 import { useCatalogGenerate } from "./use-catalog";
 import { useArticlesGenerate } from "./use-articles";
@@ -50,11 +50,22 @@ interface UseWikiGenerateReturn {
   };
 }
 
+// ==================== 流程状态类型 ====================
+
+type FlowState = 'idle' | 'catalog-generating' | 'waiting-pages' | 'articles-generating' | 'completed';
+
 // ==================== Hook 实现 ====================
 
 export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenerateReturn {
   const { wikiCatalog, reload } = useWiki();
   const forceRegenerate = options?.forceRegenerate ?? false;
+
+  // 流程状态
+  const [flowState, setFlowState] = useState<FlowState>('idle');
+
+  // 防止重复触发的 ref
+  const pagesInitializedRef = useRef(false);
+  const articlesStartedRef = useRef(false);
 
   // 派生：是否有 wiki.json（强制模式时视为无）
   const hasWikiCatalog = !forceRegenerate && wikiCatalog !== null;
@@ -65,19 +76,83 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
     [wikiCatalog?.pages]
   );
 
+  // ===== 目录完成回调 =====
+  const handleCatalogComplete = useCallback(async () => {
+    // 1. reload wiki.json
+    await reload();
+    // 2. 标记等待 pages
+    setFlowState('waiting-pages');
+  }, [reload]);
+
   // 目录生成 Hook
   const catalog = useCatalogGenerate({
     hasWikiCatalog,
     forceRegenerate,
-    onComplete: reload, // 目录完成后重新加载
+    onComplete: handleCatalogComplete,
   });
 
-  // 文章生成 Hook（目录完成后自动开始）
+  // ===== 文章完成回调 =====
+  const handleArticlesComplete = useCallback(() => {
+    // 不调用 reload，只更新状态
+    setFlowState('completed');
+  }, []);
+
+  // 文章生成 Hook
   const articles = useArticlesGenerate({
     pages,
-    canStart: catalog.state.status === "completed",
-    onComplete: reload,
+    onComplete: handleArticlesComplete,
   });
+
+  // ===== 核心流程控制 =====
+  // 场景1：目录完成后，等待 pages，然后初始化并启动文章生成
+  useEffect(() => {
+    if (
+      flowState === 'waiting-pages' &&
+      pages.length > 0 &&
+      !pagesInitializedRef.current
+    ) {
+      // 先初始化检测已存在文档
+      articles.actions.initialize().then(() => {
+        pagesInitializedRef.current = true;
+        // 然后显式启动生成
+        if (!articlesStartedRef.current && articles.state.pendingCount > 0) {
+          articlesStartedRef.current = true;
+          articles.actions.start();
+          setFlowState('articles-generating');
+        } else if (articles.state.pendingCount === 0) {
+          setFlowState('completed');
+        }
+      });
+    }
+  }, [flowState, pages.length, articles.state.pendingCount]);
+
+  // 场景2：已有 wiki.json，直接进入文章生成流程
+  useEffect(() => {
+    if (
+      hasWikiCatalog &&
+      pages.length > 0 &&
+      flowState === 'idle' &&
+      !pagesInitializedRef.current
+    ) {
+      articles.actions.initialize().then(() => {
+        pagesInitializedRef.current = true;
+        if (articles.state.pendingCount > 0 && !articlesStartedRef.current) {
+          articlesStartedRef.current = true;
+          articles.actions.start();
+          setFlowState('articles-generating');
+        } else if (articles.state.pendingCount === 0) {
+          setFlowState('completed');
+        }
+      });
+    }
+  }, [hasWikiCatalog, pages.length, articles.state.pendingCount]);
+
+  // 同步目录状态到 flowState
+  useEffect(() => {
+    if (catalog.state.status === 'loading' && flowState === 'idle') {
+      setFlowState('catalog-generating');
+    }
+  }, [catalog.state.status, flowState]);
 
   // 聚合状态
   const state = useMemo<WikiGenerateState>(
