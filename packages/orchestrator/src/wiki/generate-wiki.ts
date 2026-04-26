@@ -107,6 +107,7 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
       options?.onProgress?.(progress);
 
       try {
+
         // 使用 createAgent，通过 onEvent 回调发射细粒度事件
         const result = await createAgent({
           tools: [
@@ -138,6 +139,12 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
               case 'tool_result':
                 articleEventType = 'tool_result';
                 break;
+              case 'error':
+                // 错误事件：createAgent 会 throw 异常，由 catch 块处理
+                return;
+              case 'complete':
+                // 完成事件：不在这里发射，由外层处理
+                return;
               default:
                 // 其他事件类型不发射
                 return;
@@ -180,6 +187,7 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
       } catch (err: unknown) {
         // Error isolation: single page failure doesn't stop others
         const message = err instanceof Error ? err.message : String(err);
+
 
         progress.failed++;
         const pageResult: PageResult = {

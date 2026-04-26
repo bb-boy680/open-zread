@@ -57,7 +57,6 @@ export { QueryEngine } from './engine.js'
 
 export {
   createProvider,
-  VercelAIProvider,
 } from './providers/index.js'
 export type {
   ApiType,

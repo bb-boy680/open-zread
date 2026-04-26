@@ -37,11 +37,19 @@ export function createAssistantMessage(
   content: NormalizedContentBlock[],
   usage?: TokenUsage,
 ): AssistantMessage {
+  // Convert reasoning blocks to thinking blocks for internal representation
+  const convertedContent = content.map(block => {
+    if (block.type === 'reasoning') {
+      return { type: 'thinking', thinking: block.reasoning } as { type: 'thinking'; thinking: string }
+    }
+    return block
+  }) as AssistantMessage['message']['content']
+
   return {
     type: 'assistant',
     message: {
       role: 'assistant',
-      content,
+      content: convertedContent,
     },
     uuid: crypto.randomUUID(),
     timestamp: new Date().toISOString(),

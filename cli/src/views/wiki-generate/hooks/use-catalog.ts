@@ -51,6 +51,7 @@ export function useCatalogGenerate({
   const [state, updateState] = useImmer<CatalogState>(initialCatalogState);
   const isGenerating = useRef(false);
 
+
   /**
    * 已有目录时直接标记完成
    *
@@ -161,6 +162,7 @@ export function useCatalogGenerate({
     const shouldStart = (!hasWikiCatalog || forceRegenerate) &&
                         state.status === "waiting" &&
                         !isGenerating.current;
+
 
     if (shouldStart) {
       start();

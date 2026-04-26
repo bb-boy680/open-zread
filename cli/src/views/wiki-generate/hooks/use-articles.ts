@@ -10,7 +10,7 @@
  * 流程：外部调用 initialize() → 外部调用 start() → 并行生成各页面
  */
 
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef } from "react";
 import { useImmer } from "use-immer";
 import { loadConfig, getWikiDir, joinPath } from "@open-zread/utils";
 import { generateWikiContent, type ArticleEventPayload } from "@open-zread/orchestrator";
@@ -32,10 +32,10 @@ interface UseArticlesGenerateReturn {
   state: ArticlesState;
   /** 操作方法 */
   actions: {
-    /** 初始化：检测已存在文档并设置状态（由组合层显式调用） */
-    initialize: () => Promise<void>;
-    /** 开始生成（由组合层显式调用） */
-    start: () => Promise<void>;
+    /** 初始化：检测已存在文档并设置状态，返回 pendingPages 列表（由组合层显式调用） */
+    initialize: () => Promise<WikiPage[]>;
+    /** 开始生成，接收待生成页面列表（由组合层显式调用） */
+    start: (pendingPages: WikiPage[]) => Promise<void>;
     /** 重试所有失败文章 */
     retryFailed: () => void;
     /** 重试单篇文章 */
@@ -56,26 +56,14 @@ export function useArticlesGenerate({
   const isGenerating = useRef(false);
   const isInitialized = useRef(false);
 
-  // 从配置获取并发数
-  const [maxConcurrent, setMaxConcurrent] = useState(1);
-  const [configLoaded, setConfigLoaded] = useState(false);
-  useEffect(() => {
-    loadConfig().then((config) => {
-      setMaxConcurrent(config.concurrency.max_concurrent);
-      setConfigLoaded(true);
-    }).catch(() => {
-      setMaxConcurrent(1);
-      setConfigLoaded(true);
-    });
-  }, []);
-
   /**
    * 初始化：检测已存在文档并设置状态
    *
    * 由组合层在 pages 确定后显式调用，不使用 useEffect 自动触发。
+   * 返回待生成的 pages 列表，避免调用方闭包陷阱。
    */
-  const initialize = useCallback(async () => {
-    if (pages.length === 0 || isInitialized.current) return;
+  const initialize = useCallback(async (): Promise<WikiPage[]> => {
+    if (pages.length === 0 || isInitialized.current) return [];
     isInitialized.current = true;
 
     const wikiDir = getWikiDir();
@@ -94,6 +82,8 @@ export function useArticlesGenerate({
       }
     }
 
+    const pendingCount = pages.length - existingSlugs.length;
+
     // 一次性更新状态
     updateState((draft) => {
       const newState = createInitialArticlesState(pages);
@@ -103,8 +93,11 @@ export function useArticlesGenerate({
         draft.pages[slug] = { status: "completed" };
       }
       draft.completedCount = existingSlugs.length;
-      draft.pendingCount = pages.length - existingSlugs.length;
+      draft.pendingCount = pendingCount;
     });
+
+    // 返回待生成的 pages 列表（避免闭包陷阱）
+    return pages.filter((page) => !existingSlugs.includes(page.slug));
   }, [pages, updateState]);
 
   /**
@@ -124,57 +117,44 @@ export function useArticlesGenerate({
   );
 
   /**
-   * 开始生成（只生成 waiting 状态的文章）
+   * 开始生成
    *
    * 由组合层在 initialize() 完成后显式调用。
+   * 接收 initialize() 返回的 pendingPages 列表，避免闭包陷阱。
    */
-  const start = useCallback(async () => {
-    if (isGenerating.current || pages.length === 0) return;
+  const start = useCallback(async (pendingPages: WikiPage[]) => {
+    if (isGenerating.current || pendingPages.length === 0) return;
 
-    // 等待 config 加载完成
-    if (!configLoaded) {
-      // 配置未加载，稍等一下
-      await new Promise((resolve) => {
-        const check = () => {
-          if (configLoaded) resolve(undefined);
-          else setTimeout(check, 50);
-        };
-        check();
-      });
+    // 直接加载配置，避免闭包陷阱（不依赖 configLoaded state）
+    let concurrent = 1;
+    try {
+      const config = await loadConfig();
+      concurrent = config.concurrency.max_concurrent;
+    } catch {
+      // 配置加载失败，使用默认值
     }
 
     isGenerating.current = true;
 
-    // 计算待生成的页面列表
-    const pendingPages = pages.filter(
-      (page) => state.pages[page.slug]?.status === "waiting"
-    );
-
-    if (pendingPages.length === 0) {
-      isGenerating.current = false;
-      return;
-    }
 
     try {
       await generateWikiContent({
         pages: pendingPages,
-        maxConcurrent,
+        maxConcurrent: concurrent,
         onEvent: handleEvent,
       });
       onComplete?.();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      if (state.currentPageSlug) {
-        handleEvent({
-          type: "page_error",
-          slug: state.currentPageSlug,
-          error: message,
-        });
-      }
+      handleEvent({
+        type: "page_error",
+        slug: pendingPages[0]?.slug ?? "unknown",
+        error: message,
+      });
     } finally {
       isGenerating.current = false;
     }
-  }, [pages, state.pages, state.currentPageSlug, maxConcurrent, configLoaded, handleEvent, onComplete]);
+  }, [handleEvent, onComplete]);
 
   /**
    * 重试所有失败文章

@@ -358,6 +358,7 @@ export class QueryEngine {
           role: 'assistant',
           content: response.content.map(block => {
             if (block.type === 'text') return { type: 'text', text: block.text }
+            if (block.type === 'reasoning') return { type: 'thinking', thinking: block.reasoning }
             return { type: 'tool_use', id: block.id, name: block.name, input: block.input }
           }) as ContentBlock[],
         },

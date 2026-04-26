@@ -44,6 +44,8 @@ export type NormalizedContentBlock =
   | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean }
   | { type: 'image'; source: ImageSource }
   | { type: 'thinking'; thinking: string }
+  // DeepSeek thinking mode: reasoning content (must be passed back in subsequent requests)
+  | { type: 'reasoning'; reasoning: string }
 
 export interface NormalizedTool {
   name: string
@@ -73,6 +75,8 @@ export interface CreateMessageResponse {
 export type NormalizedResponseBlock =
   | { type: 'text'; text: string }
   | { type: 'tool_use'; id: string; name: string; input: ToolInputParams }
+  // DeepSeek thinking mode: reasoning content in response
+  | { type: 'reasoning'; reasoning: string }
 
 // --------------------------------------------------------------------------
 // Provider Interface

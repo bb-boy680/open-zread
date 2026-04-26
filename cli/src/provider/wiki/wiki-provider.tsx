@@ -25,6 +25,7 @@ export function WikiProvider({ children }: WikiProviderProps) {
 
   // 加载 wiki.json
   const loadCatalog = useCallback(async () => {
+
     const draftsDir = getDraftsDir();
     const wikiPath = joinPath(draftsDir, 'wiki.json');
 
@@ -37,7 +38,7 @@ export function WikiProvider({ children }: WikiProviderProps) {
       } else {
         setWikiCatalog(null);
       }
-    } catch {
+    } catch (err: unknown) {
       setWikiCatalog(null);
     }
   }, []);

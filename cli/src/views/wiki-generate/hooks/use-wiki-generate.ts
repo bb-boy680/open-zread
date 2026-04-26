@@ -30,7 +30,7 @@ interface UseWikiGenerateReturn {
     startCatalog: () => Promise<void>;
     /** 重试目录生成 */
     retryCatalog: () => void;
-    /** 开始文章生成 */
+    /** 开始文章生成（内部会先初始化再启动） */
     startArticles: () => Promise<void>;
     /** 重试所有失败文章 */
     retryArticles: () => void;
@@ -60,6 +60,7 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
   const { wikiCatalog, reload } = useWiki();
   const forceRegenerate = options?.forceRegenerate ?? false;
 
+
   // 流程状态
   const [flowState, setFlowState] = useState<FlowState>('idle');
 
@@ -69,6 +70,7 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
 
   // 派生：是否有 wiki.json（强制模式时视为无）
   const hasWikiCatalog = !forceRegenerate && wikiCatalog !== null;
+
 
   // 派生：文章列表
   const pages: WikiPage[] = useMemo(
@@ -112,14 +114,14 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
       !pagesInitializedRef.current
     ) {
       // 先初始化检测已存在文档
-      articles.actions.initialize().then(() => {
+      articles.actions.initialize().then((pendingPages) => {
         pagesInitializedRef.current = true;
-        // 然后显式启动生成
-        if (!articlesStartedRef.current && articles.state.pendingCount > 0) {
+        // 使用返回的 pendingPages，避免闭包陷阱
+        if (!articlesStartedRef.current && pendingPages.length > 0) {
           articlesStartedRef.current = true;
-          articles.actions.start();
+          articles.actions.start(pendingPages);
           setFlowState('articles-generating');
-        } else if (articles.state.pendingCount === 0) {
+        } else if (pendingPages.length === 0) {
           setFlowState('completed');
         }
       });
@@ -134,13 +136,14 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
       flowState === 'idle' &&
       !pagesInitializedRef.current
     ) {
-      articles.actions.initialize().then(() => {
+      articles.actions.initialize().then((pendingPages) => {
         pagesInitializedRef.current = true;
-        if (articles.state.pendingCount > 0 && !articlesStartedRef.current) {
+        // 使用返回的 pendingPages，避免闭包陷阱
+        if (pendingPages.length > 0 && !articlesStartedRef.current) {
           articlesStartedRef.current = true;
-          articles.actions.start();
+          articles.actions.start(pendingPages);
           setFlowState('articles-generating');
-        } else if (articles.state.pendingCount === 0) {
+        } else if (pendingPages.length === 0) {
           setFlowState('completed');
         }
       });
@@ -189,13 +192,20 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
     () => ({
       startCatalog: catalog.actions.start,
       retryCatalog: catalog.actions.retry,
-      startArticles: articles.actions.start,
+      // startArticles 需要先初始化获取 pendingPages，再调用 start
+      startArticles: async () => {
+        const pendingPages = await articles.actions.initialize();
+        if (pendingPages.length > 0) {
+          await articles.actions.start(pendingPages);
+        }
+      },
       retryArticles: articles.actions.retryFailed,
       retryPage: articles.actions.retryPage,
     }),
     [
       catalog.actions.start,
       catalog.actions.retry,
+      articles.actions.initialize,
       articles.actions.start,
       articles.actions.retryFailed,
       articles.actions.retryPage,

@@ -122,6 +122,10 @@ export class Agent {
     // Explicit providerId option
     if (this.cfg.providerId) return this.cfg.providerId
 
+    // Check baseURL for endpoint format first (Anthropic-compatible endpoints)
+    const baseUrl = this.apiCredentials.baseUrl?.toLowerCase() || ''
+    if (baseUrl.includes('/anthropic')) return 'anthropic'
+
     // From model string (e.g., "anthropic/claude-sonnet-4-6")
     if (this.modelId.includes('/')) {
       return this.modelId.split('/')[0]
