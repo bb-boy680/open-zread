@@ -14,9 +14,11 @@ import { getDisplayWidth, truncateByDisplayWidth } from "../utils";
 interface DividerProps {
   /** 标题文本（可选） */
   title?: string;
+  /** 颜色（可选，默认 dimColor） */
+  color?: string;
 }
 
-export default function Divider({ title }: DividerProps) {
+export default function Divider({ title, color }: DividerProps) {
   const { stdout } = useStdout();
   // Layout 有 paddingX={2}，需要减去 4 个字符宽度
   const layoutPadding = 4;
@@ -41,7 +43,7 @@ export default function Divider({ title }: DividerProps) {
 
     return (
       <Box marginTop={1}>
-        <Text dimColor>{truncated}</Text>
+        <Text dimColor={!color} color={color}>{truncated}</Text>
       </Box>
     );
   }
@@ -49,7 +51,7 @@ export default function Divider({ title }: DividerProps) {
   // 简单分割线
   return (
     <Box marginTop={1}>
-      <Text dimColor>{"─".repeat(terminalWidth)}</Text>
+      <Text dimColor={!color} color={color}>{"─".repeat(terminalWidth)}</Text>
     </Box>
   );
 }

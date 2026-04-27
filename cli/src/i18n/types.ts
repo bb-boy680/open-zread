@@ -112,14 +112,16 @@ export interface TranslationKeys {
     title: string;
     generate: string;
     continue: string;
+    manage: string;
     force: string;
     config: string;
     exit: string;
     footer: string;
-    statusNoCatalog: string;
-    statusHasCatalog: string;
-    statusInProgress: string;
-    statusComplete: string;
+    // Divider status titles
+    dividerNoCatalog: string;
+    dividerHasCatalog: string;
+    dividerInProgress: string;
+    dividerComplete: string;
   };
   wikiGenerate: {
     catalogTitle: string;

@@ -1,6 +1,7 @@
 // File I/O utilities
 export {
   ensureDir,
+  removeDir,
   readTextFile,
   writeTextFile,
   writeJsonFile,

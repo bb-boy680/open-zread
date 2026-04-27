@@ -9,6 +9,7 @@
  * URL 参数：
  * - mode=generate: 新生成（wiki.json 不存在）
  * - mode=continue: 继续生成（wiki.json 存在，文档未完成）
+ * - mode=manage: 管理文档（wiki.json 存在，文档已完成，可重新生成单个）
  * - mode=force: 强制重新生成（忽略现有 wiki.json）
  */
 
@@ -22,7 +23,7 @@ import { useI18n } from "../../i18n";
 export default function WikiGeneratePage() {
   const { t } = useI18n();
   const [searchParams] = useSearchParams();
-  const mode = searchParams.get("mode") as "generate" | "continue" | "force" | null;
+  const mode = searchParams.get("mode") as "generate" | "continue" | "manage" | "force" | null;
 
   // 选中状态跟踪（用 ref，不需要触发重渲染）
   const selectedSlugRef = useRef<string | null>(null);

@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router';
 import SelectInput from 'ink-select-input';
 import { useI18n } from '../../i18n';
 import { useWiki } from '../../provider';
+import Divider from '../../components/Divider';
 import { getWikiDir, joinPath } from '@open-zread/utils';
 import type { WikiPage, WikiOutput } from '@open-zread/types';
 
@@ -55,15 +56,20 @@ function buildSelectItems(
     });
   }
 
-  // 3. 强制重新生成（wiki.json 存在）
+  // 3. 管理文档（wiki.json 存在 + 文档已完成）
+  if (wikiCatalog && progress && progress.generated === progress.total) {
+    items.push({ label: t('wiki.manage'), value: 'manage' });
+  }
+
+  // 4. 强制重新生成（wiki.json 存在）
   if (wikiCatalog) {
     items.push({ label: t('wiki.force'), value: 'force' });
   }
 
-  // 4. 配置（常驻）
+  // 5. 配置（常驻）
   items.push({ label: t('wiki.config'), value: 'config' });
 
-  // 5. 退出（常驻）
+  // 6. 退出（常驻）
   items.push({ label: t('wiki.exit'), value: 'exit' });
 
   return items;
@@ -97,6 +103,9 @@ export default function WikiHomePage() {
       case 'continue':
         navigate('/wiki/generate?mode=continue');
         break;
+      case 'manage':
+        navigate('/wiki/generate?mode=manage');
+        break;
       case 'force':
         navigate('/wiki/generate?mode=force');
         break;
@@ -109,21 +118,24 @@ export default function WikiHomePage() {
     }
   };
 
-  // 状态文字
-  const statusText = wikiCatalog
+  // 状态标题（用于 Divider）
+  const statusTitle = wikiCatalog
     ? progress && progress.generated === progress.total
-      ? t('wiki.statusComplete', { total: progress.total })
+      ? t('wiki.dividerComplete', { total: progress.total })
       : progress
-        ? t('wiki.statusInProgress', { generated: progress.generated, total: progress.total })
-        : t('wiki.statusHasCatalog')
-    : t('wiki.statusNoCatalog');
+        ? t('wiki.dividerInProgress', { generated: progress.generated, total: progress.total })
+        : t('wiki.dividerHasCatalog')
+    : t('wiki.dividerNoCatalog');
+
+  // 状态颜色（进行中用黄色，其他默认灰色）
+  const statusColor = wikiCatalog && progress && progress.generated < progress.total
+    ? 'yellow'
+    : undefined;
 
   return (
     <Box flexDirection="column">
-      {/* ========== 状态信息 ========== */}
-      <Box marginTop={1}>
-        <Text color="yellow">{statusText}</Text>
-      </Box>
+      {/* ========== 状态分割线 ========== */}
+      <Divider title={statusTitle} color={statusColor} />
 
       {/* ========== 选项列表 ========== */}
       <Box marginTop={1}>

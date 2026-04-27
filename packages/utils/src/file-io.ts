@@ -1,8 +1,12 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rm } from 'fs/promises';
 import { dirname, join } from 'path';
 
 export async function ensureDir(dir: string): Promise<void> {
   await mkdir(dir, { recursive: true });
+}
+
+export async function removeDir(dir: string): Promise<void> {
+  await rm(dir, { recursive: true, force: true });
 }
 
 export async function readTextFile(path: string): Promise<string> {

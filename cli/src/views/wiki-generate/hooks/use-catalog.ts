@@ -12,7 +12,7 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useImmer } from "use-immer";
 import { scanFiles, parseFiles } from "@open-zread/repo-analyzer";
-import { saveCachedSymbols } from "@open-zread/utils";
+import { saveCachedSymbols, removeDir, getWikiDir, getDraftsDir, joinPath } from "@open-zread/utils";
 import { generateWikiCatalog, type CatalogEvent } from "@open-zread/orchestrator";
 import { catalogEventToState } from "../mapper";
 import { initialCatalogState } from "../state";
@@ -107,6 +107,19 @@ export function useCatalogGenerate({
     if (isGenerating.current) return;
     isGenerating.current = true;
 
+    // 强制重新生成时清理旧数据
+    if (forceRegenerate) {
+      try {
+        // 删除 wiki 目录
+        await removeDir(getWikiDir());
+        // 删除 wiki.json
+        const wikiPath = joinPath(getDraftsDir(), "wiki.json");
+        await removeDir(wikiPath);
+      } catch (_err: unknown) {
+        // 忽略删除错误（文件不存在等）
+      }
+    }
+
     // 扫描阶段
     updateState((draft) => {
       Object.assign(draft, catalogEventToState(initialCatalogState, { type: "scanning" }));
@@ -137,7 +150,7 @@ export function useCatalogGenerate({
     } finally {
       isGenerating.current = false;
     }
-  }, [updateState, handleAgentEvent]);
+  }, [forceRegenerate, updateState, handleAgentEvent]);
 
   /**
    * 重试
