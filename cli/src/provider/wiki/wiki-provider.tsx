@@ -38,7 +38,7 @@ export function WikiProvider({ children }: WikiProviderProps) {
       } else {
         setWikiCatalog(null);
       }
-    } catch (err: unknown) {
+    } catch (_err: unknown) {
       setWikiCatalog(null);
     }
   }, []);

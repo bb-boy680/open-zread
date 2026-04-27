@@ -118,11 +118,12 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // 构建钩子配置（如果有 onEvent 回调）
-    const hooks = options.onEvent ? {
+    const onEvent = options.onEvent;
+    const hooks = onEvent ? {
       PreToolUse: [{
         hooks: [
           async (input: Record<string, unknown>) => {
-            options.onEvent!({
+            onEvent({
               type: 'tool_start',
               toolName: input.toolName as string,
               toolInput: JSON.stringify(input.toolInput || {}).slice(0, 100),
@@ -134,7 +135,7 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
       PostToolUse: [{
         hooks: [
           async (input: Record<string, unknown>) => {
-            options.onEvent!({
+            onEvent({
               type: 'tool_result',
               toolName: input.toolName as string,
               output: String(input.toolOutput || '').slice(0, 200),

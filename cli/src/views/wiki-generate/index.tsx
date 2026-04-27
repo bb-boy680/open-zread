@@ -28,7 +28,7 @@ export default function WikiGeneratePage() {
   });
 
   // 键盘导航
-  useInput((input, key) => {
+  useInput((input, _key) => {
     // 目录失败时按 r 重试
     if (input === "r" && state.catalog.status === "failed") {
       actions.retryCatalog();

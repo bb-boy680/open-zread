@@ -5,7 +5,6 @@
  */
 
 import type { WikiPage } from '@open-zread/types';
-import type { TokenUsage } from '@open-zread/orchestrator';
 import type {
   CatalogState,
   ArticlesState,

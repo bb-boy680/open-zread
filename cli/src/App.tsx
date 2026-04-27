@@ -2,7 +2,7 @@
  * App - TUI 应用入口，所有路由统一管理
  */
 
-import { Box, render } from "ink";
+import { Box } from "ink";
 import { withFullScreen } from "fullscreen-ink";
 import { MemoryRouter, Routes, Route } from "react-router";
 import { I18nProvider } from "./i18n";

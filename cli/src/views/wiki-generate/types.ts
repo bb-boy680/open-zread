@@ -9,7 +9,7 @@
  */
 
 import type { WikiPage } from '@open-zread/types';
-import type { TokenUsage, ArticleEventPayload } from '@open-zread/orchestrator';
+import type { TokenUsage } from '@open-zread/orchestrator';
 
 // ==================== 基础状态类型 ====================
 
