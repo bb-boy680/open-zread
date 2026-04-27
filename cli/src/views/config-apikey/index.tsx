@@ -8,12 +8,12 @@
  * - 设置配置字段，返回首页（不自动保存）
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import { getProviderRegistry } from '@open-zread/utils';
-import { useConfig, useEscHandler } from '../../provider';
+import { useConfig, useEscHandler, usePrefilledConfig } from '../../provider';
 import { useI18n } from '../../i18n';
 
 export default function ConfigApiKeyPage() {
@@ -27,11 +27,27 @@ export default function ConfigApiKeyPage() {
   // 从 URL 参数获取自定义模型名称（用于自定义 Provider 流程）
   const customModelName = searchParams.get('model');
 
+  // 预填充值：provider 匹配时预填充 api_key 和 base_url
+  const prefilledValues = usePrefilledConfig({ providerId });
+
   const [apiKey, setApiKey] = useState('');
   const [baseUrl, setBaseUrl] = useState('');
   const [isEditingApiKey, setIsEditingApiKey] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [providerBaseUrl, setProviderBaseUrl] = useState<string>('');
+
+  // 预填充标记（确保只预填充一次）
+  const prefilledRef = useRef(false);
+
+  // 预填充值变化时更新 state（解决异步加载问题）
+  useEffect(() => {
+    // 只预填充一次，且只在有值时填充
+    if (!prefilledRef.current && prefilledValues.apiKey) {
+      setApiKey(prefilledValues.apiKey);
+      setBaseUrl(prefilledValues.baseUrl);
+      prefilledRef.current = true;
+    }
+  }, [prefilledValues]);
 
   // 加载 Provider 信息
   useEffect(() => {
@@ -45,13 +61,13 @@ export default function ConfigApiKeyPage() {
         const provider = registry.getProvider(providerId);
         if (provider) {
           setProviderBaseUrl(provider.base_url || '');
-          // 如果 provider 有预置 base_url，自动填充
-          if (provider.base_url) {
+          // 只有没有预填充值时，才使用 provider 的默认 base_url
+          if (!prefilledValues.baseUrl && provider.base_url) {
             setBaseUrl(provider.base_url);
           }
         }
       });
-  }, [providerId, navigate]);
+  }, [providerId, navigate, prefilledValues.baseUrl]);
 
   // 设置配置并返回首页
   const handleSave = useCallback(() => {

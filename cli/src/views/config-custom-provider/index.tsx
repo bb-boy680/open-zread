@@ -8,12 +8,12 @@
  * 完成后直接返回首页，不自动保存（由首页 s 键统一保存）
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import TextInput from 'ink-text-input';
 import { useParams, useNavigate } from 'react-router';
 import { getProviderRegistry } from '@open-zread/utils';
-import { useConfig, useEscHandler } from '../../provider';
+import { useConfig, useEscHandler, usePrefilledConfig } from '../../provider';
 import { useI18n } from '../../i18n';
 
 type Step = 'baseUrl' | 'modelName' | 'apiKey';
@@ -23,6 +23,10 @@ export default function ConfigCustomProviderPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { setField } = useConfig();
+
+  // 预填充值：当前 provider 匹配时才预填充
+  const prefilledValues = usePrefilledConfig({ providerId });
+
   const { claimEsc, releaseEsc } = useEscHandler();
 
   // 是否是完全自定义 Provider（需要 Base URL 步骤）
@@ -38,6 +42,22 @@ export default function ConfigCustomProviderPage() {
     modelName: '',
     apiKey: '',
   });
+
+  // 预填充标记（确保只预填充一次）
+  const prefilledRef = useRef(false);
+
+  // 预填充值变化时更新 state（解决异步加载问题）
+  useEffect(() => {
+
+    // 只预填充一次，且只在有值时填充
+    if (!prefilledRef.current && prefilledValues.baseUrl) {
+
+      setBaseUrl(prefilledValues.baseUrl);
+      setModelName(prefilledValues.modelName);
+      setApiKey(prefilledValues.apiKey);
+      prefilledRef.current = true;
+    }
+  }, [prefilledValues]);
 
   // 计算步骤编号
   const stepNumber = isFullCustom
@@ -136,8 +156,8 @@ export default function ConfigCustomProviderPage() {
 
     // 设置配置字段（暂存，由首页 s 键统一保存）
     setField('llm.provider', providerId || 'custom');
-    setField('llm.model', modelName);
-    setField('llm.api_key', apiKey);
+    setField('llm.model', modelName.trim());
+    setField('llm.api_key', apiKey.trim());
     const finalBaseUrl = baseUrl.trim() || providerBaseUrl;
     if (finalBaseUrl) {
       setField('llm.base_url', finalBaseUrl);
@@ -146,7 +166,7 @@ export default function ConfigCustomProviderPage() {
     // 直接返回上一级（使用 -1 避免路由栈堆积）
     releaseEsc();
     navigate(-1);
-  }, [apiKey, errors, t, providerId, modelName, baseUrl, providerBaseUrl, setField, navigate, releaseEsc]);
+  }, [apiKey, modelName, baseUrl, providerBaseUrl, errors, t, providerId, setField, navigate, releaseEsc]);
 
   // 键盘处理（只处理 esc）
   useInput((_input, key) => {
