@@ -129,7 +129,7 @@ export const enUS: TranslationKeys = {
     completed: 'Completed',
     failed: 'Failed',
     navigate: 'Navigate',
-    retry: 'Retry',
+    retry: 'Regenerate',
     exit: 'Exit',
   },
 };

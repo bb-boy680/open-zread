@@ -13,6 +13,7 @@
  */
 
 import { Box, Text, useInput } from "ink";
+import { useRef } from "react";
 import { useSearchParams } from "react-router";
 import { CatalogSection, ArticlesSection } from "./components";
 import { useWikiGenerate } from "./hooks";
@@ -23,21 +24,31 @@ export default function WikiGeneratePage() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") as "generate" | "continue" | "force" | null;
 
+  // 选中状态跟踪（用 ref，不需要触发重渲染）
+  const selectedSlugRef = useRef<string | null>(null);
+
   const { state, actions, derived } = useWikiGenerate({
     forceRegenerate: mode === "force",
   });
 
   // 键盘导航
   useInput((input, _key) => {
-    // 目录失败时按 r 重试
+    // 目录失败时按 r 重新生成目录
     if (input === "r" && state.catalog.status === "failed") {
       actions.retryCatalog();
+      return;
     }
-    // 文章有失败时按 r 重试
-    if (input === "r" && state.articles.failedCount > 0) {
-      actions.retryArticles();
+
+    // 选中文章时按 r 重新生成该文章
+    if (input === "r" && selectedSlugRef.current) {
+      actions.regeneratePage(selectedSlugRef.current);
     }
   });
+
+  // 处理文章高亮（按 ↑/↓ 导航，实时跟踪）
+  const handleArticleHighlight = (slug: string) => {
+    selectedSlugRef.current = slug;
+  };
 
   return (
     <Box flexDirection="column">
@@ -49,6 +60,7 @@ export default function WikiGeneratePage() {
         <ArticlesSection
           pages={state.wikiPages}
           statusMap={state.articles.pages}
+          onHighlight={handleArticleHighlight}
         />
       )}
 

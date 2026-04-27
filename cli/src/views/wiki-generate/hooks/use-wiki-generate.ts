@@ -28,14 +28,12 @@ interface UseWikiGenerateReturn {
   actions: {
     /** 开始目录生成 */
     startCatalog: () => Promise<void>;
-    /** 重试目录生成 */
+    /** 重新生成目录（目录失败时） */
     retryCatalog: () => void;
     /** 开始文章生成（内部会先初始化再启动） */
     startArticles: () => Promise<void>;
-    /** 重试所有失败文章 */
-    retryArticles: () => void;
-    /** 重试单篇文章 */
-    retryPage: (slug: string) => void;
+    /** 重新生成选中的文章 */
+    regeneratePage: (slug: string) => Promise<void>;
   };
   /** 派生状态（计算属性） */
   derived: {
@@ -199,16 +197,14 @@ export function useWikiGenerate(options?: UseWikiGenerateOptions): UseWikiGenera
           await articles.actions.start(pendingPages);
         }
       },
-      retryArticles: articles.actions.retryFailed,
-      retryPage: articles.actions.retryPage,
+      regeneratePage: articles.actions.regeneratePage,
     }),
     [
       catalog.actions.start,
       catalog.actions.retry,
       articles.actions.initialize,
       articles.actions.start,
-      articles.actions.retryFailed,
-      articles.actions.retryPage,
+      articles.actions.regeneratePage,
     ]
   );
 

@@ -129,7 +129,7 @@ export const zhCN: TranslationKeys = {
     completed: '完成',
     failed: '失败',
     navigate: '导航',
-    retry: '重试',
+    retry: '重新生成',
     exit: '退出',
   },
 };

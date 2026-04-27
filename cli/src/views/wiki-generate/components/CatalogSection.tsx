@@ -2,16 +2,16 @@
  * CatalogSection - 目录生成状态显示
  *
  * 显示格式：
- * - ○ 目录 [等待]
- * - ⠴ 目录 [请求中]
- * - ⠴ 目录 [工具: xxx] ↑↑ ↓↓
- * - ⠴ 目录 [响应中] ↑↑ ↓↓
- * - ✓ 目录 [完成] ↑↑ ↓↓ 1.2s
- * - ✗ 目录 [失败] error
+ * - ○ [等待]
+ * - ⠴ [请求中]
+ * - ⠴ [工具: xxx] ↑↑ ↓↓
+ * - ⠴ [响应中] ↑↑ ↓↓
+ * - ✓ [完成] ↑↑ ↓↓ 1.2s
+ * - ✗ [失败] error
  *
  * 架构：
  * - 纯渲染组件，只接收 props
- * - 使用共享组件：Divider、StatusRow、StatusIcon
+ * - Divider 显示标题，状态行只显示图标+状态
  */
 
 import { Box, Text } from "ink";
@@ -80,21 +80,17 @@ export default function CatalogSection({ state }: CatalogSectionProps) {
     theme.muted;
   const right = <Text color={rightColor}>{rightText}</Text>;
 
-  // 左栏
+  // 左栏：只有图标，标题由 Divider 显示
   const left = (
     <Box>
-      <Text> </Text>
       <StatusIcon status={status} />
-      <Text> {t("wikiGenerate.catalogTitle")}</Text>
     </Box>
   );
 
   return (
     <Box flexDirection="column">
       <Divider title={t("wikiGenerate.catalogTitle")} />
-      <Box marginTop={1}>
-        <StatusRow left={left} right={right} />
-      </Box>
+      <StatusRow left={left} right={right} />
     </Box>
   );
 }

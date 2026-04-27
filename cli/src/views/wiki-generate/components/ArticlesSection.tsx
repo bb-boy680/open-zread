@@ -23,13 +23,14 @@ import type { WikiPage, PageStatus } from "../types";
 interface ArticlesSectionProps {
   pages: WikiPage[];
   statusMap: Record<string, PageStatus>;
-  onSelect?: (slug: string) => void;
+  /** 高亮回调（按 ↑/↓ 导航时触发，用于跟踪当前选中项） */
+  onHighlight?: (slug: string) => void;
 }
 
 const ArticlesSection = memo(function ArticlesSection({
   pages,
   statusMap,
-  onSelect,
+  onHighlight,
 }: ArticlesSectionProps) {
   const { t } = useI18n();
 
@@ -136,10 +137,10 @@ const ArticlesSection = memo(function ArticlesSection({
     [pageMap, statusMap, t]
   );
 
-  // 缓存 onSelect 回调
-  const handleSelect = useCallback(
-    (item: { value: string }) => onSelect?.(item.value),
-    [onSelect]
+  // 缓存 onHighlight 回调（实时跟踪选中项）
+  const handleHighlight = useCallback(
+    (item: { value: string }) => onHighlight?.(item.value),
+    [onHighlight]
   );
 
   return (
@@ -148,7 +149,7 @@ const ArticlesSection = memo(function ArticlesSection({
       <Box marginTop={1}>
         <SelectInput
           items={selectItems}
-          onSelect={handleSelect}
+          onHighlight={handleHighlight}
           indicatorComponent={indicatorComponent}
           itemComponent={itemComponent}
         />

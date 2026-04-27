@@ -32,14 +32,12 @@ interface UseArticlesGenerateReturn {
   state: ArticlesState;
   /** 操作方法 */
   actions: {
-    /** 初始化：检测已存在文档并设置状态，返回 pendingPages 列表（由组合层显式调用） */
+    /** 初始化：检测已存在文档并设置状态，返回 pendingPages 列表 */
     initialize: () => Promise<WikiPage[]>;
-    /** 开始生成，接收待生成页面列表（由组合层显式调用） */
+    /** 开始生成，接收待生成页面列表 */
     start: (pendingPages: WikiPage[]) => Promise<void>;
-    /** 重试所有失败文章 */
-    retryFailed: () => void;
-    /** 重试单篇文章 */
-    retryPage: (slug: string) => void;
+    /** 重新生成单篇文章 */
+    regeneratePage: (slug: string) => Promise<void>;
   };
 }
 
@@ -157,38 +155,61 @@ export function useArticlesGenerate({
   }, [handleEvent, onComplete]);
 
   /**
-   * 重试所有失败文章
+   * 重新生成单篇文章
    */
-  const retryFailed = useCallback(() => {
-    updateState((draft) => {
-      for (const [slug, status] of Object.entries(draft.pages)) {
-        if (status.status === "failed") {
-          draft.pages[slug] = { status: "waiting" };
-          draft.failedCount--;
-          draft.pendingCount++;
-        }
-      }
-    });
-  }, [updateState]);
+  const regeneratePage = useCallback(
+    async (slug: string) => {
+      // 找到对应的 page
+      const page = pages.find((p) => p.slug === slug);
+      if (!page) return;
 
-  /**
-   * 重试单篇文章
-   */
-  const retryPage = useCallback(
-    (slug: string) => {
+      // 先将状态改为 waiting
       updateState((draft) => {
-        if (draft.pages[slug]?.status === "failed") {
-          draft.pages[slug] = { status: "waiting" };
+        const prevStatus = draft.pages[slug]?.status;
+        draft.pages[slug] = { status: "waiting" };
+
+        // 更新计数
+        if (prevStatus === "completed") {
+          draft.completedCount--;
+          draft.pendingCount++;
+        } else if (prevStatus === "failed") {
           draft.failedCount--;
           draft.pendingCount++;
+        } else if (prevStatus === "loading") {
+          // 正在生成中，不改变计数
         }
       });
+
+      // 加载配置获取并发数
+      let concurrent = 1;
+      try {
+        const config = await loadConfig();
+        concurrent = config.concurrency.max_concurrent;
+      } catch {
+        // 配置加载失败，使用默认值
+      }
+
+      // 启动生成
+      try {
+        await generateWikiContent({
+          pages: [page],
+          maxConcurrent: concurrent,
+          onEvent: handleEvent,
+        });
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        handleEvent({
+          type: "page_error",
+          slug,
+          error: message,
+        });
+      }
     },
-    [updateState]
+    [pages, updateState, handleEvent]
   );
 
   return {
     state,
-    actions: { initialize, start, retryFailed, retryPage },
+    actions: { initialize, start, regeneratePage },
   };
 }
