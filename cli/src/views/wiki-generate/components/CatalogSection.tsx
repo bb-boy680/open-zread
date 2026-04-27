@@ -75,6 +75,7 @@ export default function CatalogSection({ state }: CatalogSectionProps) {
 
   const rightColor =
     status === "loading" ? theme.warning :
+    status === "completed" ? theme.success :
     status === "failed" ? theme.error :
     theme.muted;
   const right = <Text color={rightColor}>{rightText}</Text>;

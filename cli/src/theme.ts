@@ -8,8 +8,8 @@ export const theme = {
   // 交互色 - Notion Blue
   primary: '#0075de',
 
-  // 成功 - Green
-  success: '#1aae39',
+  // 成功 - Teal（与 Notion Blue 更协调）
+  success: '#2a9d99',
 
   // 警告/加载 - Orange
   warning: '#dd5b00',
