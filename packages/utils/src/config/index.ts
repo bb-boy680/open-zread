@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'fs/promises';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { parse, stringify } from 'yaml';
@@ -17,6 +18,20 @@ export async function loadConfig(): Promise<AppConfig> {
     return validateConfig(rawConfig);
   } catch (error) {
     throw new Error(`Config file read failed: ${CONFIG_PATH}\nPlease ensure config file exists and format is correct`, { cause: error });
+  }
+}
+
+/**
+ * 同步加载配置（用于 CLI 启动时获取语言设置）
+ */
+export function loadConfigSync(): AppConfig | null {
+  try {
+    if (!existsSync(CONFIG_PATH)) return null;
+    const content = readFileSync(CONFIG_PATH, 'utf-8');
+    const rawConfig = parse(content);
+    return validateConfig(rawConfig);
+  } catch {
+    return null;
   }
 }
 

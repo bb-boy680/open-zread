@@ -5,6 +5,12 @@
 import type { TranslationKeys } from '../types';
 
 export const zhCN: TranslationKeys = {
+  cli: {
+    version: '显示版本号',
+    help: '显示帮助信息',
+    wikiDesc: 'Wiki 文档生成',
+    configDesc: '交互式配置编辑器',
+  },
   layout: {
     provider: '提供商',
     model: '模型',

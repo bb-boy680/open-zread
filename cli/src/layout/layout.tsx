@@ -10,9 +10,9 @@ import { Box, Text, useInput, useApp } from "ink";
 import { useNavigate, useLocation, Outlet } from "react-router";
 import { useEscHandler, useConfig } from "../provider";
 import { useI18n } from "../i18n";
+import { getVersion } from "../utils";
 
-// 版本信息
-const VERSION = "0.1.0";
+const VERSION = getVersion();
 const PROJECT_NAME = "open-zread";
 const GITHUB_URL = "https://github.com/bb-boy680/open-zread";
 

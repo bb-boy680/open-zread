@@ -5,6 +5,12 @@
 import type { TranslationKeys } from '../types';
 
 export const enUS: TranslationKeys = {
+  cli: {
+    version: 'Display version number',
+    help: 'Display help information',
+    wikiDesc: 'Generate Wiki documentation',
+    configDesc: 'Interactive configuration editor',
+  },
   layout: {
     provider: 'Provider',
     model: 'Model',

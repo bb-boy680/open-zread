@@ -2,6 +2,24 @@
  * 终端显示相关工具函数
  */
 
+import { readFileSync } from "fs";
+import { join } from "path";
+
+// 缓存版本号（只读取一次）
+let cachedVersion: string | undefined;
+
+/**
+ * 获取 CLI 版本号（从 package.json 读取）
+ */
+export function getVersion(): string {
+  if (cachedVersion) return cachedVersion;
+
+  const packageJsonPath = join(import.meta.dir, "..", "..", "package.json");
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as { version: string };
+  cachedVersion = packageJson.version;
+  return cachedVersion;
+}
+
 /**
  * 计算字符串的终端显示宽度
  * 中文字符占2格，ASCII字符占1格

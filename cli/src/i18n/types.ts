@@ -7,6 +7,12 @@ export type LanguageCode = 'zh-CN' | 'en-US';
 
 /** 翻译字典结构 */
 export interface TranslationKeys {
+  cli: {
+    version: string;
+    help: string;
+    wikiDesc: string;
+    configDesc: string;
+  };
   layout: {
     provider: string;
     model: string;
