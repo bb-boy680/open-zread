@@ -29,6 +29,7 @@ export interface TranslationKeys {
     maxConcurrency: string;
     maxRetries: string;
     default: string;
+    notConfigured: string;
     footer: string;
     saved: string;
     saveFailed: string;
@@ -120,10 +121,12 @@ export interface TranslationKeys {
     continue: string;
     manage: string;
     force: string;
+    firstTimeConfig: string;
     config: string;
     exit: string;
     footer: string;
     // Divider status titles
+    dividerFirstTime: string;
     dividerNoCatalog: string;
     dividerHasCatalog: string;
     dividerInProgress: string;

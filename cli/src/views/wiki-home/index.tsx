@@ -2,6 +2,7 @@
  * Wiki Home Page - Wiki 首页
  *
  * 根据 wiki.json 和文档生成状态动态显示选项列表
+ * 首次配置时显示"尚未配置 LLM 提供商"，仅提供配置和退出选项
  */
 
 import { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { Box, Text, useApp } from 'ink';
 import { useNavigate } from 'react-router';
 import SelectInput from 'ink-select-input';
 import { useI18n } from '../../i18n';
-import { useWiki } from '../../provider';
+import { useWiki, useConfig } from '../../provider';
 import Divider from '../../components/Divider';
 import { getWikiDir, joinPath } from '@open-zread/utils';
 import type { WikiPage, WikiOutput } from '@open-zread/types';
@@ -35,8 +36,18 @@ async function checkProgress(pages: WikiPage[]): Promise<{ total: number; genera
   return { total: pages.length, generated };
 }
 
-// 构建选项列表
-function buildSelectItems(
+// 构建首次配置选项列表
+function buildFirstTimeSelectItems(
+  t: (key: string, params?: Record<string, string | number>) => string
+): SelectItem[] {
+  return [
+    { label: t('wiki.firstTimeConfig'), value: 'config' },
+    { label: t('wiki.exit'), value: 'exit' },
+  ];
+}
+
+// 构建正常选项列表
+function buildNormalSelectItems(
   wikiCatalog: WikiOutput | null,
   progress: { total: number; generated: number } | null,
   t: (key: string, params?: Record<string, string | number>) => string
@@ -80,6 +91,7 @@ export default function WikiHomePage() {
   const navigate = useNavigate();
   const { exit } = useApp();
   const { wikiCatalog } = useWiki();
+  const { isFirstTime } = useConfig();
   const [progress, setProgress] = useState<{ total: number; generated: number } | null>(null);
 
   // 计算进度
@@ -91,8 +103,10 @@ export default function WikiHomePage() {
     }
   }, [wikiCatalog]);
 
-  // 构建选项列表
-  const selectItems = buildSelectItems(wikiCatalog, progress, t);
+  // 构建选项列表（首次配置 vs 正常）
+  const selectItems = isFirstTime
+    ? buildFirstTimeSelectItems(t)
+    : buildNormalSelectItems(wikiCatalog, progress, t);
 
   // 选择处理
   const handleSelect = (item: SelectItem) => {
@@ -119,18 +133,22 @@ export default function WikiHomePage() {
   };
 
   // 状态标题（用于 Divider）
-  const statusTitle = wikiCatalog
-    ? progress && progress.generated === progress.total
-      ? t('wiki.dividerComplete', { total: progress.total })
-      : progress
-        ? t('wiki.dividerInProgress', { generated: progress.generated, total: progress.total })
-        : t('wiki.dividerHasCatalog')
-    : t('wiki.dividerNoCatalog');
+  const statusTitle = isFirstTime
+    ? t('wiki.dividerFirstTime')
+    : wikiCatalog
+      ? progress && progress.generated === progress.total
+        ? t('wiki.dividerComplete', { total: progress.total })
+        : progress
+          ? t('wiki.dividerInProgress', { generated: progress.generated, total: progress.total })
+          : t('wiki.dividerHasCatalog')
+      : t('wiki.dividerNoCatalog');
 
-  // 状态颜色（进行中用黄色，其他默认灰色）
-  const statusColor = wikiCatalog && progress && progress.generated < progress.total
+  // 状态颜色（首次配置用黄色警告，进行中用黄色，其他默认灰色）
+  const statusColor = isFirstTime
     ? 'yellow'
-    : undefined;
+    : wikiCatalog && progress && progress.generated < progress.total
+      ? 'yellow'
+      : undefined;
 
   return (
     <Box flexDirection="column">

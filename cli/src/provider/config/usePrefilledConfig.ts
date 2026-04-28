@@ -33,21 +33,17 @@ export function usePrefilledConfig(options: PrefilledConfigOptions): PrefilledCo
   const { config } = useConfig();
 
   return useMemo(() => {
-
-    // api_key 和 base_url：provider 匹配时预填充
+    // api_key 和 base_url：provider 匹配时预填充（null → 空字符串）
     const providerMatches = providerId === config.llm.provider;
 
     // modelName：provider + model 都匹配时才预填充
-    const modelMatches = providerMatches && config.llm.model;
+    const modelMatches = providerMatches && config.llm.model !== null;
 
-    const result = {
-      apiKey: providerMatches ? config.llm.api_key || '' : '',
-      baseUrl: providerMatches ? config.llm.base_url || '' : '',
-      modelName: modelMatches ? config.llm.model : '',
+    return {
+      apiKey: providerMatches ? (config.llm.api_key ?? '') : '',
+      baseUrl: providerMatches ? (config.llm.base_url ?? '') : '',
+      modelName: modelMatches ? (config.llm.model ?? '') : '',
     };
-
-
-    return result;
   }, [
     providerId,
     config.llm.provider,

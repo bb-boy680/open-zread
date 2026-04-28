@@ -102,10 +102,15 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
 
   const language = config.language as 'zh' | 'en';
 
-  // 提取 LLM 配置
-  const model = config.llm.model;
-  const apiKey = config.llm.api_key;
-  const baseURL = config.llm.base_url;
+  // 提取 LLM 配置（null → undefined，SDK 不接受 null）
+  const model = config.llm.model ?? undefined;
+  const apiKey = config.llm.api_key ?? undefined;
+  const baseURL = config.llm.base_url ?? undefined;
+
+  // 验证必需配置
+  if (!model || !apiKey || !baseURL) {
+    throw new Error('LLM configuration incomplete. Please run `open-zread config` to configure.');
+  }
 
   logger.info(`模型: ${model}, baseURL: ${baseURL}`);
 

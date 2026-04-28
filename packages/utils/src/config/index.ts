@@ -7,11 +7,41 @@ import type { AppConfig } from '@open-zread/types';
 
 const CONFIG_PATH = join(homedir(), '.zread', 'config.yaml');
 
+/**
+ * 默认配置 - 首次使用时的初始配置
+ */
+export const DEFAULT_CONFIG: AppConfig = {
+  language: 'en',
+  doc_language: 'en',
+  llm: {
+    provider: null,
+    model: null,
+    api_key: null,
+    base_url: null,
+  },
+  concurrency: {
+    max_concurrent: 1,
+    max_retries: 0,
+  },
+};
+
 export function getConfigPath(): string {
   return CONFIG_PATH;
 }
 
+/**
+ * 检查配置是否为首次配置（LLM 未配置）
+ */
+export function isFirstTimeConfig(config: AppConfig): boolean {
+  return config.llm.api_key === null;
+}
+
 export async function loadConfig(): Promise<AppConfig> {
+  // 配置文件不存在，返回默认配置
+  if (!existsSync(CONFIG_PATH)) {
+    return DEFAULT_CONFIG;
+  }
+
   try {
     const content = await readFile(CONFIG_PATH, 'utf-8');
     const rawConfig = parse(content);
@@ -37,36 +67,38 @@ export function loadConfigSync(): AppConfig | null {
 
 export function validateConfig(raw: unknown): AppConfig {
   if (!raw || typeof raw !== 'object') {
-    throw new Error('Config format error');
+    return DEFAULT_CONFIG;
   }
 
   const config = raw as Record<string, unknown>;
 
-  const required = ['language', 'doc_language', 'llm', 'concurrency'];
-  for (const field of required) {
-    if (!config[field]) {
-      throw new Error(`Missing required config: ${field}`);
-    }
+  // 必需的顶级字段
+  if (!config.language || !config.doc_language || !config.concurrency) {
+    return DEFAULT_CONFIG;
   }
 
-  const llm = config.llm as Record<string, unknown>;
-  if (!llm.provider || !llm.model || !llm.api_key || !llm.base_url) {
-    throw new Error('LLM config incomplete');
-  }
-
+  // concurrency 字段验证
   const concurrency = config.concurrency as Record<string, unknown>;
   if (typeof concurrency.max_concurrent !== 'number' || typeof concurrency.max_retries !== 'number') {
-    throw new Error('Concurrency config format error');
+    return DEFAULT_CONFIG;
   }
+
+  // llm 字段验证（允许 null，表示待配置）
+  const llm = (config.llm as Record<string, unknown>) || {
+    provider: null,
+    model: null,
+    api_key: null,
+    base_url: null,
+  };
 
   return {
     language: config.language as string,
     doc_language: config.doc_language as string,
     llm: {
-      provider: llm.provider as string,
-      model: llm.model as string,
-      api_key: llm.api_key as string,
-      base_url: llm.base_url as string,
+      provider: llm.provider as string | null,
+      model: llm.model as string | null,
+      api_key: llm.api_key as string | null,
+      base_url: llm.base_url as string | null,
     },
     concurrency: {
       max_concurrent: concurrency.max_concurrent as number,

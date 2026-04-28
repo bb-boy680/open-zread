@@ -2,7 +2,7 @@ import { createContext, useEffect, useCallback, type ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import { useImmer } from 'use-immer';
 import type { AppConfig } from '@open-zread/types';
-import { loadConfig, saveConfig } from '@open-zread/utils';
+import { loadConfig, saveConfig, isFirstTimeConfig, DEFAULT_CONFIG } from '@open-zread/utils';
 
 export interface ConfigContextValue {
   config: AppConfig;
@@ -12,6 +12,7 @@ export interface ConfigContextValue {
   hasChanges: boolean;
   isLoading: boolean;
   error: string | null;
+  isFirstTime: boolean;
 }
 
 export const ConfigContext = createContext<ConfigContextValue | null>(null);
@@ -36,6 +37,9 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
       })
       .catch((err) => {
         updateError(() => err instanceof Error ? err.message : String(err));
+        // 加载失败时使用默认配置
+        updateConfig(() => DEFAULT_CONFIG);
+        setOriginalConfig(() => DEFAULT_CONFIG);
         setIsLoading(false);
       });
   }, []);
@@ -85,10 +89,13 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
     return null;
   }
 
-  // 错误状态
+  // 错误状态（已有默认配置兜底，此分支不应触发）
   if (error || !config || !originalConfig) {
     return null;
   }
+
+  // 是否首次配置
+  const isFirstTime = isFirstTimeConfig(config);
 
   return (
     <ConfigContext.Provider
@@ -100,6 +107,7 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
         hasChanges,
         isLoading,
         error,
+        isFirstTime,
       }}
     >
       {children ?? <Outlet />}
