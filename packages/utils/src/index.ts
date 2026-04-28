@@ -9,7 +9,7 @@ export {
   joinPath,
   getProjectRoot,
   getOutputDir,
-  getDraftsDir,
+  getWikiJsonPath,
   getCacheDir,
   getWikiDir,
 } from './file-io.js';
@@ -35,8 +35,7 @@ export { WikiStore } from './storage/wiki-store.js';
 export { generateSnapshotName, createVersionSnapshot } from './storage/versioning.js';
 
 // Output
-export { generateWikiJson } from './output/index.js';
-export { loadWikiBlueprint } from './output/wiki-content.js';
+export { generateWikiJson, loadWikiBlueprint } from './output/wiki-content.js';
 
 // Provider Registry
 export * from './provider-registry/types.js';

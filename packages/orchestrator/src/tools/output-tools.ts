@@ -10,11 +10,11 @@ import type { TechStackSummary } from '../types.js'
 /**
  * Generate Blueprint Tool
  *
- * Generates wiki.json blueprint and saves to drafts directory.
+ * Generates wiki.json blueprint and saves to wiki directory.
  */
 export const GenerateBlueprintTool: ToolDefinition = {
   name: 'generate_blueprint',
-  description: '生成 Wiki 蓝图 JSON 文件，保存到 .open-zread/drafts 目录。',
+  description: '生成 Wiki 蓝图 JSON 文件，保存到 .open-zread/wiki 目录。',
   inputSchema: {
     type: 'object',
     properties: {
@@ -77,15 +77,15 @@ export const GenerateBlueprintTool: ToolDefinition = {
         }
       }
 
-      // Build config
+      // Build config (llm fields can be null for tool output)
       const config: AppConfig = {
         language,
         doc_language: language,
         llm: {
           provider: 'anthropic',
           model: 'claude-sonnet-4-6',
-          api_key: '',
-          base_url: ''
+          api_key: null,
+          base_url: null,
         },
         concurrency: {
           max_concurrent: 4,

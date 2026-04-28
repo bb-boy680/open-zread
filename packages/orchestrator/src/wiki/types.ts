@@ -106,7 +106,7 @@ export interface ArticleEventPayload {
  * Generate Wiki Content Options
  */
 export interface GenerateWikiOptions {
-  /** Blueprint file path (default: .open-zread/drafts/wiki.json) */
+  /** Blueprint file path (default: .open-zread/wiki/wiki.json) */
   blueprintPath?: string;
   /** 待生成的页面列表（如果传入，则不从 blueprint 加载，只生成这些页面） */
   pages?: WikiPage[];

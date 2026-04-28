@@ -7,7 +7,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import type { WikiOutput } from '@open-zread/types';
-import { getDraftsDir, joinPath } from '@open-zread/utils';
+import { getWikiJsonPath } from '@open-zread/utils';
 
 export interface WikiContextValue {
   wikiCatalog: WikiOutput | null;  // wiki.json 数据（不存在则为 null）
@@ -25,9 +25,7 @@ export function WikiProvider({ children }: WikiProviderProps) {
 
   // 加载 wiki.json
   const loadCatalog = useCallback(async () => {
-
-    const draftsDir = getDraftsDir();
-    const wikiPath = joinPath(draftsDir, 'wiki.json');
+    const wikiPath = getWikiJsonPath();
 
     try {
       const file = Bun.file(wikiPath);

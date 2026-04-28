@@ -40,14 +40,14 @@ export function getOutputDir(): string {
   return join(getProjectRoot(), '.open-zread');
 }
 
-export function getDraftsDir(): string {
-  return join(getOutputDir(), 'drafts');
-}
-
 export function getCacheDir(): string {
   return join(getOutputDir(), 'cache');
 }
 
 export function getWikiDir(): string {
   return join(getOutputDir(), 'wiki');
+}
+
+export function getWikiJsonPath(): string {
+  return join(getWikiDir(), 'wiki.json');
 }
