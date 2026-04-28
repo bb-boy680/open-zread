@@ -41,11 +41,4 @@ export default tseslint.config(
       globals: { ...globals.node, ...globals.browser },
     },
   },
-  // Examples can use any for simplicity
-  {
-    files: ["**/examples/**/*.ts"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-    },
-  },
 );
