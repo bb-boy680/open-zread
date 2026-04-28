@@ -12,7 +12,7 @@
 import { useCallback, useRef, useEffect } from "react";
 import { useImmer } from "use-immer";
 import { scanFiles, parseFiles } from "@open-zread/repo-analyzer";
-import { saveCachedSymbols, removeDir, getWikiDir, getWikiJsonPath } from "@open-zread/utils";
+import { saveCachedSymbols, saveCachedManifest, removeDir, getWikiDir, getWikiJsonPath } from "@open-zread/utils";
 import { generateWikiCatalog, type CatalogEvent } from "@open-zread/orchestrator";
 import { catalogEventToState } from "../mapper";
 import { initialCatalogState } from "../state";
@@ -134,6 +134,9 @@ export function useCatalogGenerate({
         });
         return;
       }
+
+      // 保存文件清单缓存（用于后续增量更新）
+      await saveCachedManifest(manifest);
 
       const symbols = await parseFiles(manifest);
       await saveCachedSymbols(symbols);
