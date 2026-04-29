@@ -31,7 +31,8 @@ export const GlobTool = defineTool({
 
     try {
       // Use Node.js glob (available in Node 22+) or fall back to bash find
-      const { glob } = await import('fs/promises')
+      const mod = await import('fs/promises')
+      const glob = (mod as Record<string, unknown>).glob as ((pattern: string, options: { cwd: string }) => AsyncIterableIterator<string>) | undefined
 
       if (typeof glob === 'function') {
         const matches: string[] = []

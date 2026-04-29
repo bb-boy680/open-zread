@@ -3,7 +3,10 @@
  */
 
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // 缓存版本号（只读取一次）
 let cachedVersion: string | undefined;
@@ -14,7 +17,7 @@ let cachedVersion: string | undefined;
 export function getVersion(): string {
   if (cachedVersion) return cachedVersion;
 
-  const packageJsonPath = join(import.meta.dir, "..", "..", "package.json");
+  const packageJsonPath = join(__dirname, "..", "..", "package.json");
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as { version: string };
   cachedVersion = packageJson.version;
   return cachedVersion;

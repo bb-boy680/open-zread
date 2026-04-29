@@ -15,7 +15,7 @@ import { loadWikiBlueprint, logger } from '@open-zread/utils';
 import { createAgent } from '../agents/create-agent.js';
 import { FileEditTool, FileReadTool, GlobTool, GrepTool } from '@open-zread/agent-sdk';
 import { WritePageTool } from '../tools/page-tools.js';
-import PageAgentPrompt from '../prompts/page-agent.mdx';
+import PageAgentPrompt from '../prompts/page-agent';
 import type { WikiPage } from '@open-zread/types';
 import type { WikiResult, ProgressState, PageResult, GenerateWikiOptions, ArticleEventPayload } from './types.js';
 

@@ -6,7 +6,7 @@
 
 import { FileEditTool, FileReadTool, FileWriteTool, GlobTool, GrepTool } from '@open-zread/agent-sdk';
 import { createAgent } from './agents/create-agent';
-import GenerateCatalog from './prompts/generate-catalog.mdx';
+import GenerateCatalog from './prompts/generate-catalog';
 import { GenerateBlueprintTool, ValidateBlueprintTool } from './tools/output-tools.js';
 import { GetCoreSignaturesTool, GetDirectoryTreeTool, GetModuleDetailsTool } from './tools/repo-map-tools.js';
 import type { BlueprintResult, CatalogEvent } from './types.js';

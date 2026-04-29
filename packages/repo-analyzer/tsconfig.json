@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "paths": {
+      "@open-zread/types": ["../types/src/index.ts"],
+      "@open-zread/utils": ["../utils/src/index.ts"]
+    }
   },
   "include": ["src/**/*"]
 }

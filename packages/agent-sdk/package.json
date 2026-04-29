@@ -12,7 +12,8 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "cross-env NODE_ENV=production tsup",
+    "dev": "cross-env NODE_ENV=development tsup --watch",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

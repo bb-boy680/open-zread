@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "open-zread": "./bin/open-zread.js"
+    "open-zread": "./dist/index.js"
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "bun scripts/build.ts",
-    "dev": "bun run src/index.tsx",
+    "build": "cross-env NODE_ENV=production tsup",
+    "dev": "cross-env NODE_ENV=development tsup --watch",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js"

@@ -10,11 +10,5 @@ export default defineConfig(() => {
     sourcemap: isDev,
     minify: !isDev,
     clean: true,
-    external: [
-      '@anthropic-ai/sdk',
-      '@modelcontextprotocol/sdk',
-      'zod',
-      'zod-to-json-schema'
-    ]
   }
 })
