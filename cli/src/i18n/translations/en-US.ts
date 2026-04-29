@@ -137,6 +137,7 @@ export const enUS: TranslationKeys = {
     requesting: 'Requesting',
     responding: 'Responding',
     tool: 'Tool: {name}',
+    retrying: 'Retry {n}/{max} · {seconds}s',
     completed: 'Completed',
     failed: 'Failed',
     navigate: 'Navigate',

@@ -78,6 +78,7 @@ export type ArticleEventType =
   | 'responding' // Agent 响应中（流式）
   | 'tool_start' // 工具调用开始
   | 'tool_result' // 工具调用结果
+  | 'retry' // API 重试中
   | 'page_complete' // 页面完成
   | 'page_error'; // 页面失败
 
@@ -98,6 +99,12 @@ export interface ArticleEventPayload {
   outputPath?: string;
   /** 耗时 */
   durationMs?: number;
+  /** 重试次数（retry 时） */
+  retryCount?: number;
+  /** 最大重试次数（retry 时） */
+  maxRetries?: number;
+  /** 重试延迟（retry 时） */
+  delayMs?: number;
 }
 
 // ==================== 生成选项 ====================

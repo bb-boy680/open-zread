@@ -139,6 +139,7 @@ export interface TranslationKeys {
     requesting: string;
     responding: string;
     tool: string;
+    retrying: string;
     completed: string;
     failed: string;
     navigate: string;

@@ -61,7 +61,7 @@ ${associatedFilesList}
  * Parallel Wiki page generation with p-limit concurrency control.
  * 支持细粒度事件回调（onEvent）和批量进度回调（onProgress）。
  *
- * 注意：并发数由调用方传递，内部不读取配置。
+ * 注意：并发数由调用方传递，重试次数由 createAgent 从配置读取。
  */
 export async function generateWikiContent(options?: GenerateWikiOptions): Promise<WikiResult> {
   const startTime = performance.now();
@@ -139,6 +139,18 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
               case 'tool_result':
                 articleEventType = 'tool_result';
                 break;
+              case 'retry':
+                // 重试事件：传递给 UI 显示重试状态
+                options?.onEvent?.({
+                  type: 'retry',
+                  slug: page.slug,
+                  usage: catalogEvent.usage,
+                  retryCount: catalogEvent.retryCount,
+                  maxRetries: catalogEvent.maxRetries,
+                  delayMs: catalogEvent.delayMs,
+                  error: catalogEvent.error,
+                });
+                return;
               case 'error':
                 // 错误事件：createAgent 会 throw 异常，由 catch 块处理
                 return;

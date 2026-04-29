@@ -95,6 +95,18 @@ export function catalogEventToState(
         durationMs: event.durationMs ?? 0,
       };
 
+    case 'retry':
+      return {
+        ...state,
+        status: 'loading',
+        phase: 'retry',
+        retryCount: event.retryCount,
+        maxRetries: event.maxRetries,
+        delayMs: event.delayMs,
+        error: event.error,
+        usage: event.usage,
+      };
+
     default:
       return state;
   }
@@ -164,6 +176,19 @@ export function articleEventToState(
         status: 'loading',
         phase: 'responding',
         usage: event.usage, // 直接使用，不累加
+      };
+      break;
+
+    case 'retry':
+      newPageStatus = {
+        ...currentStatus,
+        status: 'loading',
+        phase: 'retry',
+        retryCount: event.retryCount,
+        maxRetries: event.maxRetries,
+        delayMs: event.delayMs,
+        error: event.error,
+        usage: event.usage,
       };
       break;
 

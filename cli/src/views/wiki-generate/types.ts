@@ -17,10 +17,10 @@ import type { TokenUsage } from '@open-zread/orchestrator';
 export type Status = 'waiting' | 'loading' | 'completed' | 'failed';
 
 /** 目录生成阶段 */
-export type CatalogPhase = 'scanning' | 'requesting' | 'responding' | 'tool';
+export type CatalogPhase = 'scanning' | 'requesting' | 'responding' | 'tool' | 'retry';
 
 /** 文章生成阶段 */
-export type ArticlePhase = 'requesting' | 'responding' | 'tool';
+export type ArticlePhase = 'requesting' | 'responding' | 'tool' | 'retry';
 
 /** 文章事件类型 */
 export type ArticleEventType =
@@ -51,6 +51,12 @@ export interface CatalogState {
   durationMs?: number;
   /** 错误信息 */
   error?: string;
+  /** 重试次数（retry 阶段） */
+  retryCount?: number;
+  /** 最大重试次数（retry 阶段） */
+  maxRetries?: number;
+  /** 重试延迟毫秒（retry 阶段） */
+  delayMs?: number;
 }
 
 // ==================== 文章状态 ====================
@@ -69,6 +75,12 @@ export interface PageStatus {
   error?: string;
   /** 输出路径（完成时） */
   outputPath?: string;
+  /** 重试次数（retry 阶段） */
+  retryCount?: number;
+  /** 最大重试次数（retry 阶段） */
+  maxRetries?: number;
+  /** 重试延迟毫秒（retry 阶段） */
+  delayMs?: number;
 }
 
 /** 文章集合状态 */
@@ -108,7 +120,8 @@ export type CatalogEventType =
   | 'tool_start'
   | 'tool_result'
   | 'complete'
-  | 'error';
+  | 'error'
+  | 'retry';
 
 /** 目录事件 payload */
 export interface CatalogEventPayload {
@@ -119,6 +132,12 @@ export interface CatalogEventPayload {
   error?: string;
   durationMs?: number;
   outputPath?: string;
+  /** 重试次数（retry 时） */
+  retryCount?: number;
+  /** 最大重试次数（retry 时） */
+  maxRetries?: number;
+  /** 重试延迟毫秒（retry 时） */
+  delayMs?: number;
 }
 
 // ==================== 兼容旧类型（过渡期保留） ====================

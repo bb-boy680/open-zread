@@ -83,7 +83,7 @@ export interface BlueprintOptions {
  * 完整流程：scanning → parsing → generating (Agent)
  */
 export interface CatalogEvent {
-  type: 'scanning' | 'parsing' | 'requesting' | 'responding' | 'tool_start' | 'tool_result' | 'complete' | 'error';
+  type: 'scanning' | 'parsing' | 'requesting' | 'responding' | 'tool_start' | 'tool_result' | 'complete' | 'error' | 'retry';
   /** scanning/parsing 阶段的进度信息 */
   progress?: {
     current: number;
@@ -101,4 +101,10 @@ export interface CatalogEvent {
   outputPath?: string;
   /** 耗时 */
   durationMs?: number;
+  /** 重试次数（retry 时） */
+  retryCount?: number;
+  /** 最大重试次数（retry 时） */
+  maxRetries?: number;
+  /** 重试延迟毫秒（retry 时） */
+  delayMs?: number;
 }

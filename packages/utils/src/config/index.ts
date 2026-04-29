@@ -21,7 +21,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   concurrency: {
     max_concurrent: 1,
-    max_retries: 0,
+    max_retries: 0,  // 默认不重试，用户可配置
   },
 };
 

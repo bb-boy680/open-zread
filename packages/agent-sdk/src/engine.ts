@@ -43,6 +43,7 @@ import {
 import {
   withRetry,
   isPromptTooLongError,
+  DEFAULT_RETRY_CONFIG,
 } from './utils/retry.js'
 import { getSystemContext, getUserContext } from './utils/context.js'
 import { normalizeMessagesForAPI } from './utils/messages.js'
@@ -294,7 +295,7 @@ export class QueryEngine {
                   : undefined,
             })
           },
-          undefined,
+          this.config.retryConfig ?? DEFAULT_RETRY_CONFIG,
           this.config.abortSignal,
         )
       } catch (err: unknown) {

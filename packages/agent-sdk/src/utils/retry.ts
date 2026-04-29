@@ -49,6 +49,8 @@ export interface RetryConfig {
   baseDelayMs: number
   maxDelayMs: number
   retryableStatusCodes: number[]
+  /** 重试前回调（用于通知 UI） */
+  onRetry?: (info: { attempt: number; maxRetries: number; delayMs: number; error: string }) => void
 }
 
 /**
@@ -58,7 +60,7 @@ export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
   baseDelayMs: 2000,
   maxDelayMs: 30000,
-  retryableStatusCodes: [429, 500, 502, 503, 529],
+  retryableStatusCodes: [401, 403, 429, 500, 502, 503, 529],
 }
 
 /**
@@ -84,13 +86,11 @@ export function isRetryableError(err: unknown, config: RetryConfig = DEFAULT_RET
 }
 
 /**
- * Calculate delay for exponential backoff.
+ * Calculate delay for retry.
+ * Fixed delay: always use baseDelayMs.
  */
 export function getRetryDelay(attempt: number, config: RetryConfig = DEFAULT_RETRY_CONFIG): number {
-  const delay = config.baseDelayMs * Math.pow(2, attempt)
-  // Add jitter (±25%)
-  const jitter = delay * 0.25 * (Math.random() * 2 - 1)
-  return Math.min(delay + jitter, config.maxDelayMs)
+  return config.baseDelayMs
 }
 
 /**
@@ -113,6 +113,7 @@ export async function withRetry<T>(
     } catch (err: unknown) {
       lastError = err
 
+
       if (!isRetryableError(err, config)) {
         throw err
       }
@@ -123,6 +124,16 @@ export async function withRetry<T>(
 
       // Wait before retry
       const delay = getRetryDelay(attempt, config)
+
+
+      // 调用回调通知重试状态
+      config.onRetry?.({
+        attempt: attempt + 1,
+        maxRetries: config.maxRetries,
+        delayMs: delay,
+        error: formatApiError(err),
+      })
+
       await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }

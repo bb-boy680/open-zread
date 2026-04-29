@@ -52,6 +52,7 @@ export function useCatalogGenerate({
   const isGenerating = useRef(false);
 
 
+
   /**
    * 已有目录时直接标记完成
    *
@@ -80,6 +81,9 @@ export function useCatalogGenerate({
         usage: rawEvent.usage,
         error: rawEvent.error,
         durationMs: rawEvent.durationMs,
+        retryCount: rawEvent.retryCount,
+        maxRetries: rawEvent.maxRetries,
+        delayMs: rawEvent.delayMs,
       };
 
       // 使用 mapper 纯函数更新状态
@@ -106,6 +110,7 @@ export function useCatalogGenerate({
   const start = useCallback(async () => {
     if (isGenerating.current) return;
     isGenerating.current = true;
+
 
     // 强制重新生成时清理旧数据
     if (forceRegenerate) {
@@ -141,8 +146,10 @@ export function useCatalogGenerate({
       const symbols = await parseFiles(manifest);
       await saveCachedSymbols(symbols);
 
+
       // Phase 3: 调用 Agent
       await generateWikiCatalog(handleAgentEvent);
+
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       updateState((draft) => {

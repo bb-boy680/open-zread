@@ -137,6 +137,7 @@ export const zhCN: TranslationKeys = {
     requesting: '请求中',
     responding: '响应中',
     tool: '工具: {name}',
+    retrying: '重试 {n}/{max} · {seconds}s',
     completed: '完成',
     failed: '失败',
     navigate: '导航',

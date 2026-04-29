@@ -315,6 +315,7 @@ export class Agent {
       agents: opts.agents,
       hookRegistry: this.hookRegistry,
       sessionId: this.sid,
+      retryConfig: opts.retryConfig ?? this.cfg.retryConfig,
     })
     this.currentEngine = engine
 

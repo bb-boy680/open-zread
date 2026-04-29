@@ -30,11 +30,15 @@ interface CatalogSectionProps {
 export default function CatalogSection({ state }: CatalogSectionProps) {
   const { t } = useI18n();
 
-  const { status, phase, currentTool, usage, durationMs, error } = state;
+  const { status, phase, currentTool, usage, durationMs, error, retryCount, maxRetries, delayMs } = state;
 
   // 构建状态文字
   let statusText: string;
-  if (status === "loading" && phase === "tool" && currentTool) {
+  if (status === "loading" && phase === "retry") {
+    // 重试状态：显示次数和延迟
+    const seconds = Math.ceil((delayMs || 10000) / 1000);
+    statusText = t("wikiGenerate.retrying", { n: retryCount ?? 1, max: maxRetries ?? 3, seconds });
+  } else if (status === "loading" && phase === "tool" && currentTool) {
     // 工具调用
     const toolDisplay = currentTool.replace(/_/g, " ").replace(/^get /, "");
     statusText = t("wikiGenerate.tool", { name: toolDisplay });
