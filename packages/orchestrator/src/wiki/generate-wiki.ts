@@ -118,7 +118,7 @@ export async function generateWikiContent(options?: GenerateWikiOptions): Promis
             WritePageTool
           ],
           prompts: buildPagePrompt(page),
-          maxTurns: 15,
+          maxTurns: 30,
           // 通过 onEvent 将 CatalogEvent 转换为 ArticleEventPayload
           onEvent: (catalogEvent) => {
             // 将 CatalogEvent 转换为 ArticleEventPayload
