@@ -32,8 +32,11 @@ export default defineConfig(() => {
     minify: !isDev,
     clean: true,
     bundle: true,
-    external: [],
     noExternal: [/.*/],
+    platform: 'node',
+    banner: {
+      js: '#!/usr/bin/env node\nimport{createRequire as __createRequire}from"module";import{fileURLToPath as __fileURLToPath}from"url";import{dirname as __dirnameFn}from"path";const require=__createRequire(import.meta.url);const __filename=__fileURLToPath(import.meta.url);const __dirname=__dirnameFn(__filename);',
+    },
     onSuccess: async () => {
       // 复制 yoga.wasm（Ink 布局引擎在运行时从相对路径 ./yoga.wasm 动态加载，无法被 bundle 打包）
       const cwd = process.cwd()
