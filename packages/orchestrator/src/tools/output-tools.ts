@@ -3,8 +3,8 @@
  */
 
 import type { ToolDefinition, ToolInputParams, ToolContext, ToolResult } from '@open-zread/agent-sdk'
-import { generateWikiJson } from '@open-zread/utils'
-import type { WikiPage, AppConfig } from '@open-zread/types'
+import { generateWikiJson, loadConfig } from '@open-zread/utils'
+import type { WikiPage } from '@open-zread/types'
 import type { TechStackSummary } from '../types.js'
 
 /**
@@ -46,11 +46,6 @@ export const GenerateBlueprintTool: ToolDefinition = {
       coreModules: {
         type: 'object',
         description: '核心模块信息（可选）'
-      },
-      language: {
-        type: 'string',
-        enum: ['zh', 'en'],
-        description: '文档语言（默认 zh）'
       }
     },
     required: ['pages']
@@ -65,7 +60,9 @@ export const GenerateBlueprintTool: ToolDefinition = {
     try {
       const pages = input.pages as unknown as WikiPage[]
       const techStackSummary = input.techStackSummary as unknown as TechStackSummary | undefined
-      const language = (input.language as unknown as 'zh' | 'en' | undefined) || 'zh'
+
+      // Load config to get language setting
+      const config = await loadConfig()
 
       // Validate pages
       if (!pages || !Array.isArray(pages) || pages.length === 0) {
@@ -74,22 +71,6 @@ export const GenerateBlueprintTool: ToolDefinition = {
           tool_use_id: '',
           content: '错误: pages 数组不能为空',
           is_error: true
-        }
-      }
-
-      // Build config (llm fields can be null for tool output)
-      const config: AppConfig = {
-        language,
-        doc_language: language,
-        llm: {
-          provider: 'anthropic',
-          model: 'claude-sonnet-4-6',
-          api_key: null,
-          base_url: null,
-        },
-        concurrency: {
-          max_concurrent: 4,
-          max_retries: 3
         }
       }
 

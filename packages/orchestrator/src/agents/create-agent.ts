@@ -12,7 +12,7 @@
 import { createAgent as CreateAgentSdk, type SDKMessage, type TokenUsage, type ToolDefinition, type RetryConfig } from '@open-zread/agent-sdk';
 import { loadConfig, logger } from '@open-zread/utils';
 import type { CatalogEvent, CoreModules } from '../types.js';
-import { isAssistantMessage, isPartialMessage, isResultMessage, isToolResultMessage, LANGUAGE_NOTES } from './uitls.js';
+import { isAssistantMessage, isPartialMessage, isResultMessage, isToolResultMessage, SYSTEM_PROMPTS } from './uitls.js';
 
 /**
  * 创建 Blueprint Agent 的选项
@@ -54,12 +54,9 @@ export interface AgentResult {
  */
 export async function createAgent(options: CreateBlueprintAgentOptions): Promise<AgentResult> {
   const startTime = performance.now();
-
-
   // 加载配置
   const config = await loadConfig();
-
-  const language = config.language as 'zh' | 'en';
+  const docLanguage = config.doc_language as 'zh' | 'en';
   const maxRetries = config.concurrency.max_retries;
 
   // 提取 LLM 配置（null → undefined，SDK 不接受 null）
@@ -79,8 +76,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
 
   // 构建钩子配置（如果有 onEvent 回调）
   const onEvent = options.onEvent;
-
-
   const hooks = onEvent ? {
     PreToolUse: [{
       hooks: [
@@ -132,13 +127,14 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
   } : undefined;
 
   // 创建 Agent
+  logger.info(`System prompt doc_language: ${docLanguage} => "${SYSTEM_PROMPTS[docLanguage]}"`);
   const agent = CreateAgentSdk({
     model,
     apiKey,
     baseURL,
     cwd: process.cwd(),
     tools: options.tools,
-    systemPrompt: LANGUAGE_NOTES[language],
+    systemPrompt: SYSTEM_PROMPTS[docLanguage],
     maxTurns: options?.maxTurns ?? 30,
     permissionMode: 'bypassPermissions',
     hooks,

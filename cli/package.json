@@ -11,7 +11,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "cross-env NODE_ENV=production tsup && chmod +x dist/index.js",
-    "dev": "cross-env NODE_ENV=development tsup --watch",
+    "dev": "bun run scripts/dev.ts && chmod +x dist/index.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

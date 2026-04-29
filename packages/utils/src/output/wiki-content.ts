@@ -32,7 +32,7 @@ export async function generateWikiJson(
   const wikiOutput: WikiOutput = {
     id: generateWikiId(),
     generated_at: new Date().toISOString(),
-    language: config.language,
+    language: config.doc_language,
     pages,
     techStackSummary,
   };

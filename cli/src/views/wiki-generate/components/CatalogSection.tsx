@@ -84,10 +84,11 @@ export default function CatalogSection({ state }: CatalogSectionProps) {
     theme.muted;
   const right = <Text color={rightColor}>{rightText}</Text>;
 
-  // 左栏：只有图标，标题由 Divider 显示
+  // 左栏：图标 + 标题
   const left = (
     <Box>
       <StatusIcon status={status} />
+      <Text> {t("wikiGenerate.catalogTitle")}</Text>
     </Box>
   );
 
