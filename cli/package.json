@@ -2,6 +2,9 @@
   "name": "@open-zread/cli",
   "version": "0.1.0",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "bin": {
     "open-zread": "./dist/index.js"
   },
@@ -10,8 +13,7 @@
     "build": "cross-env NODE_ENV=production tsup",
     "dev": "cross-env NODE_ENV=development tsup --watch",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "start": "node dist/index.js"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@open-zread/orchestrator": "workspace:*",
