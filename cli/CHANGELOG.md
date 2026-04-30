@@ -1,5 +1,11 @@
 # @open-zread/cli
 
+## 0.1.2
+
+### Patch Changes
+
+- 406045a: Fix WASM loading error: bundle tree-sitter.wasm and mappings.wasm, correct path resolution
+
 ## 0.1.1
 
 ### Patch Changes
