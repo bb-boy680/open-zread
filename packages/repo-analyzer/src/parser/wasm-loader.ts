@@ -67,7 +67,12 @@ function loadWasmFromCache(parserName: string): Uint8Array | null {
 
 function getTreeSitterDir(): string {
   const __filename = fileURLToPath(import.meta.url);
-  let current = dirname(__filename);
+  const currentDir = dirname(__filename);
+
+  // 打包后：wasm 文件和 index.js 在同一目录
+  if (existsSync(join(currentDir, 'tree-sitter.wasm'))) return currentDir;
+
+  let current = currentDir;
 
   // 向上查找 node_modules 目录
   for (let i = 0; i < 10; i++) {
