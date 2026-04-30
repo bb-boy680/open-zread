@@ -1,10 +1,9 @@
 <h1 align="center">Open Zread</h1>
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/bb-boy680/open-zread?style=flat-square&color=FFD700" alt="stars">
-  <img src="https://img.shields.io/github/forks/bb-boy680/open-zread?style=flat-square" alt="forks">
-  <img src="https://img.shields.io/npm/v/@open-zread/cli?style=flat-square&color=0075de" alt="npm">
-  <img src="https://img.shields.io/npm/dm/@open-zread/cli?style=flat-square" alt="downloads">
+  <img src="https://img.shields.io/badge/Wiki-Generated-2a9d99?style=flat-square" alt="Wiki">
+  <img src="https://img.shields.io/badge/Agent-Powered-0075de?style=flat-square" alt="Agent">
+  <img src="https://img.shields.io/badge/LLM-Claude-391c57?style=flat-square" alt="LLM">
   <img src="https://img.shields.io/badge/Node.js-%3E%3D18-success?style=flat-square" alt="Node version">
   <img src="https://img.shields.io/badge/License-MIT-3178C6?style=flat-square" alt="license">
 </p>

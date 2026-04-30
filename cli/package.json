@@ -1,6 +1,35 @@
 {
   "name": "@open-zread/cli",
   "version": "0.1.0",
+  "description": "一行命令，把整个项目变成高质量的 Wiki 文档库。AI 帮你读代码、理逻辑、写文档。",
+  "keywords": [
+    "wiki",
+    "documentation",
+    "ai",
+    "agent",
+    "llm",
+    "claude",
+    "code-analysis",
+    "tree-sitter",
+    "markdown",
+    "cli"
+  ],
+  "author": "bb-boy680",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bb-boy680/open-zread.git"
+  },
+  "homepage": "https://github.com/bb-boy680/open-zread#readme",
+  "bugs": {
+    "url": "https://github.com/bb-boy680/open-zread/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "files": [
     "dist"
@@ -10,8 +39,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "cross-env NODE_ENV=production tsup && chmod +x dist/index.js",
-    "dev": "bun run scripts/dev.ts && chmod +x dist/index.js",
+    "build": "cross-env NODE_ENV=production tsup",
+    "dev": "bun run scripts/dev.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
