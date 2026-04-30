@@ -1,5 +1,11 @@
 # @open-zread/cli
 
+## 0.1.5
+
+### Patch Changes
+
+- 3df15d1: remove unused outputPath and coreModules from orchestrator
+
 ## 0.1.4
 
 ### Patch Changes

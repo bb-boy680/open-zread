@@ -1,6 +1,6 @@
 {
   "name": "@open-zread/cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "一行命令，把整个项目变成高质量的 Wiki 文档库。AI 帮你读代码、理逻辑、写文档。",
   "keywords": [
     "wiki",
