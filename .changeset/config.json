@@ -7,11 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@open-zread/agent-sdk",
-    "@open-zread/orchestrator",
-    "@open-zread/repo-analyzer",
-    "@open-zread/types",
-    "@open-zread/utils"
-  ]
+  "ignore": []
 }
