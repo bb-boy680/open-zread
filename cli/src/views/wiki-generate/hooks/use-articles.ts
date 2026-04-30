@@ -12,7 +12,7 @@
 
 import { useCallback, useRef } from "react";
 import { useImmer } from "use-immer";
-import { loadConfig, getWikiDir, joinPath } from "@open-zread/utils";
+import { loadConfig, getWikiDir, joinPath, fileExists } from "@open-zread/utils";
 import { generateWikiContent, type ArticleEventPayload } from "@open-zread/orchestrator";
 import { articleEventToState } from "../mapper";
 import { createInitialArticlesState } from "../state";
@@ -70,8 +70,7 @@ export function useArticlesGenerate({
     for (const page of pages) {
       const filePath = joinPath(wikiDir, page.section, page.file);
       try {
-        const file = Bun.file(filePath);
-        const exists = await file.exists();
+        const exists = await fileExists(filePath);
         if (exists) {
           existingSlugs.push(page.slug);
         }

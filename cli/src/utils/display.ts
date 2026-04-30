@@ -2,14 +2,15 @@
  * 终端显示相关工具函数
  */
 
-// CLI_VERSION is injected at build time by tsup
-declare const CLI_VERSION: string;
+// CLI_VERSION is injected at build time by tsup or dev script
+// 使用 globalThis 以支持开发模式
 
 /**
  * 获取 CLI 版本号
  */
 export function getVersion(): string {
-  return CLI_VERSION;
+  // @ts-expect-error CLI_VERSION is injected at runtime
+  return globalThis.CLI_VERSION ?? '0.0.0-dev';
 }
 
 /**

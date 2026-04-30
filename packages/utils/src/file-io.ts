@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, rm } from 'fs/promises';
+import { readFile, writeFile, mkdir, rm, stat } from 'fs/promises';
 import { dirname, join } from 'path';
 
 export async function ensureDir(dir: string): Promise<void> {
@@ -26,6 +26,18 @@ export async function writeJsonFile(path: string, data: unknown): Promise<void> 
 export async function readJsonFile<T>(path: string): Promise<T> {
   const content = await readTextFile(path);
   return JSON.parse(content) as T;
+}
+
+/**
+ * 检查文件是否存在
+ */
+export async function fileExists(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function joinPath(...parts: string[]): string {

@@ -35,7 +35,8 @@ export default defineConfig(() => {
     noExternal: [/.*/],
     platform: 'node',
     define: {
-      'CLI_VERSION': JSON.stringify(pkg.version),
+      // 替换 globalThis.CLI_VERSION 为版本号常量
+      'globalThis.CLI_VERSION': JSON.stringify(pkg.version),
     },
     banner: {
       js: '#!/usr/bin/env node\nimport{createRequire as __createRequire}from"module";import{fileURLToPath as __fileURLToPath}from"url";import{dirname as __dirnameFn}from"path";const require=__createRequire(import.meta.url);const __filename=__fileURLToPath(import.meta.url);const __dirname=__dirnameFn(__filename);',

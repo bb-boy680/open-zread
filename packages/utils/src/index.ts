@@ -6,6 +6,7 @@ export {
   writeTextFile,
   writeJsonFile,
   readJsonFile,
+  fileExists,
   joinPath,
   getProjectRoot,
   getOutputDir,
