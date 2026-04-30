@@ -9,7 +9,10 @@
     "build": "turbo build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc --noEmit --project tsconfig.json"
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "changeset": "bunx @changesets/cli changeset",
+    "version": "bunx @changesets/cli version",
+    "release": "bunx @changesets/cli publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
