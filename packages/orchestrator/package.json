@@ -1,6 +1,7 @@
 {
   "name": "@open-zread/orchestrator",
   "version": "0.1.0",
+  "private": true,
   "description": "Wiki blueprint generation using Agent orchestration",
   "type": "module",
   "main": "./dist/index.js",
