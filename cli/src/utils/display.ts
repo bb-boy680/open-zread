@@ -2,25 +2,14 @@
  * 终端显示相关工具函数
  */
 
-import { readFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// 缓存版本号（只读取一次）
-let cachedVersion: string | undefined;
+// CLI_VERSION is injected at build time by tsup
+declare const CLI_VERSION: string;
 
 /**
- * 获取 CLI 版本号（从 package.json 读取）
+ * 获取 CLI 版本号
  */
 export function getVersion(): string {
-  if (cachedVersion) return cachedVersion;
-
-  const packageJsonPath = join(__dirname, "..", "..", "package.json");
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as { version: string };
-  cachedVersion = packageJson.version;
-  return cachedVersion;
+  return CLI_VERSION;
 }
 
 /**
