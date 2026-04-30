@@ -1,15 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git push *)",
-      "Bash(bun install *)",
-      "Bash(bun run *)",
-      "Bash(bun pm *)",
-      "Bash(bun info *)",
-      "Bash(npm pack *)"
-    ],
     "defaultMode": "bypassPermissions"
   }
 }
