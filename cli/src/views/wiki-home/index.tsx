@@ -12,7 +12,7 @@ import SelectInput from 'ink-select-input';
 import { useI18n } from '../../i18n';
 import { useWiki, useConfig } from '../../provider';
 import Divider from '../../components/Divider';
-import { getWikiDir, joinPath } from '@open-zread/utils';
+import { getWikiDir, joinPath, fileExists } from '@open-zread/utils';
 import type { WikiPage, WikiOutput } from '@open-zread/types';
 
 // SelectInput Item 类型
@@ -25,9 +25,7 @@ async function checkProgress(pages: WikiPage[]): Promise<{ total: number; genera
   const checks = pages.map(async (page) => {
     // wiki 目录按 section 分组，文件路径：wikiDir/section/file.md
     const filePath = joinPath(wikiDir, page.section, page.file);
-    const file = Bun.file(filePath);
-    const exists = await file.exists();
-    return exists;
+    return await fileExists(filePath);
   });
 
   const results = await Promise.all(checks);

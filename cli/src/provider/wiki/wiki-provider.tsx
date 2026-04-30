@@ -7,7 +7,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo, type ReactNode } from 'react';
 import { Outlet } from 'react-router';
 import type { WikiOutput } from '@open-zread/types';
-import { getWikiJsonPath } from '@open-zread/utils';
+import { getWikiJsonPath, fileExists, readJsonFile } from '@open-zread/utils';
 
 export interface WikiContextValue {
   wikiCatalog: WikiOutput | null;  // wiki.json 数据（不存在则为 null）
@@ -28,11 +28,11 @@ export function WikiProvider({ children }: WikiProviderProps) {
     const wikiPath = getWikiJsonPath();
 
     try {
-      const file = Bun.file(wikiPath);
-      const exists = await file.exists();
+      const exists = await fileExists(wikiPath);
+
       if (exists) {
-        const content = await file.json();
-        setWikiCatalog(content as WikiOutput);
+        const content = await readJsonFile<WikiOutput>(wikiPath);
+        setWikiCatalog(content);
       } else {
         setWikiCatalog(null);
       }

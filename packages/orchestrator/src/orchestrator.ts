@@ -47,9 +47,7 @@ export async function generateWikiCatalog(
   });
 
   return {
-    outputPath: result.outputPath,
     pagesCount: 0,
-    coreModules: result.coreModules,
     durationMs: result.durationMs,
     tokenUsage: result.tokenUsage,
   };

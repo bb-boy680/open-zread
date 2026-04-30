@@ -4,240 +4,247 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @DESIGN.md
 
+---
+
+## 项目概述
+
+Open Zread 是一个 AI 驱动的 Wiki 文档生成工具。一行命令即可将整个项目转换为高质量的 Wiki 文档库，基于 web-tree-sitter 支持多语言 AST 解析（TS/JS/Go/Rust/Python/Java/C++）。
+
+---
+
+## 开发环境
+
+**包管理器**: Bun 1.3.0+
+
+**启动开发环境**:
+```bash
+bun run dev
+```
+
+> **重要**:
+> - LLM 在修改完代码后**不需要执行**开发环境或构建命令。用户会主动执行 `bun run dev` 进行测试。LLM 只需专注于代码修改本身。
+> - **每次修改代码后，必须执行** `bun run typecheck` 和 `bun run lint`，确保类型正确且代码符合规范。
+
+**代码质量检查**（**每次修改代码后必须执行**）:
+```bash
+bun run typecheck  # TypeScript 类型检查 - 必须
+bun run lint       # ESLint 代码规范检查 - 必须
+bun run lint:fix   # ESLint 自动修复（可选，lint 有错误时使用）
+```
+
+**单个包操作**:
+```bash
+bun run build --filter=@open-zread/cli       # 只构建 CLI 包
+bun run dev --filter=@open-zread/orchestrator # 只开发特定包
+```
+
+---
+
+## 架构说明
+
+这是一个 Bun Monorepo 项目，使用 Turborepo 进行任务编排。
+
+### 包依赖关系图
+
+```
+@open-zread/cli (终端 UI 入口)
+    ├── @open-zread/orchestrator (Agent 调度引擎)
+    │       ├── @open-zread/agent-sdk (Agent SDK)
+    │       ├── @open-zread/repo-analyzer (代码分析)
+    │       └── @open-zread/utils (工具函数)
+    ├── @open-zread/repo-analyzer
+    ├── @open-zread/types (共享类型)
+    └── @open-zread/utils
+```
+
+---
+
+### 包职责详解
+
+#### 1. `@open-zread/types` (packages/types)
+
+**职责**: 共享类型定义，是整个项目的类型基础。
+
+**核心模块**:
+- `manifest.ts`: 文件扫描结果类型 (FileManifest, FileInfo)
+- `symbols.ts`: AST 解析符号类型 (SymbolManifest, SymbolInfo)
+- `wiki.ts`: Wiki 页面定义与输出类型 (WikiPage, WikiOutput)
+- `config.ts`: 应用配置类型 (AppConfig)
+- `cache.ts`: 缓存清单结构 (CacheManifest)
+- `repo-map.ts`: 三层 Repo Map 类型定义
+
+**依赖**: 无外部依赖，纯类型定义包。
+
+---
+
+#### 2. `@open-zread/utils` (packages/utils)
+
+**职责**: 通用工具函数库，提供文件 I/O、配置管理、缓存、日志等基础设施。
+
+**核心模块**:
+- `file-io.ts`: 文件读写、目录操作、路径解析
+- `config/`: 配置加载、保存、验证
+- `cache/`: 符号级缓存（基于 AST Hash）
+- `logger.ts`: 日志系统
+- `storage/wiki-store.ts`: Wiki 存储管理
+- `storage/versioning.ts`: 版本快照管理
+- `output/wiki-content.ts`: Wiki JSON 生成与加载
+- `provider-registry/`: LLM Provider 注册表管理（支持 75+ Provider）
+
+**依赖**: `@open-zread/types`
+
+---
+
+#### 3. `@open-zread/repo-analyzer` (packages/repo-analyzer)
+
+**职责**: 代码库分析引擎，负责扫描文件、解析 AST、构建三层 Repo Map。
+
+**核心模块**:
+- `scanner/`: 基于 glob + .gitignore 的文件扫描
+- `parser/`: web-tree-sitter AST 解析，提取导出与签名
+  - `wasm-loader.ts`: WASM 解析器加载
+  - `language-map.ts`: 语言映射配置
+  - `vue-handler.ts`: Vue SFC 特殊处理
+- `repo-map/`: 三层 Repo Map 构建
+  - `index.ts`: 主入口 `buildRepoMap()`
+  - `formatter.ts`: Repo Map 格式化输出
+  - `prioritizer.ts`: 文件优先级排序（高频引用优先）
+  - `reference-counter.ts`: 符号引用计数
+  - `token-counter.ts`: Token 估算
+
+**三层 Repo Map 结构**:
+1. **层一**: 目录拓扑 → 建立宏观架构
+2. **层二**: 核心签名 → 寻找高频引用接口
+3. **层三**: 模块详情 → 划分业务边界，生成 wiki.json
+
+**依赖**: `@open-zread/types`, `@open-zread/utils`, `web-tree-sitter`, `glob`
+
+---
+
+#### 4. `@open-zread/agent-sdk` (packages/agent-sdk)
+
+**职责**: 开源 Agent SDK，提供完整的 Agent 运行环境，无需依赖外部 CLI。
+
+**核心模块**:
+- `agent.ts`: 高级 Agent API (`Agent`, `createAgent`, `query`)
+- `engine.ts`: Agent 执行引擎 (`QueryEngine`)
+- `providers/`: LLM Provider 抽象层
+  - `anthropic.ts`: Anthropic Claude 支持
+  - `openai.ts`: OpenAI 支持
+  - `types.ts`: Provider 类型定义
+- `tools/`: 30+ 内置工具
+  - 文件 I/O: `read.ts`, `write.ts`, `edit.ts`
+  - 搜索: `glob.ts`, `grep.ts`
+  - 执行: `bash.ts`
+  - Web: `web-fetch.ts`, `web-search.ts`
+  - 多 Agent: `agent-tool.ts`, `send-message.ts`, `team-tools.ts`
+  - 任务管理: `task-tools.ts`
+  - MCP: `mcp-resource-tools.ts`, `sdk-mcp-server.ts`
+  - 其他: `lsp-tool.ts`, `cron-tools.ts`, `plan-tools.ts`, `skill-tool.ts`
+- `skills/`: Skill 系统（可复用的 Prompt 模板）
+  - `bundled/`: 内置 Skills (commit, debug, review, simplify, test)
+  - `registry.ts`: Skill 注册管理
+- `hooks.ts`: Hook 系统（生命周期钩子）
+- `session.ts`: Session 持久化管理
+- `utils/`: 工具函数
+  - `compact.ts`: 对话压缩
+  - `tokens.ts`: Token 估算与成本计算
+  - `retry.ts`: 重试逻辑（指数退避）
+  - `fileCache.ts`: 文件状态 LRU 缓存
+
+**依赖**: `@anthropic-ai/sdk`, `@modelcontextprotocol/sdk`, `zod`
+
+---
+
+#### 5. `@open-zread/orchestrator` (packages/orchestrator)
+
+**职责**: Wiki Blueprint 生成引擎，使用 Agent 调度生成 Wiki 目录和内容。
+
+**核心模块**:
+- `orchestrator.ts`: Wiki Catalog 生成入口 (`generateWikiCatalog`)
+- `wiki/generate-wiki.ts`: Wiki 内容生成 (`generateWikiContent`)
+- `agents/create-agent.ts`: Page Agent 创建
+- `agents/uitls.ts`: Agent 工具函数
+- `prompts/`: Prompt 模板
+  - `generate-catalog.ts`: Catalog 生成 Prompt
+  - `page-agent.ts`: Page Agent Prompt
+- `tools/`: 专用工具
+  - `repo-map-tools.ts`: Repo Map 交互工具
+  - `page-tools.ts`: Wiki 页面操作工具
+  - `output-tools.ts`: 输出工具
+
+**工作流程**:
+1. 接收 repo-analyzer 的 Repo Map
+2. 调用 Agent 生成 Wiki Catalog（模块划分）
+3. N 个并发 Page Agent 生成各模块的 Markdown 文档
+4. 输出到 Wiki/ 目录
+
+**依赖**: `@open-zread/agent-sdk`, `@open-zread/repo-analyzer`, `@open-zread/utils`, `@open-zread/types`
+
+---
+
+#### 6. `@open-zread/cli` (cli)
+
+**职责**: 终端 UI 入口，基于 Ink + React 的交互式 CLI 应用。
+
+**核心模块**:
+- `src/index.tsx`: CLI 入口，bin 命令绑定
+- `src/App.tsx`: 应用路由配置
+- `src/layout/`: 布局组件
+- `src/views/`: 视图组件
+  - `wiki-home/`: Wiki 生成首页
+  - `wiki-generate/`: Wiki 生成进度页
+  - `config-*/`: 配置管理页面（API Key、Provider、Model 等）
+- `src/provider/`: React Context Provider
+  - `config/`: 配置状态管理
+  - `wiki/`: Wiki 生成状态管理
+  - `i18n/`: 国际化支持
+- `src/components/`: 通用组件（Divider, Spinner, StatusRow 等）
+- `src/i18n/`: 国际化翻译（zh-CN, en-US）
+- `src/theme.ts`: 主题配置
+
+**依赖**: `ink`, `react`, `react-router`, `zustand`, `use-immer`, 以及所有内部包
+
+---
+
+## 修改文件指南
+
+### CLI UI 修改
+
+修改终端 UI 时，严格遵循 `DESIGN.md` 中的设计系统：
+- **颜色**: 使用 Notion 风格的暖色调（`#f6f5f4` warm white, `#31302e` warm dark）
+- **边框**: 超细边框 `1px solid rgba(0,0,0,0.1)`（whisper border）
+- **字体**: NotionInter，display 大标题使用负 letter-spacing（-2.125px at 64px）
+- **阴影**: 多层叠加，单层 opacity 不超过 0.05
+
+### Agent SDK 修改
+
+Agent SDK 是独立可复用的包，修改时注意：
+- 保持 Provider 抽象层的通用性
+- 工具定义使用 Zod schema
+- Skill 注册遵循 `SkillDefinition` 类型
+
+### Orchestrator 修改
+
+修改 Orchestrator 时：
+- Agent Prompt 模板在 `prompts/` 目录
+- 并发控制使用 `p-limit`
+- Wiki 输出遵循 `WikiOutput` 类型
+
+---
+
+## 发布流程
+
+使用 Changesets 管理版本发布：
+
+```bash
+bun run changeset      # 创建变更记录
+bun run version        # 更新版本号
+bun run release        # 发布到 npm
+```
+
+---
+
 # UI 开发规则
+
 编写 UI 代码时，请严格遵循上方导入的 DESIGN.md 文件中指定的设计系统、颜色和组件规范。
-
-## 开发命令
-
-构建与开发：
-- `bun run dev` - 以开发模式运行 CLI
-- `bun run build` - 构建所有包（Turbo 协调各包构建）
-- `bun run build:cli` - 单独构建 CLI（输出 `cli/dist/index.js`）
-- `bun run lint` - 运行 ESLint 检查
-- `bun run lint:fix` - 自动修复 ESLint 问题
-- `bun run typecheck` - TypeScript 类型检查（不生成文件）
-
-测试：
-- `bun test` - 运行所有测试
-- `bun test packages/repo-analyzer/src/repo-map/__tests__/repo-map.test.ts` - 运行 Repo Map 单元测试
-- `bun test -w` - 监听模式运行测试
-
-## 包管理器
-
-本项目使用 **Bun**（v1.3.0）。请勿使用 npm 或 pnpm 命令。
-
-## 架构
-
-这是一个由 Turbo 管理的 monorepo，包含 5 个包 + CLI。数据流程如下：
-
-```
-CLI (React/Ink 终端 UI) → Scanner → Parser → SymbolCache → Orchestrator Agent → wiki.json
-```
-
-### 包依赖关系
-
-```
-types        → （无依赖，共享类型定义）
-utils        → types（文件 I/O、配置、缓存、存储、输出）
-repo-analyzer → types, utils（文件扫描、解析、Repo Map 生成）
-agent-sdk    → （独立 Agent SDK - 支持 Anthropic/OpenAI）
-orchestrator → agent-sdk, repo-analyzer, utils, types（Agent 编排层）
-cli          → orchestrator, utils, repo-analyzer（Ink 终端 UI）
-```
-
-### 各包概述
-
-- **@open-zread/types**: 共享 TypeScript 接口，模块化结构：
-  - `manifest.ts` - FileManifest, FileInfo
-  - `symbols.ts` - SymbolManifest, SymbolInfo
-  - `wiki.ts` - WikiPage, WikiOutput, TechStackSummary
-  - `config.ts` - AppConfig
-  - `cache.ts` - CacheManifest
-  - `repo-map.ts` - 三层 Repo Map 类型
-- **@open-zread/utils**: 文件 I/O 工具、从 `~/.zread/config.yaml` 加载配置、缓存管理（SymbolCache、last_manifest.json）、存储（WikiStore）、输出生成
-- **@open-zread/repo-analyzer**: 两阶段代码处理 + 三层 Repo Map：
-  1. Scanner - 使用 glob/ignore 模式查找源文件
-  2. Parser - 使用 web-tree-sitter WASM 解析器提取符号
-  3. 三层 Repo Map - 目录树 → 核心签名 → 模块详情（分层递进）
-- **@open-zread/agent-sdk**: 完整的 Agent SDK，包含 30+ 工具（文件 I/O、shell、web、agents、tasks、teams）、MCP 服务器集成、技能系统、上下文压缩、重试逻辑、会话持久化、钩子系统。支持 Anthropic 和 OpenAI 提供商。
-  
-  **类型安全工具开发**：
-  - 工具输入使用 `ToolInputParams`（JsonValue 类型）
-  - 使用辅助函数安全提取值（从 `@open-zread/agent-sdk` 导入）：
-    - `getRequiredString(input, 'name')` - 必需字符串
-    - `getString(input, 'path')` - 可选字符串
-    - `getNumber(input, 'limit')` - 数字
-    - `getBoolean(input, 'flag')` - 布尔
-    - `getArray<T>(input, 'items')` - 数组
-    - `getObject<T>(input, 'config')` - 对象
-  - catch 错误使用 `unknown` 类型，用 `err instanceof Error ? err.message : String(err)` 获取消息
-- **@open-zread/orchestrator**: Agent 编排层，使用三层 Repo Map 递进分析项目，生成 wiki.json。后续会扩展更多 Agent（wiki 生成、wiki 更新等）。
-
-### Repo Map 架构（packages/repo-analyzer/src/repo-map）
-
-**三层 Repo Map** - 分层递进的项目上下文生成，解决 AI 漂移问题：
-
-```
-Layer 1: 目录树        → 建立全局模块框架（约 200-500 tokens）
-Layer 2: 核心签名      → 理解核心 API 边界（Ref >= 5）
-Layer 3: 模块详情      → 深入具体模块实现（按需加载）
-```
-
-```
-repo-map/
-├── index.ts           # buildRepoMap() + 三层函数（buildDirectoryTreeOnly, buildCoreSignatures, buildModuleDetails）
-├── formatter.ts       # 树状格式化（├──、[Ref: N]、/** 注释 */）
-├── prioritizer.ts     # 优先级计算（引用权重 10 + 导出权重 5 + 深度权重）
-├── token-counter.ts   # Token 预算管理（默认 2048）
-├── reference-counter.ts # 引用计数（从 imports 解析）
-└── constants.ts       # 配置常量
-```
-
-三层输出示例：
-```
-# Layer 1: 目录树
-Project Structure
-├── packages/
-│   ├── types/
-│   ├── utils/
-│   ├── repo-analyzer/
-
-# Layer 2: 核心签名（Ref >= 5）
-Core Files Signatures (Ref >= 5)
-├── packages/utils/src/config.ts [Ref: 15]
-│   [Export] function loadConfig(): AppConfig
-├── packages/types/src/index.ts [Ref: 12]
-│   [Export] interface WikiPage { slug, title, section }
-
-# Layer 3: 模块详情（指定路径）
-Module Details: packages/auth/src/
-├── login.ts [Ref: 11]
-│   [Export] function login(email, password): Promise<User>
-│   function validateEmail(email): boolean
-```
-
-### Orchestrator Agent 架构（packages/orchestrator）
-
-Agent 编排层完成 wiki.json 生成，使用三层 Repo Map 递进分析：
-
-```
-orchestrator/
-├── agents/
-│   └── create-agent.ts      # Agent 创建方法（7 个工具，maxTurns=30）
-├── prompts/
-│   └── generate-catalog.mdx # 提示词（三层工作流程）
-├── tools/
-│   ├── output-tools.ts      # GenerateBlueprintTool, ValidateBlueprintTool
-│   └── repo-map-tools.ts    # 三层工具（get_directory_tree, get_core_signatures, get_module_details）
-├── orchestrator.ts          # generateWikiCatalog() 入口
-└── types.ts                 # 类型定义
-```
-
-Agent 工具列表（三层 Repo Map）：
-- `get_directory_tree` - Layer 1: 纯目录结构（无符号，约 200-500 tokens）
-- `get_core_signatures` - Layer 2: 核心文件签名（Ref >= 5，仅导出）
-- `get_module_details` - Layer 3: 模块完整详情（按需加载）
-- `generate_blueprint` - 生成 wiki.json
-- `validate_blueprint` - 验证关联文件存在性
-- `Read` - 补充读取配置文件
-- `Glob` - 搜索特定文件
-
-### CLI 流程（5 步）
-
-```
-1. Load config    → ~/.zread/config.yaml
-2. Scan files     → FileManifest
-3. Check cache    → 增量处理（哈希比对）
-4. Parse files    → SymbolManifest → SymbolCache
-5. Orchestrator Agent → 三层 Repo Map:
-   - get_directory_tree → 建立全局框架
-   - get_core_signatures → 理解核心 API
-   - get_module_details → 深入模块分析（按需）
-   - generate_blueprint → wiki.json
-   - validate_blueprint → 验证关联文件
-```
-
-### 缓存文件
-
-- `last_manifest.json` - 文件清单（路径、哈希、大小）
-- `last_symbols.json` - 符号信息（exports、functions、imports、docstrings）
-
-缓存位于 `.open-zread/cache/` 目录。
-
-### 必需配置
-
-CLI 需要 `~/.zread/config.yaml` 配置 LLM 设置：
-
-```yaml
-language: zh
-doc_language: zh
-llm:
-  provider: anthropic
-  model: claude-sonnet-4-6
-  api_key: <密钥>
-  base_url: https://api.anthropic.com
-concurrency:
-  max_concurrent: 5
-  max_retries: 3
-```
-
-## 构建系统
-
-- Turbo 协调构建，任务依赖：`build` 依赖 `^build`、`typecheck`、`lint`
-- 各包使用 tsup 进行 ESM 打包并生成 DTS 类型声明
-- CLI 使用 Bun 的打包器，目标运行时为 Bun
-- WASM 文件（yoga.wasm、tree-sitter.wasm、mappings.wasm）在构建时复制到 CLI dist 目录
-
-## 代码风格
-
-ESLint 配置采用 TypeScript 严格模式：
-
-**类型检查规则**：
-- `@typescript-eslint/no-explicit-any`: 错误级别 - 禁止使用 `any` 类型
-- `@typescript-eslint/no-unused-vars`: 下划线前缀变量（`_`、`_var`）可忽略
-- catch 语句使用 `unknown` 类型，通过类型守卫访问错误属性
-
-**例外情况**（仅允许 any）：
-- MCP SDK 客户端（动态 API 类型）
-- token 估算函数（接受任意消息格式）
-- 第三方库类型不兼容时（添加 eslint-disable 注释并说明原因）
-
-**类型转换模式**：
-- `input.xxx as T` → 使用辅助函数 `getXxx(input, 'xxx')`
-- `err.message` → `err instanceof Error ? err.message : String(err)`
-- 复杂类型转换使用 `as unknown as T` 双重转换
-
-## 输出目录结构
-
-运行 CLI 后生成：
-
-```
-.open-zread/
-├── cache/
-│   ├── last_manifest.json
-│   └── last_symbols.json
-├── drafts/
-│   └── wiki.json          # Orchestrator Agent 输出
-└── output/
-    └── wiki/              # 最终 Wiki 文档（待实现）
-```
-
-## Wiki 章节规范
-
-wiki.json 的 section 字段用于导航分组，推荐分类：
-
-| section | 适用章节 |
-|---------|---------|
-| 入门指南 | 项目概览、快速开始、架构设计 |
-| 核心模块 | 各模块章节 |
-| 集成扩展 | MCP、插件、扩展 |
-| 应用程序 | CLI、GUI、扩展应用 |
-| 高级主题 | 性能优化、安全、自定义 |
-| 开发指南 | 测试、贡献、部署 |
-
-slug 编号从 1 开始连续递增，格式为 `N-module-name`（英文）。
-
-**associatedFiles 支持文件和目录两种路径：**
-- 文件路径：`README.md`、`package.json`（入门章节关联根目录文件）
-- 目录路径：`packages/auth/src/`（模块章节关联整个目录，以 `/` 结尾）
-- 后续生成 Wiki 内容时会扫描关联目录下所有源文件

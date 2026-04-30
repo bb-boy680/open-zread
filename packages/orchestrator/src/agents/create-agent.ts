@@ -11,7 +11,7 @@
 
 import { createAgent as CreateAgentSdk, type SDKMessage, type TokenUsage, type ToolDefinition, type RetryConfig } from '@open-zread/agent-sdk';
 import { loadConfig, logger } from '@open-zread/utils';
-import type { CatalogEvent, CoreModules } from '../types.js';
+import type { CatalogEvent } from '../types.js';
 import { isAssistantMessage, isPartialMessage, isResultMessage, isToolResultMessage, SYSTEM_PROMPTS } from './uitls.js';
 
 /**
@@ -32,10 +32,6 @@ export interface CreateBlueprintAgentOptions {
  * 执行结果
  */
 export interface AgentResult {
-  /** 输出文件路径 */
-  outputPath: string;
-  /** 核心模块信息 */
-  coreModules: CoreModules | undefined;
   /** 执行耗时（毫秒） */
   durationMs: number;
   /** Token 使用统计 */
@@ -120,7 +116,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
           error: info.error,
           usage: totalUsage,
         });
-      } else {
       }
       logger.warn(`API 错误，${info.delayMs / 1000}秒后重试 (${info.attempt}/${info.maxRetries}): ${info.error}`);
     },
@@ -141,9 +136,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
     includePartialMessages: true,
     retryConfig,
   });
-
-  let outputPath = '';
-  let coreModules: CoreModules | undefined;
 
   // 发送开始事件
   options.onEvent?.({ type: 'requesting', usage: totalUsage });
@@ -177,24 +169,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
     if (isToolResultMessage(msg)) {
       const result = msg.result;
       logger.info(`[Tool Result: ${result.tool_name}] ${result.output}`);
-
-      try {
-        const output = JSON.parse(result.output);
-        if (result.tool_name === 'get_core_signatures') {
-          if (output.coreFiles) {
-            coreModules = {
-              coreModules: output.coreFiles.map((f: string) => ({
-                name: f.split('/').pop() || f,
-                files: [f],
-                reason: '高频引用文件',
-              })),
-              moduleGroups: {},
-            };
-          }
-        }
-      } catch {
-        // Not JSON output, skip
-      }
     }
 
     if (isResultMessage(msg)) {
@@ -203,19 +177,13 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
       }
 
       if (msg.subtype === 'success') {
-        if (msg.result?.includes('Blueprint generated')) {
-          outputPath = msg.result.match(/Blueprint generated: (.+)/)?.[1] || '';
-        }
         options.onEvent?.({
           type: 'complete',
-          outputPath,
           usage: totalUsage,
           durationMs: Math.round(performance.now() - startTime),
         });
 
         return {
-          outputPath,
-          coreModules,
           durationMs: Math.round(performance.now() - startTime),
           tokenUsage: totalUsage,
         };
@@ -238,8 +206,6 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
 
   // 返回结果
   return {
-    outputPath,
-    coreModules,
     durationMs: Math.round(performance.now() - startTime),
     tokenUsage: totalUsage,
   };
