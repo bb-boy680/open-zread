@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit --project tsconfig.json",
-    "changeset": "bunx @changesets/cli changeset",
+    "changeset": "bunx @changesets/cli",
     "version": "bunx @changesets/cli version",
     "release": "bunx @changesets/cli publish"
   },

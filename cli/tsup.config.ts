@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup'
 import { cp } from 'fs/promises'
-import { existsSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, statSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
 
 function findFileRecursively(dir: string, target: string): string | null {
@@ -22,6 +22,8 @@ function findFileRecursively(dir: string, target: string): string | null {
 }
 
 export default defineConfig(() => {
+  const pkg = JSON.parse(readFileSync("package.json", "utf-8")) as { version: string }
+
   return {
     entry: ['src/index.tsx'],
     format: ['esm'],
@@ -32,6 +34,9 @@ export default defineConfig(() => {
     bundle: true,
     noExternal: [/.*/],
     platform: 'node',
+    define: {
+      'CLI_VERSION': JSON.stringify(pkg.version),
+    },
     banner: {
       js: '#!/usr/bin/env node\nimport{createRequire as __createRequire}from"module";import{fileURLToPath as __fileURLToPath}from"url";import{dirname as __dirnameFn}from"path";const require=__createRequire(import.meta.url);const __filename=__fileURLToPath(import.meta.url);const __dirname=__dirnameFn(__filename);',
     },
