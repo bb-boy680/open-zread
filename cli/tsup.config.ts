@@ -43,10 +43,17 @@ export default defineConfig(() => {
     onSuccess: async () => {
       const cwd = process.cwd()
       const nmPath = resolve(cwd, '../node_modules')
-      const found = findFileRecursively(nmPath, 'yoga.wasm')
-      if (found && existsSync(found)) {
-        await cp(found, join(cwd, 'dist/yoga.wasm'))
+      const copyWasm = async (name: string) => {
+        const found = findFileRecursively(nmPath, name)
+        if (found && existsSync(found)) {
+          await cp(found, join(cwd, `dist/${name}`))
+        }
       }
+      await Promise.all([
+        copyWasm('yoga.wasm'),
+        copyWasm('tree-sitter.wasm'),
+        copyWasm('mappings.wasm'),
+      ])
     },
   }
 })
