@@ -1,5 +1,11 @@
 # @open-zread/cli
 
+## 0.1.4
+
+### Patch Changes
+
+- 724660e: Fix fullscreen-ink dependency location and CI bun version consistency
+
 ## 0.1.3
 
 ### Patch Changes
