@@ -19,5 +19,5 @@
       "@open-zread/agent-sdk": ["../../packages/agent-sdk/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "src/**/*.d.ts"]
+  "include": ["src/**/*", "src/**/*.d.ts", "tsup.config.ts"]
 }

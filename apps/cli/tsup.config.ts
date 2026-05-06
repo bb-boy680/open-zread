@@ -1,7 +1,7 @@
-import { defineConfig } from 'tsup'
+import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { cp } from 'fs/promises'
-import { existsSync, readdirSync, statSync, readFileSync } from 'fs'
 import { join, resolve } from 'path'
+import { defineConfig } from 'tsup'
 
 // Mock react-devtools-core (ink 的可选开发依赖，生产环境不需要)
 const reactDevToolsMock = {
@@ -63,6 +63,15 @@ export default defineConfig(() => {
     },
     onSuccess: async () => {
       const cwd = process.cwd()
+
+      // 复制 browse 的构建产物到 dist/browse
+      const browseDistPath = resolve(cwd, '../browse/dist')
+      const browseTargetPath = join(cwd, 'dist/browse')
+      if (existsSync(browseDistPath)) {
+        await cp(browseDistPath, browseTargetPath, { recursive: true })
+      }
+
+      // 复制 WASM 文件
       const nmPath = resolve(cwd, '../../node_modules')
       const copyWasm = async (name: string) => {
         const found = findFileRecursively(nmPath, name)

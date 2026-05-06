@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: '../cli/dist/browse',
+    outDir: 'dist', // 输出到自己的 dist 目录
     emptyOutDir: true,
   },
 })
