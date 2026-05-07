@@ -15,6 +15,13 @@ import { MermaidPreviewModal } from "./MermaidPreviewModal";
 
 const CodeBlockContext = createContext(false);
 
+// 移除 Markdown frontmatter (元数据)
+function removeFrontmatter(content: string): string {
+  // 匹配 --- 开头的 YAML frontmatter
+  const frontmatterRegex = /^---\s*\n[\s\S]*?\n---\s*\n?/;
+  return content.replace(frontmatterRegex, "").trimStart();
+}
+
 interface MarkdownRendererProps {
   content: string;
   onReferencesFound: (refs: CodeReference[]) => void;
@@ -308,7 +315,7 @@ export function MarkdownRenderer({
           ),
         }}
       >
-        {content}
+        {removeFrontmatter(content)}
       </ReactMarkdown>
       <MermaidPreviewModal
         open={activeMermaid !== null}
