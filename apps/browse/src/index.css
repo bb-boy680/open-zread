@@ -65,7 +65,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 12px;
 }
 
 .toc-glyph-item {
@@ -107,7 +107,10 @@ body {
 }
 
 .toc-glyph-item-active::before {
+  width: 16px;
+  height: 3px;
   background: var(--color-notion-blue);
+  box-shadow: 0 0 6px rgba(0, 117, 222, 0.6), 0 0 12px rgba(0, 117, 222, 0.4);
 }
 
 .toc-card {
