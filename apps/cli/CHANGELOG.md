@@ -1,5 +1,11 @@
 # @open-zread/cli
 
+## 0.1.7
+
+### Patch Changes
+
+- 31fe614: Add browse preview service integration
+
 ## 0.1.6
 
 ### Patch Changes
