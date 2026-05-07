@@ -1,5 +1,11 @@
 # @open-zread/cli
 
+## 0.1.6
+
+### Patch Changes
+
+- 0c683c5: Initial beta release
+
 ## 0.1.6-beta.0
 
 ### Patch Changes
