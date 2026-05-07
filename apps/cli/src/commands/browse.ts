@@ -187,9 +187,9 @@ export async function runBrowse(projectPath: string) {
     });
   } else {
     // Development: API only mode, fixed port 5173
-    app.listen(5173, () => {
-      console.log(`\n🌐 API Server running at http://localhost:5173`);
-      console.log(`📖 Wiki API: http://localhost:5173/api/wiki/catalog\n`);
+    app.listen(3000, () => {
+      console.log(`\n🌐 API Server running at http://localhost:3000`);
+      console.log(`📖 Wiki API: http://localhost:3000/api/wiki/catalog\n`);
     });
   }
 }

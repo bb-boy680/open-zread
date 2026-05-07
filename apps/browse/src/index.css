@@ -48,15 +48,312 @@ body {
   content: none !important;
 }
 
-/* Mermaid 图表样式 */
-.mermaid {
+/* TOC 样式 */
+.toc-glyph-container {
+  position: relative;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+
+.toc-glyph-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.toc-glyph-item {
+  list-style: none;
+  position: relative;
+  height: 2px;
+}
+
+.toc-glyph-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 9999px;
+  background: #d1d5db;
+  transition: background 0.15s ease;
+}
+
+.toc-glyph-item[data-level='2']::before {
+  width: 14px;
+  background: #31302e;
+}
+
+.toc-glyph-item[data-level='3']::before {
+  width: 11px;
+  background: #615d59;
+}
+
+.toc-glyph-item[data-level='4']::before {
+  width: 8px;
+  background: #a39e98;
+}
+
+.toc-glyph-item[data-level='5']::before,
+.toc-glyph-item[data-level='6']::before {
+  width: 5px;
+  background: #d1d5db;
+}
+
+.toc-glyph-item-active::before {
+  background: var(--color-notion-blue);
+}
+
+.toc-card {
+  width: 280px;
+  max-height: 70vh;
+  overflow: hidden;
+  border: var(--border-whisper);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: var(--shadow-card);
+  color: var(--color-notion-black);
+}
+
+.toc-card[data-side='left'] {
+  transform-origin: right center;
+}
+
+.toc-card-header {
+  padding: 12px 16px 10px;
+  border-bottom: var(--border-whisper);
+}
+
+.toc-card-title {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.33;
+  letter-spacing: 0.125px;
+  color: var(--color-warm-gray-500);
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 10px;
+  max-height: calc(70vh - 48px);
+  overflow: auto;
+}
+
+.toc-item {
+  list-style: none;
+  list-style-image: none;
+  list-style-type: none;
+  position: relative;
+}
+
+.toc-item::marker {
+  content: none;
+}
+
+.toc-button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--color-notion-black);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+
+.toc-item[data-level='3'] .toc-button {
+  padding-left: 24px;
+}
+
+.toc-item[data-level='4'] .toc-button {
+  padding-left: 32px;
+}
+
+.toc-item[data-active='true'] .toc-button {
+  color: var(--color-notion-blue);
+  font-weight: 500;
+}
+
+.toc-button:hover,
+.toc-button:focus-visible {
+  color: var(--color-notion-blue);
+  outline: none;
+}
+
+.mermaid-card {
+  position: relative;
+  border: var(--border-whisper);
+  border-radius: 12px;
+  background: var(--color-warm-white);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+
+.mermaid-card:hover,
+.mermaid-card:focus-visible {
+  box-shadow: var(--shadow-card);
+  transform: translateY(-1px);
+}
+
+.mermaid-card:focus-visible {
+  outline: 2px solid #097fe8;
+  outline-offset: 2px;
+}
+
+.mermaid-card-body {
+  padding: 24px 16px;
+}
+
+.mermaid-expand-button {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: var(--border-whisper);
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.96);
+  color: var(--color-warm-gray-500);
+  opacity: 0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: opacity 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.mermaid-card:hover .mermaid-expand-button,
+.mermaid-expand-button:focus-visible {
+  opacity: 1;
+}
+
+.mermaid-expand-button:hover {
+  color: var(--color-notion-black);
+  transform: scale(1.04);
+}
+
+.mermaid-diagram {
   display: flex;
   justify-content: center;
+  cursor: pointer;
 }
 
 .mermaid svg {
   max-width: 100%;
   height: auto;
+}
+
+.mermaid-preview-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(245, 243, 240, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.mermaid-preview-content {
+  position: fixed;
+  inset: 24px;
+  outline: none;
+}
+
+.mermaid-preview-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.92);
+  box-shadow: var(--shadow-deep);
+}
+
+.mermaid-preview-toolbar {
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mermaid-preview-zoom {
+  padding: 4px 10px;
+  border: var(--border-whisper);
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.9);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-warm-gray-500);
+}
+
+.mermaid-preview-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: var(--border-whisper);
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.92);
+  color: var(--color-warm-gray-500);
+}
+
+.mermaid-preview-close:hover {
+  color: var(--color-notion-black);
+}
+
+.mermaid-preview-viewport {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mermaid-preview-viewport *,
+.mermaid-preview-diagram svg,
+.mermaid-preview-diagram svg * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mermaid-preview-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.mermaid-preview-transform {
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.mermaid-preview-diagram {
+  padding: 32px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mermaid-preview-diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
 }
 
 /* 滚动条样式 */

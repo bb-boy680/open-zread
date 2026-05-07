@@ -1,9 +1,9 @@
 // apps/browse/src/context/WikiContext.tsx
 import React, { createContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { wikiApi } from '../utils/api';
-import type { WikiOutput, WikiPage, CodeReference, WikiState } from '../types/wiki';
-import { buildTree } from '../utils/buildTree';
-import { parseReferences } from '../utils/parseReferences';
+import { wikiApi } from '@/utils/api';
+import type { WikiOutput, WikiPage, CodeReference, WikiState } from '@/types/wiki';
+import { buildTree } from '@/utils/buildTree';
+import { parseReferences } from '@/utils/parseReferences';
 
 interface WikiContextValue extends WikiState {
   tree: ReturnType<typeof buildTree>;

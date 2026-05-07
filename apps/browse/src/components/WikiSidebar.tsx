@@ -1,8 +1,8 @@
 // apps/browse/src/components/WikiSidebar.tsx
 import { useNavigate } from 'react-router';
-import { useWiki } from '../hooks/useWiki';
-import { BookOpen, ChevronDown, ChevronRight, Search } from 'lucide-react';
-import type { TreeNode, WikiPage } from '../types/wiki';
+import { useWiki } from '@/hooks/useWiki';
+import { BookOpen, ChevronDown, ChevronRight } from 'lucide-react';
+import type { TreeNode, WikiPage } from '@/types/wiki';
 
 interface TreeItemProps {
   node: TreeNode;
@@ -127,14 +127,6 @@ export function WikiSidebar() {
         >
           <ChevronLeft size={18} />
         </button>
-      </div>
-
-      {/* Search */}
-      <div className="p-4">
-        <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-md text-gray-500">
-          <Search size={16} />
-          <span className="text-sm">搜索文档...</span>
-        </div>
       </div>
 
       {/* Tree */}

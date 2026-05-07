@@ -1,5 +1,5 @@
 // apps/browse/src/utils/parseReferences.ts
-import type { CodeReference } from '../types/wiki';
+import type { CodeReference } from '@/types/wiki';
 
 export function parseReferences(content: string): CodeReference[] {
   const references: CodeReference[] = [];

@@ -1,8 +1,8 @@
 // apps/browse/src/components/CodePanel.tsx
 import { useState, useEffect } from 'react';
-import { useWiki } from '../hooks/useWiki';
-import { FolderTree, FileCode, X, Menu } from 'lucide-react';
-import type { CodeReference } from '../types/wiki';
+import { useWiki } from '@/hooks/useWiki';
+import { FolderTree, FileCode, X, Menu, ChevronLeft } from 'lucide-react';
+import type { CodeReference } from '@/types/wiki';
 
 export function CodePanel() {
   const { rightPanelCollapsed, toggleRightPanel, references, activeReference, selectReference, loadSourceCode } = useWiki();
@@ -19,7 +19,6 @@ export function CodePanel() {
         });
     }
   }, [activeReference, codeMap, loadSourceCode]);
-
   if (rightPanelCollapsed) {
     return (
       <div className="w-12 h-full bg-white border-l border-gray-200 flex flex-col items-center py-4">
@@ -73,12 +72,12 @@ export function CodePanel() {
           </div>
         ) : (
           <div className="bg-gray-50 rounded-lg p-3">
-            {references.map((ref, idx) => (
+            {references.map((reference, idx) => (
               <ReferenceItem
                 key={idx}
-                ref={ref}
-                isActive={activeReference?.filePath === ref.filePath}
-                onClick={() => selectReference(ref)}
+                reference={reference}
+                isActive={activeReference?.filePath === reference.filePath}
+                onClick={() => selectReference(reference)}
               />
             ))}
           </div>
@@ -108,12 +107,12 @@ export function CodePanel() {
 }
 
 interface ReferenceItemProps {
-  ref: CodeReference;
+  reference: CodeReference;
   isActive: boolean;
   onClick: () => void;
 }
 
-function ReferenceItem({ ref, isActive, onClick }: ReferenceItemProps) {
+function ReferenceItem({ reference, isActive, onClick }: ReferenceItemProps) {
   return (
     <div
       onClick={onClick}
@@ -125,32 +124,13 @@ function ReferenceItem({ ref, isActive, onClick }: ReferenceItemProps) {
     >
       <FileCode size={14} className={isActive ? 'text-blue-500' : 'text-gray-400'} />
       <span className={`truncate ${isActive ? 'font-medium' : ''}`}>
-        {ref.fileName}
+        {reference.fileName}
       </span>
-      {ref.lineStart && (
+      {reference.lineStart && (
         <span className="text-xs text-gray-400 ml-auto">
-          L{ref.lineStart}
+          L{reference.lineStart}
         </span>
       )}
     </div>
-  );
-}
-
-// ChevronLeft icon component
-function ChevronLeft({ size, className }: { size: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
   );
 }

@@ -1,6 +1,6 @@
 // apps/browse/src/hooks/useWiki.ts
 import { useContext } from 'react';
-import { WikiContext } from '../context/WikiContext';
+import { WikiContext } from '@/context/WikiContext';
 
 export function useWiki() {
   const context = useContext(WikiContext);

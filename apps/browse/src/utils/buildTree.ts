@@ -1,5 +1,5 @@
 // apps/browse/src/utils/buildTree.ts
-import type { WikiPage, TreeNode } from '../types/wiki';
+import type { WikiPage, TreeNode } from '@/types/wiki';
 
 export function buildTree(pages: WikiPage[]): TreeNode[] {
   const sections = new Map<string, TreeNode>();
@@ -8,7 +8,6 @@ export function buildTree(pages: WikiPage[]): TreeNode[] {
   for (const page of pages) {
     const sectionKey = page.section;
 
-    // Create section if not exists
     if (!sections.has(sectionKey)) {
       sections.set(sectionKey, {
         type: 'section',
@@ -18,9 +17,11 @@ export function buildTree(pages: WikiPage[]): TreeNode[] {
       });
     }
 
-    const section = sections.get(sectionKey)!;
+    const section = sections.get(sectionKey);
+    if (!section || !section.children) {
+      continue;
+    }
 
-    // If page has a group
     if (page.group) {
       const groupKey = `${sectionKey}/${page.group}`;
 
@@ -32,25 +33,29 @@ export function buildTree(pages: WikiPage[]): TreeNode[] {
           children: []
         };
         groups.set(groupKey, groupNode);
-        section.children!.push(groupNode);
+        section.children.push(groupNode);
       }
 
-      const group = groups.get(groupKey)!;
-      group.children!.push({
+      const group = groups.get(groupKey);
+      if (!group || !group.children) {
+        continue;
+      }
+
+      group.children.push({
         type: 'page',
         id: `page-${page.slug}`,
         title: page.title,
         pageData: page
       });
-    } else {
-      // Page directly under section
-      section.children!.push({
-        type: 'page',
-        id: `page-${page.slug}`,
-        title: page.title,
-        pageData: page
-      });
+      continue;
     }
+
+    section.children.push({
+      type: 'page',
+      id: `page-${page.slug}`,
+      title: page.title,
+      pageData: page
+    });
   }
 
   return Array.from(sections.values());

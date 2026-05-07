@@ -1,5 +1,5 @@
-// apps/browse/src/hooks/useTableOfContents.ts
 import { useMemo } from 'react';
+import GithubSlugger from 'github-slugger';
 
 export interface TocItem {
   id: string;
@@ -10,35 +10,18 @@ export interface TocItem {
 export function useTableOfContents(content: string): TocItem[] {
   return useMemo(() => {
     const headings: TocItem[] = [];
-    const lines = content.split('\n');
-    const slugMap = new Map<string, number>();
+    const slugger = new GithubSlugger();
 
-    for (const line of lines) {
-      // Match markdown headings: ## Heading, ### Heading
-      const match = line.match(/^(#{2,4})\s+(.+)$/);
-      if (match) {
-        const level = match[1].length;
-        const text = match[2].trim();
+    // 简单正则提取 h2-h4 headings
+    const regex = /^(#{2,4})\s+(.+)$/gm;
+    let match;
 
-        // Generate slug from text (same logic as anchor links)
-        let slug = text
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-');
+    while ((match = regex.exec(content)) !== null) {
+      const level = match[1].length;
+      const text = match[2].trim();
+      const id = slugger.slug(text);
 
-        // Handle duplicate slugs
-        const count = slugMap.get(slug) || 0;
-        if (count > 0) {
-          slug = `${slug}-${count}`;
-        }
-        slugMap.set(slug, count + 1);
-
-        headings.push({
-          id: slug,
-          text,
-          level
-        });
-      }
+      headings.push({ id, text, level });
     }
 
     return headings;
