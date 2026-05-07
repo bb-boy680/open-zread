@@ -1,6 +1,12 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 import globals from "globals";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default tseslint.config(
   {
@@ -12,12 +18,18 @@ export default tseslint.config(
       "**/bun.lock",
       "**/*.lock",
       "**/*.js",
-      "apps/browse/**",
     ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...tseslint.configs.strict,
+  {
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: __dirname,
+      },
+    },
+  },
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
@@ -32,14 +44,27 @@ export default tseslint.config(
           "caughtErrorsIgnorePattern": "^_",
         },
       ],
-      // 禁止使用 any 类型
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
   {
-    files: ["apps/cli/src/**/*.{ts,tsx}"],
+    files: ["apps/cli/src/**/*.{ts,tsx}", "apps/browse/src/**/*.{ts,tsx}"],
     languageOptions: {
       globals: { ...globals.node, ...globals.browser },
+    },
+  },
+  {
+    files: ["apps/browse/src/**/*.{ts,tsx}"],
+    plugins: {
+      "react-hooks": reactHooks,
+      "react-refresh": reactRefresh,
+    },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
     },
   },
 );
