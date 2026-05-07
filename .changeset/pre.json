@@ -10,5 +10,7 @@
     "@open-zread/types": "0.1.0",
     "@open-zread/utils": "0.1.0"
   },
-  "changesets": []
+  "changesets": [
+    "every-regions-deny"
+  ]
 }
