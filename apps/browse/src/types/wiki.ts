@@ -43,4 +43,6 @@ export interface WikiState {
   leftPanelCollapsed: boolean;
   rightPanelCollapsed: boolean;
   expandedNodes: Set<string>;
+  sourceModalOpen: boolean;
+  sourceModalRef: CodeReference | null;
 }

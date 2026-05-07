@@ -5,6 +5,7 @@ import { TableOfContents } from "./TableOfContents";
 import { TocProvider } from "@/context/TocContext";
 import { Clock, Signal } from "lucide-react";
 import type { TocItem } from "@/hooks/useTableOfContents";
+import { SourceCodeModal } from "@/components/SourceCodeModal";
 
 /**
  * 计算阅读时间（分钟）
@@ -38,7 +39,7 @@ function calculateReadingTime(content: string): number {
 }
 
 export function WikiContent() {
-  const { currentPage, currentContent } = useWiki();
+  const { currentPage, currentContent, sourceModalOpen, sourceModalRef, closeSourceModal } = useWiki();
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
 
   const readingTime = useMemo(
@@ -105,6 +106,12 @@ export function WikiContent() {
           </div>
         </div>
       </div>
+
+      <SourceCodeModal
+        open={sourceModalOpen}
+        reference={sourceModalRef}
+        onClose={closeSourceModal}
+      />
     </TocProvider>
   );
 }

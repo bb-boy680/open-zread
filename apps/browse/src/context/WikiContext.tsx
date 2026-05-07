@@ -14,6 +14,8 @@ interface WikiContextValue extends WikiState {
   toggleRightPanel: () => void;
   selectReference: (ref: CodeReference | null) => void;
   loadSourceCode: (filePath: string, lineStart?: number, lineEnd?: number) => Promise<string | null>;
+  openSourceModal: (ref: CodeReference) => void;
+  closeSourceModal: () => void;
 }
 
 const WikiContext = createContext<WikiContextValue | null>(null);
@@ -48,6 +50,8 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const hasInitializedExpanded = useRef(false);
+  const [sourceModalOpen, setSourceModalOpen] = useState(false);
+  const [sourceModalRef, setSourceModalRef] = useState<CodeReference | null>(null);
 
   const tree = useMemo(() => (wikiData ? buildTree(wikiData.pages) : []), [wikiData]);
 
@@ -139,6 +143,16 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
     setActiveReference(ref);
   }, []);
 
+  const openSourceModal = useCallback((ref: CodeReference) => {
+    setSourceModalRef(ref);
+    setSourceModalOpen(true);
+  }, []);
+
+  const closeSourceModal = useCallback(() => {
+    setSourceModalOpen(false);
+    setSourceModalRef(null);
+  }, []);
+
   const value: WikiContextValue = {
     wikiData,
     currentPage,
@@ -155,7 +169,11 @@ export function WikiProvider({ children }: { children: React.ReactNode }) {
     toggleLeftPanel,
     toggleRightPanel,
     selectReference,
-    loadSourceCode
+    loadSourceCode,
+    sourceModalOpen,
+    sourceModalRef,
+    openSourceModal,
+    closeSourceModal
   };
 
   return (

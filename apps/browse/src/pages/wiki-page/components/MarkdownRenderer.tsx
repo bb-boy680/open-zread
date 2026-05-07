@@ -12,8 +12,62 @@ import { useTableOfContents } from "@/hooks/useTableOfContents";
 import { parseReferences } from "@/utils/parseReferences";
 import { useTocContext } from "@/hooks/useTocContext";
 import { MermaidPreviewModal } from "./MermaidPreviewModal";
+import { useWiki } from "@/hooks/useWiki";
 
 const CodeBlockContext = createContext(false);
+
+function SourceCodeLink({
+  filePath,
+  fileName,
+  lineStart,
+  lineEnd,
+  children,
+}: {
+  filePath: string;
+  fileName: string;
+  lineStart?: number;
+  lineEnd?: number;
+  children: React.ReactNode;
+}) {
+  const { openSourceModal } = useWiki();
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    openSourceModal({
+      filePath,
+      fileName,
+      lineStart,
+      lineEnd,
+    });
+  };
+
+  return (
+    <a
+      href="#"
+      onClick={handleClick}
+      className="text-cyan-600 underline hover:text-cyan-700 cursor-pointer"
+    >
+      {children}
+    </a>
+  );
+}
+
+// 代码文件扩展名列表
+const CODE_EXTENSIONS = [
+  'ts', 'tsx', 'js', 'jsx', 'go', 'rs', 'py', 'java', 'cpp', 'c', 'vue',
+  'md', 'json', 'yaml', 'yml', 'sh', 'bash', 'zsh', 'sql', 'html', 'css',
+  'scss', 'less', 'xml', 'toml', 'ini', 'cfg', 'conf', 'env', 'dockerfile'
+];
+
+// 检测是否是代码文件链接
+function isCodeFileLink(href: string): boolean {
+  if (!href) return false;
+  // 忽略外部链接（包含 ://）
+  if (href.includes('://')) return false;
+  // 检查文件扩展名
+  const ext = href.split('.').pop()?.toLowerCase();
+  return ext ? CODE_EXTENSIONS.includes(ext) : false;
+}
 
 // 移除 Markdown frontmatter (元数据)
 function removeFrontmatter(content: string): string {
@@ -295,16 +349,56 @@ export function MarkdownRenderer({
               {children}
             </ol>
           ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              className="text-cyan-600 underline hover:text-cyan-700"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => {
+            const hasLineNumber = href && href.includes('#L');
+            const isCodeFile = href && isCodeFileLink(href);
+
+            if (hasLineNumber) {
+              const match = href.match(/([^#]+)#L(\d+)(?:-L(\d+))?$/);
+              if (match) {
+                const filePath = match[1];
+                const fileName = filePath.split('/').pop() || filePath;
+                const lineStart = parseInt(match[2], 10);
+                const lineEnd = match[3] ? parseInt(match[3], 10) : lineStart;
+
+                return (
+                  <SourceCodeLink
+                    filePath={filePath}
+                    fileName={fileName}
+                    lineStart={lineStart}
+                    lineEnd={lineEnd}
+                  >
+                    {children}
+                  </SourceCodeLink>
+                );
+              }
+            }
+
+            if (isCodeFile && !hasLineNumber) {
+              const filePath = href;
+              const fileName = filePath.split('/').pop() || filePath;
+
+              return (
+                <SourceCodeLink
+                  filePath={filePath}
+                  fileName={fileName}
+                >
+                  {children}
+                </SourceCodeLink>
+              );
+            }
+
+            return (
+              <a
+                href={href}
+                className="text-cyan-600 underline hover:text-cyan-700"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {children}
+              </a>
+            );
+          },
           img: ({ src, alt }) => (
             <img
               src={src}
