@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useWiki } from "@/hooks/useWiki";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { TableOfContents } from "./TableOfContents";
@@ -6,9 +6,45 @@ import { TocProvider } from "@/context/TocContext";
 import { Clock, Signal } from "lucide-react";
 import type { TocItem } from "@/hooks/useTableOfContents";
 
+/**
+ * 计算阅读时间（分钟）
+ * 中文约 350 字/分钟，英文约 200 词/分钟
+ */
+function calculateReadingTime(content: string): number {
+  if (!content) return 0;
+
+  // 移除 markdown 标记（代码块、链接等）
+  const cleanContent = content
+    .replace(/```[\s\S]*?```/g, '') // 移除代码块
+    .replace(/`[^`]+`/g, '') // 移除行内代码
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // 保留链接文本
+    .replace(/[#*_~>|]/g, '') // 移除 markdown 符号
+    .replace(/\n+/g, ' ') // 换行转空格
+    .trim();
+
+  // 统计中文字符数
+  const chineseChars = (cleanContent.match(/[一-龥]/g) || []).length;
+  // 统计英文单词数（连续字母为一个单词）
+  const englishWords = (cleanContent.match(/[a-zA-Z]+/g) || []).length;
+
+  // 中文阅读速度：350 字/分钟，英文：200 词/分钟
+  const chineseMinutes = chineseChars / 350;
+  const englishMinutes = englishWords / 200;
+
+  const totalMinutes = chineseMinutes + englishMinutes;
+
+  // 最少 1 分钟，向上取整
+  return Math.max(1, Math.ceil(totalMinutes));
+}
+
 export function WikiContent() {
   const { currentPage, currentContent } = useWiki();
   const [tocItems, setTocItems] = useState<TocItem[]>([]);
+
+  const readingTime = useMemo(
+    () => calculateReadingTime(currentContent || ''),
+    [currentContent]
+  );
 
   if (!currentPage) {
     return (
@@ -39,7 +75,7 @@ export function WikiContent() {
               <div className="flex items-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-2">
                   <Clock size={16} className="text-emerald-500" />
-                  <span>6 分钟</span>
+                  <span>{readingTime} 分钟</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Signal size={16} className="text-amber-500" />
