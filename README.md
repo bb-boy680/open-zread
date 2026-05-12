@@ -42,6 +42,9 @@ Open Zread 是[zread.ai](https://zread.ai/) 的开源复刻版与精神延续。
 <p align="center">
   <img src="./static/open-zread.wiki.png" width="100%" alt="多 Agent 并发生成文档">
 </p>
+<p align="center">
+  <img src="./static/browse.png" width="100%" alt="本地 Web 预览 Wiki">
+</p>
 
 ---
 
@@ -66,6 +69,14 @@ open-zread
 1. 填入你的大模型 API Key（支持 75+ 家 Provider，如 OpenAI, Anthropic, DeepSeek 等）。
 2. 点击 `Generate Documentation`。
 3. 稍等片刻，你的项目目录下会自动生成一个排版精美、带 Mermaid 架构图的 `Wiki/` Markdown 文件夹！
+
+**浏览器预览 Wiki**：
+
+```bash
+open-zread browse
+```
+
+自动启动本地 Web 服务，在浏览器中沉浸式阅读 Wiki — 侧边栏导航、Mermaid 架构图渲染、代码高亮，一站搞定。
 
 ---
 
@@ -118,7 +129,7 @@ open-zread
 | 🌍 **多语言全栖解析** | ✅ | 预置主流语言 Tree-sitter 引擎支持 |
 | 📝 **并发 Wiki 创作引擎**| ✅ | TypeScript 调度 N 个独立 Agent 生成高质量 Markdown |
 | ⚙️ **无文件配置管理** | ✅ | 终端 UI 内部直接增删改查 Provider 和 Key |
-| 🌐 **本地 Web 预览服务** | ☐ | `open-zread browse` 启动本地服务器，浏览器沉浸式阅读 Wiki |
+| 🌐 **本地 Web 预览服务** | ✅ | `open-zread browse` 启动本地服务器，浏览器沉浸式阅读 Wiki |
 | 🔄 **细粒度增量更新** | ☐ | 仅重写发生代码变更关联的 Markdown 页面 |
 | 🛠️ **自定义 Rules & Skill**| ☐ | 允许团队传入自定义的 Rules 和 Skill，深度定制专属的文档生成风格 |
 
