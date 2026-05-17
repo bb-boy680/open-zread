@@ -89,8 +89,8 @@ export function ConfigProvider({ children }: ConfigProviderProps) {
     return null;
   }
 
-  // 错误状态（已有默认配置兜底，此分支不应触发）
-  if (error || !config || !originalConfig) {
+  // config 或 originalConfig 未就绪时等待加载完成
+  if (!config || !originalConfig) {
     return null;
   }
 

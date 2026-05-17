@@ -1,9 +1,10 @@
 import { readFile, writeFile } from 'fs/promises';
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { parse, stringify } from 'yaml';
 import type { AppConfig } from '@open-zread/types';
+import { ensureDir } from '../file-io';
 
 const CONFIG_PATH = join(homedir(), '.zread', 'config.yaml');
 
@@ -110,6 +111,7 @@ export function validateConfig(raw: unknown): AppConfig {
 export async function saveConfig(config: AppConfig): Promise<void> {
   validateConfig(config);
   const yamlContent = stringify(config);
+  await ensureDir(dirname(CONFIG_PATH));
   await writeFile(CONFIG_PATH, yamlContent, 'utf-8');
 }
 
