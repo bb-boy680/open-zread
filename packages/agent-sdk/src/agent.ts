@@ -71,8 +71,8 @@ export class Agent {
     this.modelId = this.cfg.model ?? this.readEnv('CODEANY_MODEL') ?? 'claude-sonnet-4-6'
     this.sid = this.cfg.sessionId ?? crypto.randomUUID()
 
-    // Resolve provider ID
-    this.providerId = this.cfg.providerId ?? this.extractProviderId()
+    // Resolve provider ID (baseURL format takes priority over explicit providerId)
+    this.providerId = this.extractProviderId()
 
     // Create LLM provider
     this.provider = createProvider(this.providerId, {
@@ -119,12 +119,13 @@ export class Agent {
    * Extract provider ID from model name or apiType (for backwards compatibility).
    */
   private extractProviderId(): string {
-    // Explicit providerId option
-    if (this.cfg.providerId) return this.cfg.providerId
-
     // Check baseURL for endpoint format first (Anthropic-compatible endpoints)
+    // This takes priority because the endpoint format determines API compatibility
     const baseUrl = this.apiCredentials.baseUrl?.toLowerCase() || ''
     if (baseUrl.includes('/anthropic')) return 'anthropic'
+
+    // Explicit providerId option (respected when baseURL doesn't indicate format)
+    if (this.cfg.providerId) return this.cfg.providerId
 
     // From model string (e.g., "anthropic/claude-sonnet-4-6")
     if (this.modelId.includes('/')) {
