@@ -28,6 +28,7 @@ const PROVIDER_ID_TO_API_TYPE: Record<string, ApiType> = {
   'zhipu': 'openai-completions',
   'qwen': 'openai-completions',
   'moonshot': 'openai-completions',
+  'custom': 'openai-completions',
 }
 
 /**

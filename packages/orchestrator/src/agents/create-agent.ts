@@ -59,6 +59,7 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
   const model = config.llm.model ?? undefined;
   const apiKey = config.llm.api_key ?? undefined;
   const baseURL = config.llm.base_url ?? undefined;
+  const providerId = config.llm.provider ?? undefined;
 
   // 验证必需配置
   if (!model || !apiKey || !baseURL) {
@@ -127,6 +128,7 @@ export async function createAgent(options: CreateBlueprintAgentOptions): Promise
     model,
     apiKey,
     baseURL,
+    providerId,
     cwd: process.cwd(),
     tools: options.tools,
     systemPrompt: SYSTEM_PROMPTS[docLanguage],

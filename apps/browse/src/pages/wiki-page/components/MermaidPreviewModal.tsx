@@ -22,6 +22,7 @@ interface Size {
 const MIN_SCALE = 0.25;
 const MAX_SCALE = 3;
 const DEFAULT_SIZE: Size = { width: 1200, height: 800 };
+const DIAGRAM_PADDING = 32;
 
 function clampScale(scale: number) {
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
@@ -97,8 +98,15 @@ export function MermaidPreviewModal({ open, onOpenChange, content }: MermaidPrev
       const availableHeight = Math.max(0, viewport.clientHeight - padding * 2);
       const fitScale = Math.min(availableWidth / svgSize.width, availableHeight / svgSize.height);
       const newScale = clampScale(Number.isFinite(fitScale) && fitScale > 0 ? fitScale : 1);
+
+      // 计算初始 offset 使内容在 viewport 中居中（考虑 diagram padding）
+      const totalWidth = svgSize.width * newScale + DIAGRAM_PADDING * 2;
+      const totalHeight = svgSize.height * newScale + DIAGRAM_PADDING * 2;
+      const centerOffsetX = (viewport.clientWidth - totalWidth) / 2;
+      const centerOffsetY = (viewport.clientHeight - totalHeight) / 2;
+
       setScale(newScale);
-      setOffset({ x: 0, y: 0 });
+      setOffset({ x: centerOffsetX, y: centerOffsetY });
     };
 
     // Initial fit
@@ -116,8 +124,27 @@ export function MermaidPreviewModal({ open, onOpenChange, content }: MermaidPrev
 
   const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const rect = viewport.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    // 鼠标相对于 SVG 内容的位置（viewBox 坐标，考虑 diagram padding）
+    const contentX = (mouseX - offset.x - DIAGRAM_PADDING) / scale;
+    const contentY = (mouseY - offset.y - DIAGRAM_PADDING) / scale;
+
     const nextScale = clampScale(scale - event.deltaY * 0.0015);
+
+    // 缩放后调整 offset，使鼠标位置下的内容点保持不变
+    const nextOffset = {
+      x: mouseX - DIAGRAM_PADDING - contentX * nextScale,
+      y: mouseY - DIAGRAM_PADDING - contentY * nextScale
+    };
+
     setScale(nextScale);
+    setOffset(nextOffset);
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
