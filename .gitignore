@@ -19,3 +19,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# debug
+.debug
+.history
