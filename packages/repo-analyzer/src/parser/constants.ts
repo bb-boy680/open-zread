@@ -7,6 +7,7 @@ export const WASM_FILE_MAP: Record<string, string> = {
   vue: 'tree-sitter-vue.wasm',
   go: 'tree-sitter-go.wasm',
   python: 'tree-sitter-python.wasm',
+  php: 'tree-sitter-php.wasm',
 };
 
 export const PARSER_CACHE_DIR = '~/.zread/parsers';

@@ -6,6 +6,7 @@ export const LANGUAGE_TO_PARSER: Record<string, string> = {
   vue: 'vue',
   go: 'go',
   python: 'python',
+  php: 'php',
 };
 
 export function isLanguageSupported(language: string): boolean {

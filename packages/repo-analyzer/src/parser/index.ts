@@ -34,6 +34,13 @@ const SCM_QUERIES: Record<string, string> = {
     (function_definition name: (identifier) @fn_name) @fn
     (class_definition name: (identifier) @class_name) @class
   `,
+  php: `
+    (namespace_use_declaration) @import
+    (function_definition name: (name) @fn_name) @fn
+    (class_declaration name: (name) @class_name) @class
+    (method_declaration name: (name) @method_name) @method
+    (interface_declaration name: (name) @iface_name) @iface
+  `,
 };
 
 /**
