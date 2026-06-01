@@ -45,7 +45,7 @@ Documentation rots. Open Zread keeps it alive.
 - **Onboard in minutes, not weeks.** Get a Wiki with clear module boundaries and architecture diagrams from any unfamiliar codebase.
 - **Stay focused on code.** AI extracts interfaces, dependencies, and usage examples — no need to write doc comments as you go.
 - **Refresh, don't rewrite.** Symbol-level incremental cache means re-runs after code changes are fast and cheap.
-- **Works on real backends.** Built on `web-tree-sitter` with first-class AST support for TypeScript, JavaScript, Vue, Go, and Python — with more on the way.
+- **Works on real backends.** Built on `web-tree-sitter` with AST support for 14 languages — TypeScript, JavaScript, Vue, Go, Python, Rust, Java, C, C++, C#, Ruby, Swift, Kotlin, and PHP.
 - **Your code stays yours.** Fully open source, runs locally. No vendor lock-in, no data leaving your machine.
 - **Bring your own LLM.** 19 first-class providers — Anthropic, OpenAI, Google, DeepSeek, Moonshot, Qwen, Doubao, xAI, Groq and more — plus dynamic discovery for hundreds of models via the LiteLLM registry.
 
@@ -190,18 +190,24 @@ Re-running on a changed codebase doesn't blow away your Wiki. The orchestrator:
 
 ## Supported Languages
 
-| Language                  | AST Parser            | Status |
-| ------------------------- | --------------------- | :----: |
-| TypeScript / TSX          | tree-sitter-typescript |  ✅   |
-| JavaScript / JSX          | tree-sitter-javascript |  ✅   |
-| Vue (SFC)                 | Custom script extractor → TS/JS parser |  ✅   |
-| Go                        | tree-sitter-go         |  ✅   |
-| Python                    | tree-sitter-python     |  ✅   |
-| Rust                      | tree-sitter-rust       |  ☐ planned |
-| Java                      | tree-sitter-java       |  ☐ planned |
-| C / C++                   | tree-sitter-cpp        |  ☐ planned |
+| Language                  | AST Parser                     | Status |
+| ------------------------- | ------------------------------ | :----: |
+| TypeScript / TSX          | tree-sitter-typescript         |   ✅   |
+| JavaScript / JSX          | tree-sitter-javascript         |   ✅   |
+| Vue (SFC)                 | Custom script extractor → TS/JS parser |   ✅   |
+| Go                        | tree-sitter-go                 |   ✅   |
+| Python                    | tree-sitter-python             |   ✅   |
+| Rust                      | tree-sitter-rust               |   ✅   |
+| Java                      | tree-sitter-java               |   ✅   |
+| C                         | tree-sitter-c                  |   ✅   |
+| C++                       | tree-sitter-cpp                |   ✅   |
+| C#                        | tree-sitter-c_sharp            |   ✅   |
+| Ruby                      | tree-sitter-ruby               |   ✅   |
+| Swift                     | tree-sitter-swift              |   ✅   |
+| Kotlin                    | tree-sitter-kotlin             |   ✅   |
+| PHP                       | tree-sitter-php                |   ✅   |
 
-Adding a language is mostly a matter of registering its tree-sitter grammar in `packages/repo-analyzer/src/parser/language-map.ts` and adapting the symbol extractor. PRs welcome.
+Adding a language is mostly a matter of registering its tree-sitter grammar, WASM mapping, and SCM query in `packages/repo-analyzer/src/parser/`. PRs welcome.
 
 ## Supported LLM Providers
 
@@ -263,7 +269,7 @@ Every page is plain Markdown with embedded Mermaid blocks — render anywhere (G
 | ------------------------------ | ---------------------------------------------------- | --------------------------------------------------------- |
 | Manual documentation           | Slow, drifts from code, nobody enjoys it             | AI generates from source; re-run keeps it in sync         |
 | Copilot / Cursor               | File-local context, no global view                   | Three-layer Repo Map gives a god's-eye view               |
-| Mintlify / JSDoc               | Frontend ecosystems only                             | AST-level parsing for Go, Python, Vue today; more soon    |
+| Mintlify / JSDoc               | Frontend ecosystems only                             | AST-level parsing for 14 languages across frontend and backend |
 | Closed-source AI doc SaaS      | Subscription cost, code uploaded to third parties    | Fully open source, runs locally, your data stays put      |
 | Naive RAG-over-README          | Generic summaries with little signal                 | Per-module agents adaptively render APIs and architecture |
 | Hand-crafted Docusaurus / VitePress | High setup cost, still requires hand-written content | Generated content drops straight into your existing static-site pipeline |
@@ -291,13 +297,12 @@ Highlights:
 | Multi-LLM provider support       |   ✅   | 19 first-class providers + LiteLLM registry for hundreds more          |
 | Three-layer Repo Map             |   ✅   | Directory tree → core signatures → module details                      |
 | Symbol-level incremental cache   |   ✅   | AST hash; unchanged files skipped instantly                            |
-| Multi-language AST parsing       |   ✅   | TypeScript, JavaScript, Vue SFC, Go, Python                            |
+| Multi-language AST parsing       |   ✅   | 14 languages: TS/JS, Vue, Go, Python, Rust, Java, C/C++, C#, Ruby, Swift, Kotlin, PHP |
 | Parallel Wiki generation engine  |   ✅   | `p-limit`-scheduled fan-out, configurable concurrency                  |
 | Diff-aware Wiki sync             |   ✅   | Tags pages as `new` / `updated` / `unchanged` / `archived`             |
 | In-TUI configuration management  |   ✅   | Add/remove providers and keys without editing config files            |
 | Local web preview server         |   ✅   | React 19 + Vite + Tailwind v4, Mermaid, code highlighting, dark mode  |
 | Cost tracking                    |   ✅   | Live per-model token / cost meter during generation                    |
-| Rust / Java / C++ AST parsers    |   ☐    | Tree-sitter grammars exist — needs symbol-extractor wiring             |
 | CI integration                   |   ☐    | GitHub Action for auto-sync on push                                    |
 | Custom Rules & Skills            |   ☐    | Bring your own writing style and team conventions                      |
 | Hosted preview                   |   ☐    | One-click publish generated Wiki to a hosted URL                       |
