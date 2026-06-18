@@ -45,6 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@open-zread/agent-sdk": "workspace:*",
     "commander": "^14.0.3",
     "express": "^5.1.0",
     "fullscreen-ink": "^0.1.0",

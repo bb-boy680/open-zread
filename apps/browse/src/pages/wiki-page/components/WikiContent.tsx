@@ -98,7 +98,7 @@ export function WikiContent() {
               </div>
             </div>
 
-            <div className="relative overflow-visible">
+            <div className="relative overflow-visible" data-chat-selection-root="true">
               <MarkdownRenderer
                 content={currentContent}
                 onReferencesFound={() => {}}

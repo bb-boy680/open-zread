@@ -8,6 +8,13 @@ import open from "open";
 import path from "path";
 import { existsSync, readFileSync } from "fs";
 import type { Server } from "http";
+import { resolveBrowseChat, serializeBrowseChatError } from "./browse-chat";
+import {
+  deleteBrowseChatSession,
+  loadBrowseChatHistory,
+  saveBrowseChatHistory,
+  type BrowseChatHistoryPayload,
+} from "./browse-chat-history";
 
 // 打包时通过 tsup define 注入的全局常量
 declare global {
@@ -68,6 +75,7 @@ function readCodeSnippet(
 /** 创建 Express app（API 路由） */
 function createWikiApp(projectPath: string) {
   const app = express();
+  app.use(express.json({ limit: "1mb" }));
 
   // Wiki data path
   const wikiPath = path.join(projectPath, ".open-zread", "wiki");
@@ -175,6 +183,65 @@ function createWikiApp(projectPath: string) {
     } catch (error) {
       res.status(500).json({
         error: "Failed to load source snippet",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  app.post("/api/chat", async (req: Request, res: Response) => {
+    try {
+      const result = await resolveBrowseChat(req.body);
+      res.json(result);
+    } catch (error) {
+      const serialized = serializeBrowseChatError(error);
+      res.status(serialized.status).json(serialized.body);
+    }
+  });
+
+  app.get("/api/chat/history", async (_req: Request, res: Response) => {
+    try {
+      const history = await loadBrowseChatHistory(projectPath);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({
+        error: "Failed to load chat history",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  app.put("/api/chat/history", async (req: Request, res: Response) => {
+    try {
+      const history = await saveBrowseChatHistory(
+        projectPath,
+        req.body as BrowseChatHistoryPayload,
+      );
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({
+        error: "Failed to save chat history",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
+  app.delete("/api/chat/history/:sessionId", async (req: Request, res: Response) => {
+    try {
+      const sessionId = req.params.sessionId;
+      if (typeof sessionId !== "string") {
+        return res.status(400).json({
+          error: "Invalid chat session id",
+          message: "sessionId must be a string",
+        });
+      }
+      const history = await deleteBrowseChatSession(
+        projectPath,
+        sessionId,
+      );
+      res.json(history);
+    } catch (error) {
+      res.status(400).json({
+        error: "Failed to delete chat session",
         message: error instanceof Error ? error.message : String(error),
       });
     }
