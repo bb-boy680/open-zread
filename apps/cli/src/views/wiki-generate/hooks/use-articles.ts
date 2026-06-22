@@ -103,10 +103,12 @@ export function useArticlesGenerate({
   const handleEvent = useCallback(
     (event: ArticleEventPayload) => {
       updateState((draft) => {
+        const currentState = { ...draft } as ArticlesState;
         const newState = articleEventToState(
-          { ...draft } as ArticlesState,
+          currentState,
           event
         );
+        if (newState === currentState) return;
         Object.assign(draft, newState);
       });
     },

@@ -88,10 +88,12 @@ export function useCatalogGenerate({
 
       // 使用 mapper 纯函数更新状态
       updateState((draft) => {
+        const currentState = { ...draft } as CatalogState;
         const newState = catalogEventToState(
-          { ...draft } as CatalogState,
+          currentState,
           event
         );
+        if (newState === currentState) return;
         // 将纯函数结果合并回 draft
         Object.assign(draft, newState);
       });

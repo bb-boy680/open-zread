@@ -8,7 +8,7 @@
  * 注意：SDK 的 usage 已经是累积总量，不需要再累加
  */
 
-import type { ArticleEventPayload } from '@open-zread/orchestrator';
+import type { ArticleEventPayload, TokenUsage } from '@open-zread/orchestrator';
 import type {
   CatalogState,
   ArticlesState,
@@ -16,6 +16,54 @@ import type {
   CatalogEventPayload,
 } from './types';
 import { initialPageStatus } from './state';
+
+function tokenUsageEquals(a?: TokenUsage, b?: TokenUsage): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+
+  return (
+    a.input_tokens === b.input_tokens &&
+    a.output_tokens === b.output_tokens &&
+    a.cache_creation_input_tokens === b.cache_creation_input_tokens &&
+    a.cache_read_input_tokens === b.cache_read_input_tokens
+  );
+}
+
+function catalogStateEquals(a: CatalogState, b: CatalogState): boolean {
+  return (
+    a.status === b.status &&
+    a.phase === b.phase &&
+    a.currentTool === b.currentTool &&
+    tokenUsageEquals(a.usage, b.usage) &&
+    a.durationMs === b.durationMs &&
+    a.error === b.error &&
+    a.retryCount === b.retryCount &&
+    a.maxRetries === b.maxRetries &&
+    a.delayMs === b.delayMs
+  );
+}
+
+function reuseCatalogStateIfUnchanged(
+  state: CatalogState,
+  nextState: CatalogState
+): CatalogState {
+  return catalogStateEquals(state, nextState) ? state : nextState;
+}
+
+function pageStatusEquals(a: PageStatus, b: PageStatus): boolean {
+  return (
+    a.status === b.status &&
+    a.phase === b.phase &&
+    a.currentTool === b.currentTool &&
+    tokenUsageEquals(a.usage, b.usage) &&
+    a.durationMs === b.durationMs &&
+    a.error === b.error &&
+    a.outputPath === b.outputPath &&
+    a.retryCount === b.retryCount &&
+    a.maxRetries === b.maxRetries &&
+    a.delayMs === b.delayMs
+  );
+}
 
 // ==================== 目录状态转换 ====================
 
@@ -32,71 +80,81 @@ export function catalogEventToState(
   state: CatalogState,
   event: CatalogEventPayload
 ): CatalogState {
+  let nextState: CatalogState;
+
   switch (event.type) {
     case 'scanning':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'scanning',
       };
+      break;
 
     case 'parsing':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'scanning',
       };
+      break;
 
     case 'requesting':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'requesting',
         usage: event.usage, // 直接使用，不累加
       };
+      break;
 
     case 'responding':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'responding',
         usage: event.usage, // 直接使用，不累加
       };
+      break;
 
     case 'tool_start':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'tool',
         currentTool: event.toolName,
         usage: event.usage, // 直接使用，不累加
       };
+      break;
 
     case 'tool_result':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'responding',
         usage: event.usage, // 直接使用，不累加
       };
+      break;
 
     case 'complete':
-      return {
+      nextState = {
         status: 'completed',
         usage: event.usage,
         durationMs: event.durationMs ?? 0,
       };
+      break;
 
     case 'error':
-      return {
+      nextState = {
         status: 'failed',
         usage: event.usage,
         error: event.error,
         durationMs: event.durationMs ?? 0,
       };
+      break;
 
     case 'retry':
-      return {
+      nextState = {
         ...state,
         status: 'loading',
         phase: 'retry',
@@ -106,10 +164,13 @@ export function catalogEventToState(
         error: event.error,
         usage: event.usage,
       };
+      break;
 
     default:
       return state;
   }
+
+  return reuseCatalogStateIfUnchanged(state, nextState);
 }
 
 // ==================== 文章状态转换 ====================
@@ -235,7 +296,7 @@ export function articleEventToState(
     }
   }
 
-  return {
+  const nextState = {
     ...state,
     pages: { ...state.pages, [event.slug]: newPageStatus },
     currentPageSlug:
@@ -244,4 +305,16 @@ export function articleEventToState(
     failedCount,
     pendingCount,
   };
+
+  if (
+    pageStatusEquals(currentStatus, newPageStatus) &&
+    nextState.currentPageSlug === state.currentPageSlug &&
+    nextState.completedCount === state.completedCount &&
+    nextState.failedCount === state.failedCount &&
+    nextState.pendingCount === state.pendingCount
+  ) {
+    return state;
+  }
+
+  return nextState;
 }
